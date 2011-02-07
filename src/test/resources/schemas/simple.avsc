@@ -1,0 +1,14 @@
+{"type": "record", "name":"SimpleDatum", "namespace": "com.bixolabs.cascading", "fields": [
+	{"name": "url", "type": "string"},
+      
+	// Time of page fetch
+	{"name": "fetchTime", "type": "long"},
+
+	// Server response headers
+	{"name": "responseHeaders", "type":
+		{"type": "map", "values": "string"}},
+
+	// Raw page content
+	{"name": "content", "type": "bytes"}
+  ]
+}
