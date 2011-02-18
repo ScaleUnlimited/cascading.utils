@@ -23,30 +23,36 @@ Copyright (c) 2011 TransPac Software, Inc.
 	<!-- Maven                                                              -->
 	<!-- ================================================================== -->
 
-<target name="mvn-init" unless="compile.classpath" xmlns:artifact="urn:maven-artifact-ant">
-	<path id="maven.ant.tasks.classpath" path="${lib.dir}/maven-ant-tasks-2.0.10.jar" />
-	
-    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant"
-        classpathref="maven.ant.tasks.classpath"/>
-        
-    <condition property="maven.repo.local" value="${maven.repo.local}" else="${user.home}/.m2/repository">
-        <isset property="maven.repo.local"/>
-    </condition>
-    <artifact:localRepository id="local.repository" path="${maven.repo.local}"/>
-    <artifact:pom file="pom.xml" id="maven.project"/>
-    <artifact:dependencies pathId="compile.classpath" filesetId="compile.fileset" useScope="compile">
-        <pom refid="maven.project"/>
-        <localRepository refid="local.repository"/>
-    </artifact:dependencies>
-    <artifact:dependencies pathId="test.classpath" filesetId="test.fileset" useScope="test">
-        <pom refid="maven.project"/>
-        <localRepository refid="local.repository"/>
-    </artifact:dependencies>
-    <artifact:dependencies pathId="runtime.classpath" filesetId="runtime.fileset" useScope="runtime">
-        <pom refid="maven.project"/>
-        <localRepository refid="local.repository"/>
-    </artifact:dependencies>
-</target>
+    <target name="mvn-init" unless="compile.classpath" xmlns:artifact="urn:maven-artifact-ant">
+    	<path id="maven.ant.tasks.classpath" path="${lib.dir}/maven-ant-tasks-2.0.10.jar" />
+    	
+        <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant"
+            classpathref="maven.ant.tasks.classpath"/>
+            
+        <condition property="maven.repo.local" value="${maven.repo.local}" else="${user.home}/.m2/repository">
+            <isset property="maven.repo.local"/>
+        </condition>
+        <artifact:localRepository id="local.repository" path="${maven.repo.local}"/>
+        <artifact:pom file="pom.xml" id="maven.project"/>
+        <artifact:dependencies pathId="compile.classpath" filesetId="compile.fileset" useScope="compile">
+            <pom refid="maven.project"/>
+            <localRepository refid="local.repository"/>
+        </artifact:dependencies>
+        <artifact:dependencies pathId="test.classpath" filesetId="test.fileset" useScope="test">
+            <pom refid="maven.project"/>
+            <localRepository refid="local.repository"/>
+        </artifact:dependencies>
+        <artifact:dependencies pathId="runtime.classpath" filesetId="runtime.fileset" useScope="runtime">
+            <pom refid="maven.project"/>
+            <localRepository refid="local.repository"/>
+        </artifact:dependencies>
+    </target>
+
+    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="mvn-init">
+        <artifact:install file="${build.dir}/${jar.name}">
+            <pom refid="maven.project"/>
+        </artifact:install>
+    </target>
 
 	
 	<!-- ================================================================== -->
@@ -168,6 +174,36 @@ Copyright (c) 2011 TransPac Software, Inc.
 			</manifest>
 		</jar>
 	</target>
+
+    <!-- ================================================================== -->
+    <!-- Install in local Maven repository                                  -->
+    <!-- ================================================================== -->
+
+    <target name="install"
+            depends="jar, mvn-install"
+            description="--> install SNAPSHOT jar to local repository">
+    </target>
+
+    <!-- ================================================================== -->
+    <!-- Deploy to Conjars repository (requires $ANT_HOME/lb/ant-jsch.jar)  -->
+    <!-- ================================================================== -->
+
+    <target name="deploy"
+            depends="jar"
+            description="--> deploy jar to Conjars repository (requires $ANT_HOME/lb/ant-jsch.jar)">
+        <condition property="deploy.private.key.file" 
+        	value="${deploy.private.key.file}" 
+        	else="${user.home}/.ssh/id_rsa_bixolabs">
+            <isset property="deploy.private.key.file"/>
+        </condition>
+    	<scp remoteTodir="${deploy.remoteToDir}"
+    		keyfile="${deploy.private.key.file}">
+            <fileset>
+                <include name="pom.xml"/>
+                <include name="${build.dir}/${jar.name}"/>
+            </fileset>
+    	</scp>
+    </target>
 
 	<!-- ================================================================== -->
 	<!-- Generating eclipse file                                            -->
