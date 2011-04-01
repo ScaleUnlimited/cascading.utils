@@ -158,10 +158,12 @@ Copyright (c) 2011 TransPac Software, Inc.
 			<format property="timestamp" pattern="MMM dd yyyy, HH:mm:ss" />
 		</tstamp>
 
-		<jar jarfile="${build.dir}/${jar.name}"
-		     basedir="${build.dir.main-classes}">
+		<jar jarfile="${build.dir}/${jar.name}">
+			<fileset dir="${build.dir.main-classes}" />
+			<fileset dir="${main.res.dir}" />
+			
 			<manifest>
-				<section name="jameco-miner">
+				<section name="Cascading.utils">
 					<attribute name="Implementation-Vendor"
 					           value="TransPac Software, Inc" />
 					<attribute name="Implementation-Title"
