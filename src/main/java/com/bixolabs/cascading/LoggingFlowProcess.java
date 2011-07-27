@@ -25,7 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.Counters.Counter;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.Counters;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -233,9 +234,14 @@ public class LoggingFlowProcess extends FlowProcess {
         increment(counter, -amount);
     }
 
+    /**
+     * @param counter whose value should be returned
+     * @return current value of the counter, local to the task
+     * <br/><br/><b>Note:</b> Only the JobTracker aggregates task counter values
+     * to report the job-wide total.
+     */
     public int getCounter(Enum counter) {
-        // TODO KKr - figure out if I want to use my local counter here
-        if (true || _isLocal) {
+        if (_isLocal) {
             AtomicInteger count = _localCounters.get(counter);
             if (count != null) {
                 return count.get();
@@ -243,24 +249,11 @@ public class LoggingFlowProcess extends FlowProcess {
                 return 0;
             }
         } else {
-            // TODO KKr - verify that this is the right way to get a counter
-            // value, especially the part of
-            // mapping from the Enum to the group/name pair needed for
-            // reporter.getCounter().
-            Reporter reporter = ((HadoopFlowProcess) _baseProcess).getReporter();
-
-            // TODO KKr - on EC2, it looks like counter.getDeclaringClass()
-            // returns null, as I get a NPE here
-            // and I've verified that reporter is not null. But looking at the
-            // Enum source, I don't see how
-            // that could be unless counter.getClass().getSuperclass() returns
-            // null.
-            Counter hadoopCounter = null; // TODO KKr - getCounter() doesn't
-                                          // exist with Bixo 0.18.3
-                                          // reporter.getCounter(counter.getDeclaringClass().getName(),
-                                          // counter.toString());
+            
+            Counters counters = new Counters();
+            Counter hadoopCounter = counters.findCounter(counter);
             if (hadoopCounter != null) {
-                return (int)hadoopCounter.getCounter();
+                return (int)hadoopCounter.getValue();
             } else {
                 return 0;
             }
