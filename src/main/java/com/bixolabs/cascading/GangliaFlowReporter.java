@@ -102,13 +102,18 @@ public class GangliaFlowReporter implements IFlowReporter {
     }
     
     private static void sendToGanglia(InetAddress address, int port, String name, String value, String type, String units, int slope, int tmax, int dmax) {
+        DatagramSocket socket = null;
         try {
-            DatagramSocket socket = new DatagramSocket();
+            socket = new DatagramSocket();
             byte[] buf = write(name, value, type, units, slope, tmax, dmax);
             DatagramPacket p = new DatagramPacket(buf, buf.length, address, port);
             socket.send(p);
         } catch (IOException e) {
-            // who cares
+            LOGGER.debug("Unable to send data to Ganglia", e);
+        } finally {
+            if (socket != null) {
+                socket.close();
+            }
         }
     }
     
