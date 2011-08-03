@@ -49,7 +49,7 @@ public class HadoopUtils {
     }
     
     @SuppressWarnings("deprecation")
-    public static JobConf getDefaultJobConf() throws IOException {
+    public static JobConf getDefaultJobConf() throws IOException, InterruptedException {
     	return getDefaultJobConf(DEFAULT_STACKSIZE);
     }
     
@@ -74,7 +74,7 @@ public class HadoopUtils {
     }
     
     @SuppressWarnings("deprecation")
-    public static JobConf getDefaultJobConf(int stackSizeInKB) throws IOException {
+    public static JobConf getDefaultJobConf(int stackSizeInKB) throws IOException, InterruptedException {
         JobConf conf = new JobConf();
         
         // We explicitly set task counts to 1 for local so that code which depends on
@@ -83,12 +83,8 @@ public class HadoopUtils {
             conf.setNumMapTasks(1);
             conf.setNumReduceTasks(1);
         } else {
-            JobClient jobClient = new JobClient(conf);
-            ClusterStatus status = jobClient.getClusterStatus();
-            int trackers = status.getTaskTrackers();
 
-            conf.setNumMapTasks(trackers * 10);
-            conf.setNumReduceTasks((trackers * conf.getInt("mapred.tasktracker.reduce.tasks.maximum", 2)));
+            conf.setNumReduceTasks(getNumReducers(conf));
         }
         
         conf.setMapSpeculativeExecution(false);
