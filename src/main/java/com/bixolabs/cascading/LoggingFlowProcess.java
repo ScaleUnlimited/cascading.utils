@@ -36,7 +36,6 @@ import cascading.tap.Tap;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 
-@SuppressWarnings("unchecked")
 public class LoggingFlowProcess extends FlowProcess {
     private static final Logger LOGGER = Logger.getLogger(LoggingFlowProcess.class);
 
