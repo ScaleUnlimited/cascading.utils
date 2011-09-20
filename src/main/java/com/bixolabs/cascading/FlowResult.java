@@ -13,4 +13,11 @@ public class FlowResult {
     public Map<String, Long> getCounters() {
         return _counters;
     }
+    
+    @SuppressWarnings("unchecked")
+    public long getCounterValue(Enum counter) {
+        String counterName = counter.getClass().getName() + "." + counter.name();
+        Long result = _counters.get(counterName);
+        return (result == null) ? 0 : result;
+    }
 }

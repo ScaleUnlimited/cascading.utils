@@ -3,6 +3,7 @@ package com.bixolabs.cascading;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import cascading.flow.Flow;
 
@@ -88,5 +89,16 @@ public class FlowRunner {
         }
     }
     
-    
+    /**
+     * Convenience method for running a Flow and returning the result.
+     * 
+     * @param flow Flow to run
+     * @return Result of running the flow.
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
+    public static FlowResult run(Flow flow) throws InterruptedException, ExecutionException {
+        FlowFuture ff = new FlowFuture(flow);
+        return ff.get();
+    }
 }
