@@ -16,6 +16,7 @@
 
 package com.bixolabs.cascading;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,28 @@ public class FlowCounters {
             }
         }
         
+        return result;
+    }
+    
+    // TODO Use this routine with the above code? Would need to map from Enum to name,
+    // compare against what we get back here.
+    public Map<String, Long> getCounters(Flow flow) {
+        Map<String, Long> result = new HashMap<String, Long>();
+        
+        FlowStats stats = flow.getFlowStats();
+        List<StepStats> stepStats = stats.getStepStats();
+
+        for (StepStats stepStat : stepStats) {
+            Collection<String> counterGroups = stepStat.getCounterGroups();
+            for (String counterGroup : counterGroups) {
+                Collection<String> counters = stepStat.getCountersFor(counterGroup);
+                for (String counter : counters) {
+                    long counterValue = stepStat.getCounterValue(counterGroup, counter);
+                    result.put(counterGroup + "." + counter, counterValue);
+                }
+            }
+        }
+
         return result;
     }
     
