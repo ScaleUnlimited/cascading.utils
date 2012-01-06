@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2011 TransPac Software, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ import cascading.flow.MultiMapReducePlanner;
 public class HadoopUtils {
     private static final Logger LOGGER = Logger.getLogger(HadoopUtils.class);
     
-	public static final int DEFAULT_STACKSIZE = 512;
-	
     private static final long STATUS_CHECK_INTERVAL = 10000;
 	
     public static void safeRemove(FileSystem fs, Path path) {
@@ -46,11 +44,6 @@ public class HadoopUtils {
     			// Ignore
     		}
     	}
-    }
-    
-    @SuppressWarnings("deprecation")
-    public static JobConf getDefaultJobConf() throws IOException, InterruptedException {
-    	return getDefaultJobConf(DEFAULT_STACKSIZE);
     }
     
     /**
@@ -74,7 +67,7 @@ public class HadoopUtils {
     }
     
     @SuppressWarnings("deprecation")
-    public static JobConf getDefaultJobConf(int stackSizeInKB) throws IOException, InterruptedException {
+    public static JobConf getDefaultJobConf() throws IOException, InterruptedException {
         JobConf conf = new JobConf();
         
         // We explicitly set task counts to 1 for local so that code which depends on
@@ -83,18 +76,17 @@ public class HadoopUtils {
             conf.setNumMapTasks(1);
             conf.setNumReduceTasks(1);
         } else {
-
             conf.setNumReduceTasks(getNumReducers(conf));
+
+            // TODO - By default we want to use 0.95 * the number of reduce slots, as per
+            // Hadoop wiki. But we want to round, versus truncate, to avoid setting it to
+            // 0 if we have one reducer. This way it only impacts you if you have more
+            // than 10 reducers.
+            // conf.setNumReduceTasks((getNumReducers(conf) * 95) / 100);
         }
         
         conf.setMapSpeculativeExecution(false);
         conf.setReduceSpeculativeExecution(false);
-        
-        conf.set("mapred.child.java.opts", String.format("-server -Xmx512m -Xss%dk", stackSizeInKB));
-
-        // Should match the value used for Xss above. Note no 'k' suffix for the ulimit command.
-        // New support that one day will be in Hadoop.
-        conf.set("mapred.child.ulimit.stack", String.format("%d", stackSizeInKB));
 
         return conf;
     }
@@ -103,7 +95,7 @@ public class HadoopUtils {
     	props.put("log4j.logger", String.format("cascading=%s,bixo=%s", cascadingLevel, bixoLevel));
     }
     
-    @SuppressWarnings({ "unchecked", "deprecation" })
+    @SuppressWarnings({ "deprecation" })
 	public static Properties getDefaultProperties(Class appJarClass, boolean debugging, JobConf conf) {
         Properties properties = new Properties();
 
