@@ -44,7 +44,7 @@ public class BaseTool {
     }
 
     protected static String getStepDotFileName(BaseOptions options, String suffix) {
-        return getBaseDotFileName(options) + "-" + suffix + "-import.dot";
+        return getBaseDotFileName(options) + "-" + suffix + "-step.dot";
     }
     
     protected static String getDotFileName(BaseOptions options, String suffix) {

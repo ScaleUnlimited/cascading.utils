@@ -5,9 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.log4j.Logger;
+
 import cascading.flow.Flow;
 
 public class FlowRunner {
+    static final Logger LOGGER = Logger.getLogger(FlowRunner.class);
 
     private static final long FLOW_CHECK_INTERVAL = 5 * 1000L;
     
@@ -19,7 +23,12 @@ public class FlowRunner {
     }
     
     public FlowRunner(int maxFlows) {
-        _maxFlows = maxFlows;
+        if ((maxFlows > 1) && (HadoopUtils.isJobLocal(new JobConf()))) {
+            LOGGER.warn("Running locally, so flows must be run serially for thread safety.");
+            _maxFlows = 1;
+        } else {
+            _maxFlows = maxFlows;
+        }
         _flowFutures = new ArrayList<FlowFuture>();
     }
     
