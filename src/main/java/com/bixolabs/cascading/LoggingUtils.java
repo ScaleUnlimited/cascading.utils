@@ -31,11 +31,11 @@ public class LoggingUtils {
      * Set the log level for the com.bixolabs classes to be <level>
      * 
      * @param props Properties to modify/update.
-     * @param bixoLabsLevel Logging level for our code (not Hadoop/Cascading)
+     * @param myLevel Logging level for our code (not Hadoop/Cascading)
      */
-    public static void setLoggingProperties(Properties props, Level bixoLabsLevel) {
+    public static void setLoggingProperties(Properties props, Level myLevel) {
         Level cascadingLevel = Level.INFO;
-        Level bixoLevel = bixoLabsLevel;
+        Level bixoLevel = myLevel;
         
         String curLogSettings = (String)props.get("log4j.logger");
         if  (   (curLogSettings == null)
@@ -48,8 +48,13 @@ public class LoggingUtils {
                                                 curLogSettings,
                                                 cascadingLevel,
                                                 bixoLevel,
-                                                bixoLabsLevel);
+                                                myLevel);
         props.put("log4j.logger", newLogSettings);
+        
+        // HACK - set the TupleLogger's logging level explicitly, so that subsequent
+        // calls to TupleLogger.makePipe() will do the right thing when defining the
+        // workflow.
+        TupleLogger.setLevel(myLevel);
     }
 
     /**

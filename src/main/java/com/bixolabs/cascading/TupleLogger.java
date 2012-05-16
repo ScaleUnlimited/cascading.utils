@@ -17,6 +17,7 @@
 package com.bixolabs.cascading;
 
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import cascading.flow.FlowProcess;
@@ -53,8 +54,16 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     private int _printTupleEvery = 1;
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
     
+    public static Pipe makePipe(Pipe inPipe) {
+        return makePipe(inPipe, inPipe.getName(), true, DEFAULT_MAX_ELEMENT_LENGTH, LOGGER.isDebugEnabled());
+    }
+    
     public static Pipe makePipe(Pipe inPipe, boolean printFields) {
         return makePipe(inPipe, printFields, DEFAULT_MAX_ELEMENT_LENGTH);
+    }
+    
+    public static Pipe makePipe(Pipe inPipe, boolean printFields, boolean makePipe) {
+        return makePipe(inPipe, inPipe.getName(), printFields, DEFAULT_MAX_ELEMENT_LENGTH, makePipe);
     }
     
     public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields) {
@@ -88,7 +97,11 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @return pipe to use
      */
     public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
-        if (LOGGER.isDebugEnabled()) {
+        return makePipe(inPipe, prefix, printFields, maxLength, LOGGER.isDebugEnabled());
+    }
+    
+    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
+        if (addPipe) {
             TupleLogger tl = new TupleLogger(prefix, printFields);
             tl.setMaxPrintLength(maxLength);
             
@@ -235,6 +248,16 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         
         // Now we want to limit the length, and get rid of control, \n, \r sequences
         return result.substring(0, Math.min(maxLength, result.length())).replaceAll("[\r\n\t]", " ");
+    }
+    
+    /**
+     * Explicitly set the logging level for our internal logger, which then will
+     * impact what makePipe() will do.
+     * 
+     * @param level new logging level
+     */
+    public static void setLevel(Level level) {
+        LOGGER.setLevel(level);
     }
 
 }
