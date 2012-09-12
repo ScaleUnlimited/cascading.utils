@@ -10,15 +10,17 @@ import org.junit.Test;
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Filter;
 import cascading.operation.FilterCall;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
@@ -53,7 +55,7 @@ public class FlowCountersTest {
         String in = testDir + "in";
 
         Lfs sourceTap = new Lfs(new SequenceFile(testFields), in, SinkMode.REPLACE);
-        TupleEntryCollector write = sourceTap.openForWrite(new JobConf());
+        TupleEntryCollector write = sourceTap.openForWrite(new HadoopFlowProcess());
         
         for (int i = 0; i < numDatums; i++) {
             String username = "user-" + (i % 3);
@@ -66,7 +68,7 @@ public class FlowCountersTest {
         pipe = new Each(pipe, new CountTuplesFunction());
         Tap sinkTap = new NullSinkTap(testFields);
         
-        Flow flow = new FlowConnector().connect(sourceTap, sinkTap, pipe);
+        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
         Map<Enum, Long> counters = FlowCounters.run(flow, FlowCountersTestEnum.TUPLE_COUNT,
                         FlowCountersTestEnum.UNUSED_COUNT);
         

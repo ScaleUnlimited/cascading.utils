@@ -25,7 +25,7 @@ import org.apache.log4j.Logger;
 
 import cascading.flow.Flow;
 import cascading.stats.FlowStats;
-import cascading.stats.StepStats;
+import cascading.stats.FlowStepStats;
 
 public class FlowCounters {
     static final Logger LOGGER = Logger.getLogger(FlowCounters.class);
@@ -47,9 +47,9 @@ public class FlowCounters {
         Map<Enum, Long> result = new HashMap<Enum, Long>();
         
         FlowStats stats = flow.getFlowStats();
-        List<StepStats> stepStats = stats.getStepStats();
+        List<FlowStepStats> stepStats = stats.getFlowStepStats();
 
-        for (StepStats stepStat : stepStats) {
+        for (FlowStepStats stepStat : stepStats) {
             for (Enum counter : counters) {
                 long counterValue = stepStat.getCounterValue(counter);
                 if (counterValue != 0) {
@@ -79,9 +79,9 @@ public class FlowCounters {
         Map<String, Long> result = new HashMap<String, Long>();
         
         FlowStats stats = flow.getFlowStats();
-        List<StepStats> stepStats = stats.getStepStats();
+        List<FlowStepStats> stepStats = stats.getFlowStepStats();
 
-        for (StepStats stepStat : stepStats) {
+        for (FlowStepStats stepStat : stepStats) {
             Collection<String> counterGroups = stepStat.getCounterGroups();
             for (String counterGroup : counterGroups) {
                 Collection<String> counters = stepStat.getCountersFor(counterGroup);

@@ -36,7 +36,7 @@ public abstract class BaseFunction<INDATUM extends BaseDatum, OUTDATUM extends B
     
     public BaseFunction(Class<INDATUM> inClass, Class<OUTDATUM> outClass) throws Exception {
         super(outClass.newInstance().getFields());
-        
+
         _inDatum = inClass.newInstance();
         _outDatum = outClass.newInstance();
     }

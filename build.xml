@@ -139,6 +139,8 @@
 				<path refid="test.classpath" />
 			</classpath>
 			<formatter type="plain" />
+		    <jvmarg value="-Djava.security.krb5.realm="/>
+		    <jvmarg value="-Djava.security.krb5.kdc="/>
 			<batchtest fork="yes"
 			           todir="${build.dir.test-reports}"
 			           unless="testcase">

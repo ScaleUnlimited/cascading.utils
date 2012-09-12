@@ -33,11 +33,11 @@ import cascading.flow.Flow;
 import cascading.flow.FlowListener;
 import cascading.flow.FlowStep;
 import cascading.flow.StepCounters;
-import cascading.stats.FlowStats;
-import cascading.stats.StepStats;
 import cascading.stats.CascadingStats.Status;
+import cascading.stats.FlowStats;
+import cascading.stats.FlowStepStats;
 
-public class FlowMonitor {
+public class FlowMonitor<Config> {
 
     private static final Logger LOGGER = Logger.getLogger(FlowMonitor.class);
 
@@ -52,7 +52,7 @@ public class FlowMonitor {
     private static final String DEFAULT_HADOOP_LOG_DIR = "/mnt/hadoop/logs/";
     private static final String DEFAULT_LOCAL_LOG_DIR = "./";
     
-    private Flow _flow;
+    private Flow<Config> _flow;
     private Throwable _flowException;
     private int _updateInterval;
     private boolean _includeCascadingCounters;
@@ -65,7 +65,7 @@ public class FlowMonitor {
     private String _htmlStepTemplate;
     private String _htmlRowTemplate;
     
-    public FlowMonitor(Flow flow) throws IOException {
+    public FlowMonitor(Flow<Config> flow) throws IOException {
         _flow = flow;
         
         _updateInterval = DEFAULT_UPDATE_INTERVAL;
@@ -80,12 +80,12 @@ public class FlowMonitor {
         _htmlRowTemplate = IOUtils.toString(FlowMonitor.class.getResourceAsStream(MONITOR_ROW_HTML));
         
         _stepEntries = new ArrayList<StepEntry>();
-        for (FlowStep step : _flow.getSteps()) {
+        for (FlowStep<Config> step : _flow.getFlowSteps()) {
             _stepEntries.add(new StepEntry(step));
         }
     }
     
-    public Flow getFlow() {
+    public Flow<Config> getFlow() {
         return _flow;
     }
 
@@ -128,7 +128,7 @@ public class FlowMonitor {
     @SuppressWarnings("unchecked")
     public boolean run(Enum... counters) throws Throwable {
         if (_htmlDir == null) {
-            _htmlDir = getDefaultLogDir(_flow.getJobConf());
+            _htmlDir = getDefaultLogDir(_flow.getConfig());
         }
         
         _flowException = null;
@@ -159,10 +159,10 @@ public class FlowMonitor {
             Thread.sleep(_updateInterval);
 
             stats = _flow.getFlowStats();
-            List<StepStats> stepStats = stats.getStepStats();
+            List<FlowStepStats> stepStats = stats.getFlowStepStats();
 
-            for (StepStats stepStat : stepStats) {
-                int stepId = (Integer)stepStat.getID();
+            for (FlowStepStats stepStat : stepStats) {
+                String stepId = stepStat.getID();
                 StepEntry stepEntry = findStepById(stepId);
                 Status oldStatus = stepEntry.getStatus();
                 Status newStatus = stepStat.getStatus();
@@ -249,9 +249,9 @@ public class FlowMonitor {
         return stats.isSuccessful();
     }
     
-    private StepEntry findStepById(int stepId) {
+    private StepEntry findStepById(String stepId) {
         for (StepEntry stepEntry : _stepEntries) {
-            if (stepEntry.getId() == stepId) {
+            if (stepEntry.getId().equals(stepId)) {
                 return stepEntry;
             }
         }
@@ -260,7 +260,7 @@ public class FlowMonitor {
     }
 
     @SuppressWarnings("unchecked")
-    private TimeEntry makeTimeEntry(StepEntry stepEntry, StepStats stepStats, Enum... counters) {
+    private TimeEntry makeTimeEntry(StepEntry stepEntry, FlowStepStats stepStats, Enum... counters) {
         FlowStep flowStep = stepEntry.getStep();
         TimeEntry result = new TimeEntry(stepEntry.getDuration());
         for (Enum counter : counters) {
@@ -346,10 +346,10 @@ public class FlowMonitor {
         template.insert(offset, value);
     }
 
-    private File getDefaultLogDir(JobConf conf) {
+    private File getDefaultLogDir(Config config) {
         File result;
         
-        if (isJobLocal(conf)) {
+        if (isJobLocal(config)) {
             result = new File(DEFAULT_LOCAL_LOG_DIR);
             if (!result.exists()) {
                 result.mkdir();
@@ -382,8 +382,14 @@ public class FlowMonitor {
         return result;
     }
     
-    private static boolean isJobLocal(JobConf conf) {
-        return conf.get( "mapred.job.tracker" ).equalsIgnoreCase( "local" );
+    @SuppressWarnings("deprecation")
+    private boolean isJobLocal(Config config) {
+        if (config instanceof JobConf) {
+            JobConf conf = (JobConf)config;
+            return conf.get( "mapred.job.tracker" ).equalsIgnoreCase( "local" );
+        } else {
+            return true;
+        }
     }
 
     private static class TimeEntry {
@@ -417,8 +423,6 @@ public class FlowMonitor {
     private static class StepEntry {
         Status _status;
         FlowStep _step;
-        @SuppressWarnings("unused")
-        StepStats _stats;
         long _startTime;
         long _duration;
         List<TimeEntry> _timeEntries;
@@ -443,10 +447,10 @@ public class FlowMonitor {
         }
         
         public String getName() {
-            return _step.getStepName();
+            return _step.getStepDisplayName();
         }
         
-        public int getId() {
+        public String getId() {
             return _step.getID();
         }
         

@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
@@ -31,12 +31,10 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import cascading.flow.FlowProcess;
+import cascading.flow.FlowProcessWrapper;
 import cascading.flow.hadoop.HadoopFlowProcess;
-import cascading.tap.Tap;
-import cascading.tuple.TupleEntryCollector;
-import cascading.tuple.TupleEntryIterator;
 
-public class LoggingFlowProcess extends FlowProcess {
+public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
     private static final Logger LOGGER = Logger.getLogger(LoggingFlowProcess.class);
 
     public static enum LoggingLevels {
@@ -61,48 +59,6 @@ public class LoggingFlowProcess extends FlowProcess {
         }
     }
     
-    // TODO KKr - extend HadoopFlowProces, use Reporter.NULL for reporter, etc.
-    // would
-    // be safer than relying on never casting this to a HadoopFlowProcess when
-    // in local
-    // mode, which is fragile. Though better might be for FlowProcess to support
-    // an isLocal() call, and a getReporter() call, where it returns null for
-    // getReporter
-    // when running local or if it's not a HadoopFlowProcess.
-    private class FakeFlowProcess extends FlowProcess {
-
-        @Override
-        public Object getProperty(String key) {
-            return null;
-        }
-
-        @Override
-        public void increment(Enum counter, int amount) {
-        }
-
-        @Override
-        public void increment(String group, String counter, int amount) {
-        }
-        
-        @Override
-        public void keepAlive() {
-        }
-
-        @Override
-        public TupleEntryIterator openTapForRead(Tap tap) throws IOException {
-            return null;
-        }
-
-        @Override
-        public TupleEntryCollector openTapForWrite(Tap tap) throws IOException {
-            return null;
-        }
-
-        @Override
-        public void setStatus(String status) {
-        }
-    }
-
     private class HadoopFlowReporter implements IFlowReporter {
         private Reporter _reporter;
 
@@ -126,16 +82,18 @@ public class LoggingFlowProcess extends FlowProcess {
         }
     }
 
-    private FlowProcess _baseProcess;
     private boolean _isLocal;
     private List<IFlowReporter> _reporters;
-    private Map<Enum, AtomicInteger> _localCounters;
+    private Map<Enum, AtomicLong> _localCounters;
 
-    public LoggingFlowProcess(FlowProcess baseProcess, IFlowReporter reporter) {
+    public LoggingFlowProcess(FlowProcess<Config> baseProcess, IFlowReporter reporter) {
+        super(baseProcess);
         init(baseProcess, reporter);
     }
 
-    public LoggingFlowProcess(FlowProcess baseProcess) {
+    public LoggingFlowProcess(FlowProcess<Config> baseProcess) {
+        super(baseProcess);
+        
         if (baseProcess instanceof HadoopFlowProcess) {
             init(baseProcess, new HadoopFlowReporter(((HadoopFlowProcess)baseProcess).getReporter()));
         } else {
@@ -144,6 +102,8 @@ public class LoggingFlowProcess extends FlowProcess {
     }
     
     public LoggingFlowProcess(HadoopFlowProcess baseProcess) {
+        super(baseProcess);
+        
         IFlowReporter reporter = new HadoopFlowReporter(baseProcess.getReporter());
         init(baseProcess, reporter);
     }
@@ -153,16 +113,17 @@ public class LoggingFlowProcess extends FlowProcess {
      * real Cascading FlowProcess to use.
      */
     public LoggingFlowProcess() {
-        init(new FakeFlowProcess(), new LoggingFlowReporter());
+        super(FlowProcess.NULL);
+        
+        init(FlowProcess.NULL, new LoggingFlowReporter());
     }
 
     private void init(FlowProcess baseProcess, IFlowReporter reporter) {
-        _baseProcess = baseProcess;
         _isLocal = !(baseProcess instanceof HadoopFlowProcess)
                         || ((HadoopFlowProcess) baseProcess).getJobConf().get("mapred.job.tracker")
                                         .equalsIgnoreCase("local");
 
-        _localCounters = new HashMap<Enum, AtomicInteger>();
+        _localCounters = new HashMap<Enum, AtomicLong>();
         _reporters = new ArrayList<IFlowReporter>();
         addReporter(reporter);
     }
@@ -173,8 +134,8 @@ public class LoggingFlowProcess extends FlowProcess {
     
     @SuppressWarnings("deprecation")
     public JobConf getJobConf() throws IOException {
-        if (_baseProcess instanceof HadoopFlowProcess) {
-            return ((HadoopFlowProcess)_baseProcess).getJobConf();
+        if (getDelegate() instanceof HadoopFlowProcess) {
+            return ((HadoopFlowProcess)getDelegate()).getJobConf();
         } else {
             return new JobConf();
         }
@@ -185,6 +146,8 @@ public class LoggingFlowProcess extends FlowProcess {
     }
 
     public void setStatus(String msg, Throwable t) {
+        super.setStatus(msg);
+        
         for (IFlowReporter reporter : _reporters) {
             reporter.setStatus(msg, t);
         }
@@ -193,6 +156,8 @@ public class LoggingFlowProcess extends FlowProcess {
     }
 
     public void setStatus(Level level, String msg) {
+        super.setStatus(msg);
+        
         for (IFlowReporter reporter : _reporters) {
             reporter.setStatus(level, msg);
         }
@@ -201,19 +166,19 @@ public class LoggingFlowProcess extends FlowProcess {
     }
 
     @Override
-    public void increment(Enum counter, int amount) {
-        _baseProcess.increment(counter, amount);
+    public void increment(Enum counter, long amount) {
+        super.increment(counter, amount);
 
         // TODO KKr - decide if I really want to track stuff locally
         if (true || _isLocal) {
             synchronized (_localCounters) {
                 if (_localCounters.get(counter) == null) {
-                    _localCounters.put(counter, new AtomicInteger());
+                    _localCounters.put(counter, new AtomicLong());
                 }
             }
 
-            AtomicInteger curCount = _localCounters.get(counter);
-            int newValue = curCount.addAndGet(amount);
+            AtomicLong curCount = _localCounters.get(counter);
+            long newValue = curCount.addAndGet(amount);
 
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Cascading counter: " + counter + (amount > 0 ? " + " : " - ")
@@ -223,13 +188,13 @@ public class LoggingFlowProcess extends FlowProcess {
     }
 
     @Override
-    public void increment(String group, String counter, int amount) {
-        _baseProcess.increment(group, counter, amount);
+    public void increment(String group, String counter, long amount) {
+        super.increment(group, counter, amount);
         
         // TODO KKr - get my local counters in sync?
     }
 
-    public void decrement(Enum counter, int amount) {
+    public void decrement(Enum counter, long amount) {
         increment(counter, -amount);
     }
 
@@ -239,16 +204,15 @@ public class LoggingFlowProcess extends FlowProcess {
      * <br/><br/><b>Note:</b> Only the JobTracker aggregates task counter values
      * to report the job-wide total.
      */
-    public int getCounter(Enum counter) {
+    public long getCounter(Enum counter) {
         if (_isLocal) {
-            AtomicInteger count = _localCounters.get(counter);
+            AtomicLong count = _localCounters.get(counter);
             if (count != null) {
                 return count.get();
             } else {
                 return 0;
             }
         } else {
-            
             Counters counters = new Counters();
             Counter hadoopCounter = counters.findCounter(counter);
             if (hadoopCounter != null) {
@@ -272,26 +236,5 @@ public class LoggingFlowProcess extends FlowProcess {
 
         // FUTURE KKr - also dump Hadoop counters to Logger?
     }
-
-    @Override
-    public Object getProperty(String key) {
-        return _baseProcess.getProperty(key);
-    }
-
-    @Override
-    public void keepAlive() {
-        _baseProcess.keepAlive();
-    }
-
-    @Override
-    public TupleEntryIterator openTapForRead(Tap tap) throws IOException {
-        return _baseProcess.openTapForRead(tap);
-    }
-
-    @Override
-    public TupleEntryCollector openTapForWrite(Tap tap) throws IOException {
-        return _baseProcess.openTapForWrite(tap);
-    }
-
 
 }

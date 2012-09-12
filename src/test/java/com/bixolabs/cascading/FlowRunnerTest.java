@@ -1,7 +1,5 @@
 package com.bixolabs.cascading;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -11,26 +9,22 @@ import java.util.concurrent.TimeoutException;
 
 import junit.framework.Assert;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
-import cascading.flow.FlowStep;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BaseOperation;
-import cascading.operation.Debug;
 import cascading.operation.Filter;
 import cascading.operation.FilterCall;
-import cascading.operation.aggregator.Sum;
 import cascading.pipe.Each;
-import cascading.pipe.Every;
-import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
 import cascading.tap.SinkMode;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
@@ -148,7 +142,7 @@ public class FlowRunnerTest {
         String out = testDir + "out-" + id;
 
         Lfs sourceTap = new Lfs(new SequenceFile(testFields), in, SinkMode.REPLACE);
-        TupleEntryCollector write = sourceTap.openForWrite(new JobConf());
+        TupleEntryCollector write = sourceTap.openForWrite(new HadoopFlowProcess());
         
         for (int i = 0; i < numDatums; i++) {
             String username = "user-" + (i % 3);
@@ -161,7 +155,7 @@ public class FlowRunnerTest {
         pipe = new Each(pipe, new MyFilter(fails));
         Lfs sinkTap = new Lfs(new SequenceFile(testFields), out, SinkMode.REPLACE);
 
-        Flow flow = new FlowConnector().connect("FlowRunnerTest", sourceTap, sinkTap, pipe);
+        Flow flow = new HadoopFlowConnector().connect("FlowRunnerTest", sourceTap, sinkTap, pipe);
         return flow;
     }
 

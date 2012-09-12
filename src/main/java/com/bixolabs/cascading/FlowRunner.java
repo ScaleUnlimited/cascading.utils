@@ -8,6 +8,8 @@ import java.util.concurrent.ExecutionException;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Logger;
 
+import com.bixolabs.cascading.hadoop.HadoopUtils;
+
 import cascading.flow.Flow;
 
 public class FlowRunner {

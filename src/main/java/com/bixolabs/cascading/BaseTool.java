@@ -52,10 +52,7 @@ public class BaseTool {
     }
     
     protected static void nameFlowSteps(Flow flow) {
-        List<FlowStep> flowSteps = flow.getSteps();
-        for (FlowStep step : flowSteps) {
-            StepUtils.nameFlowStep(step);
-        }
+        // TODO make this name the flow steps, if needed.
     }
     
     protected static CmdLineParser parse(String[] args, BaseOptions options) {

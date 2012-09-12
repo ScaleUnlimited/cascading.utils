@@ -1,6 +1,6 @@
 package com.bixolabs.cascading;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.HashMap;
@@ -10,12 +10,13 @@ import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
+import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.operation.Identity;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
-import cascading.scheme.TextLine;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.TextLine;
 import cascading.tap.Tap;
+import cascading.tap.hadoop.Lfs;
 
 public class FlowBreakTest {
 
@@ -38,7 +39,7 @@ public class FlowBreakTest {
         sinks.put(tail1.getName(), new Lfs(new TextLine(), "dest/path1"));
         sinks.put(tail2.getName(), new Lfs(new TextLine(), "dest/path2"));
         
-        FlowConnector fc = new FlowConnector();
+        FlowConnector fc = new HadoopFlowConnector();
         return fc.connect(new Lfs(new TextLine(), "source/path"), sinks, tail1, tail2);
     }
     
@@ -54,7 +55,7 @@ public class FlowBreakTest {
         Flow f2 = makeFlow(true);
         // f2.writeDOT("build/test/CheckpointTest/f2.dot");
         
-        assertTrue(f1.getSteps().size() < f2.getSteps().size());
+        assertTrue(f1.getFlowSteps().size() < f2.getFlowSteps().size());
     }
 
 }

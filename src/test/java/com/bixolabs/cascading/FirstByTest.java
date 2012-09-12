@@ -1,19 +1,20 @@
 package com.bixolabs.cascading;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
-import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
-import cascading.operation.Debug;
-import cascading.pipe.Each;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -35,11 +36,10 @@ public class FirstByTest {
         File tmpOutDir = new File("build/test/FirstByTest/testFindingFirst/out");
         Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
 
-        FlowConnector flowConnector = new FlowConnector();
-        Flow flow = flowConnector.connect(in, out, pipe);
-        flow.complete();
+        FlowConnector flowConnector = new HadoopFlowConnector();
+        flowConnector.connect(in, out, pipe).complete();
         
-        TupleEntryIterator iter = out.openForRead(new JobConf());
+        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("a", te.getString("grouping"));
@@ -68,11 +68,10 @@ public class FirstByTest {
         File tmpOutDir = new File("build/test/FirstByTest/testReverseSort/out");
         Lfs out = new Lfs(new SequenceFile(new Fields("data")), tmpOutDir.getAbsolutePath(), true);
 
-        FlowConnector flowConnector = new FlowConnector();
-        Flow flow = flowConnector.connect(in, out, pipe);
-        flow.complete();
+        FlowConnector flowConnector = new HadoopFlowConnector();
+        flowConnector.connect(in, out, pipe).complete();
         
-        TupleEntryIterator iter = out.openForRead(new JobConf());
+        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("b-extra", te.getString("data"));
@@ -88,7 +87,7 @@ public class FirstByTest {
         File tmpInDir = new File("build/test/FirstByTest/testFindingFirst/in");
         Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
         
-        TupleEntryCollector writer = in.openForWrite(new JobConf());
+        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
         writer.add(new Tuple("a", 2, "a-extra1"));
         writer.add(new Tuple("a", 1, "a-extra2"));
         writer.add(new Tuple("a", 1, "a-extra4"));

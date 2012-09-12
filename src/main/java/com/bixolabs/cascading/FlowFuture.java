@@ -13,7 +13,6 @@ import java.util.concurrent.TimeoutException;
 import cascading.flow.Flow;
 import cascading.flow.FlowListener;
 import cascading.stats.FlowStats;
-import cascading.stats.StepStats;
 
 public class FlowFuture implements Future<FlowResult> {
 
@@ -139,22 +138,18 @@ public class FlowFuture implements Future<FlowResult> {
     
     private FlowResult makeFlowResult() {
         Map<String, Long> result = new HashMap<String, Long>();
-        
-        FlowStats stats = _flow.getFlowStats();
-        List<StepStats> stepStats = stats.getStepStats();
 
-        for (StepStats stepStat : stepStats) {
-            Collection<String> counterGroups = stepStat.getCounterGroups();
-            for (String counterGroup : counterGroups) {
-                Collection<String> counters = stepStat.getCountersFor(counterGroup);
-                for (String counter : counters) {
-                    long counterValue = stepStat.getCounterValue(counterGroup, counter);
-                    String counterName = counterGroup + "." + counter;
-                    if (result.containsKey(counterName)) {
-                        result.put(counterName, counterValue + result.get(counterName));
-                    } else {
-                        result.put(counterName, counterValue);
-                    }
+        FlowStats stats = _flow.getFlowStats();
+        Collection<String> counterGroups = stats.getCounterGroups();
+        for (String counterGroup : counterGroups) {
+            Collection<String> counters = stats.getCountersFor(counterGroup);
+            for (String counter : counters) {
+                long counterValue = stats.getCounterValue(counterGroup, counter);
+                String counterName = counterGroup + "." + counter;
+                if (result.containsKey(counterName)) {
+                    result.put(counterName, counterValue + result.get(counterName));
+                } else {
+                    result.put(counterName, counterValue);
                 }
             }
         }

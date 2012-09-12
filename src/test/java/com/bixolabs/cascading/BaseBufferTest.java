@@ -1,6 +1,9 @@
 package com.bixolabs.cascading;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.util.Iterator;
@@ -10,12 +13,14 @@ import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BufferCall;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -24,6 +29,7 @@ import cascading.tuple.TupleEntryIterator;
 
 public class BaseBufferTest {
 
+    @SuppressWarnings("serial")
     private static class MyBuffer extends BaseBuffer {
 
         private boolean _stopOnPrepareException;
@@ -60,7 +66,7 @@ public class BaseBufferTest {
         File tmpInDir = new File("build/test/BaseBufferTest/testSimple/in");
         Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
         
-        TupleEntryCollector writer = in.openForWrite(new JobConf());
+        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
         writer.add(new Tuple("a", 2));
         writer.add(new Tuple("a", 1));
         writer.add(new Tuple("a", 1));
@@ -75,11 +81,11 @@ public class BaseBufferTest {
         File tmpOutDir = new File("build/test/BaseBufferTest/testSimple/out");
         Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
 
-        FlowConnector flowConnector = new FlowConnector();
+        FlowConnector flowConnector = new HadoopFlowConnector();
         Flow flow = flowConnector.connect(in, out, pipe);
         flow.complete();
         
-        TupleEntryIterator iter = out.openForRead(new JobConf());
+        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("a", te.getString("key"));
@@ -100,7 +106,7 @@ public class BaseBufferTest {
         File tmpInDir = new File("build/test/BaseBufferTest/testExceptionInPrepare/in");
         Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
         
-        TupleEntryCollector writer = in.openForWrite(new JobConf());
+        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
         writer.add(new Tuple("a", 1));
         writer.close();
         
@@ -112,7 +118,7 @@ public class BaseBufferTest {
         File tmpOutDir = new File("build/test/BaseBufferTest/testExceptionInPrepare/out");
         Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
 
-        FlowConnector flowConnector = new FlowConnector();
+        FlowConnector flowConnector = new HadoopFlowConnector();
         Flow flow = flowConnector.connect(in, out, pipe);
         
         try {

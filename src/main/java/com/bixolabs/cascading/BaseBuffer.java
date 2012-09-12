@@ -42,11 +42,15 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
         _flowProcess = new LoggingFlowProcess((HadoopFlowProcess) flowProcess);
         _flowProcess.addReporter(new LoggingFlowReporter());
         
+        String bufferClassName = this.getClass().getSimpleName();
+        
         try {
+            LOGGER.info("Starting " + bufferClassName);
+            
             prepare();
         } catch (Throwable t) {
             if (!handlePrepareException(t)) {
-                LOGGER.error("Unhandled exception while preparing", t);
+                LOGGER.error("Unhandled exception while preparing " + bufferClassName, t);
                 if (t instanceof RuntimeException) {
                     throw (RuntimeException)t;
                 } else {
@@ -58,11 +62,15 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
     
     @Override
     public void cleanup(FlowProcess flowProcess, OperationCall<NullContext> operationCall) {
+        String bufferClassName = this.getClass().getSimpleName();
+
         try {
+            LOGGER.info("Ending " + bufferClassName);
+
             cleanup();
         } catch (Throwable t) {
             if (!handleCleanupException(t)) {
-                LOGGER.error("Unhandled exception while cleaning up", t);
+                LOGGER.error("Unhandled exception while cleaning up " + bufferClassName, t);
                 if (t instanceof RuntimeException) {
                     throw (RuntimeException)t;
                 } else {

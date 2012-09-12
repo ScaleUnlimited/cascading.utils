@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.bixolabs.cascading;
+package com.bixolabs.cascading.hadoop;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -29,7 +30,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import cascading.flow.FlowConnector;
-import cascading.flow.MultiMapReducePlanner;
+import cascading.flow.hadoop.util.HadoopUtil;
+import cascading.property.AppProps;
 
 public class HadoopUtils {
     private static final Logger LOGGER = Logger.getLogger(HadoopUtils.class);
@@ -96,8 +98,8 @@ public class HadoopUtils {
     }
     
     @SuppressWarnings({ "deprecation" })
-	public static Properties getDefaultProperties(Class appJarClass, boolean debugging, JobConf conf) {
-        Properties properties = new Properties();
+	public static Map<Object, Object> getDefaultProperties(Class appJarClass, boolean debugging, JobConf conf) {
+        Map<Object, Object> properties = HadoopUtil.createProperties(conf);
 
         // Use special Cascading hack to control logging levels for code running as Hadoop jobs
         if (debugging) {
@@ -106,12 +108,7 @@ public class HadoopUtils {
             properties.put("log4j.logger", "cascading=INFO,bixo=INFO");
         }
 
-        FlowConnector.setApplicationJarClass(properties, appJarClass);
-
-        // Put the JobConf into the properties, so that when this properties file
-        // is used to create the cascading Flow, values in the JobConf are used to
-        // set up Hadoop.
-        MultiMapReducePlanner.setJobConf(properties, conf);
+        AppProps.setApplicationJarClass(properties, appJarClass);
 
         return properties;
     }

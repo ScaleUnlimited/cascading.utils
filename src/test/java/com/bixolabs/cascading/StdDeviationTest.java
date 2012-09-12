@@ -1,20 +1,22 @@
 package com.bixolabs.cascading;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Random;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
 import cascading.tap.SinkMode;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -34,7 +36,7 @@ public class StdDeviationTest {
         String out = "build/test/GroupLimitTest/test/out";
 
         Lfs sourceTap = new Lfs(new SequenceFile(testFields), in, SinkMode.REPLACE);
-        TupleEntryCollector write = sourceTap.openForWrite(new JobConf());
+        TupleEntryCollector write = sourceTap.openForWrite(new HadoopFlowProcess());
         
         Random gen = new Random(1L);
         for (int i = 0; i < 10000; i++) {
@@ -53,10 +55,10 @@ public class StdDeviationTest {
         
         Lfs sinkTap = new Lfs(new SequenceFile(new Fields("user", StdDeviation.FIELD_NAME)), out, SinkMode.REPLACE);
         
-        Flow flow = new FlowConnector().connect(sourceTap, sinkTap, pipe);
+        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
         flow.complete();
         
-        TupleEntryIterator iter = sinkTap.openForRead(new JobConf());
+        TupleEntryIterator iter = sinkTap.openForRead(new HadoopFlowProcess());
 
         TupleEntry te = iter.next();
         assertEquals("user1", te.getString("user"));

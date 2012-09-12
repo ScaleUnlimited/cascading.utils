@@ -1,21 +1,19 @@
 package com.bixolabs.cascading;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
-import cascading.operation.Debug;
-import cascading.operation.filter.Limit;
-import cascading.pipe.Each;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.scheme.SequenceFile;
-import cascading.tap.Lfs;
+import cascading.scheme.hadoop.SequenceFile;
 import cascading.tap.SinkMode;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -34,7 +32,7 @@ public class GroupLimitTest {
         String out = "build/test/GroupLimitTest/test/out";
 
         Lfs sourceTap = new Lfs(new SequenceFile(testFields), in, SinkMode.REPLACE);
-        TupleEntryCollector write = sourceTap.openForWrite(new JobConf());
+        TupleEntryCollector write = sourceTap.openForWrite(new HadoopFlowProcess());
         write.add(new Tuple("user1", 1));
         write.add(new Tuple("user1", 2));
         write.add(new Tuple("user2", 1));
@@ -48,10 +46,10 @@ public class GroupLimitTest {
         
         Lfs sinkTap = new Lfs(new SequenceFile(testFields), out, SinkMode.REPLACE);
         
-        Flow flow = new FlowConnector().connect(sourceTap, sinkTap, pipe);
+        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
         flow.complete();
         
-        TupleEntryIterator iter = sinkTap.openForRead(new JobConf());
+        TupleEntryIterator iter = sinkTap.openForRead(new HadoopFlowProcess());
 
         TupleEntry te = iter.next();
         assertEquals("user2", te.getString("user"));

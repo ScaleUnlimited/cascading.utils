@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2012 TransPac Software, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import cascading.flow.FlowStep;
+import cascading.flow.planner.BaseFlowStep;
 import cascading.operation.Operation;
 import cascading.pipe.Group;
-import cascading.stats.StepStats;
+import cascading.stats.FlowStepStats;
 
 public class StepUtils {
 
@@ -31,7 +31,7 @@ public class StepUtils {
         Pattern.compile("(.+)\\[.+\\]");
 
     @SuppressWarnings("unchecked")
-    public static long safeGetCounter(StepStats stepStats, Enum counter) {
+    public static long safeGetCounter(FlowStepStats stepStats, Enum counter) {
         try {
             return stepStats.getCounterValue(counter);
         } catch (NullPointerException e) {
@@ -42,8 +42,8 @@ public class StepUtils {
         }
     }
     
-    @SuppressWarnings("unchecked")
-    public static void nameFlowStep(FlowStep step) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void nameFlowStep(BaseFlowStep step) {
         
         Group group = step.getGroup();
         
@@ -68,6 +68,8 @@ public class StepUtils {
         } else {
             stepName = group.getName();
         }
-        step.setParentFlowName(stepName);
+        
+        // TODO figure out how to do this, if needed
+        // step.setFlowName(stepName);
     }
 }
