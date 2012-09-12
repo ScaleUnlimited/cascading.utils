@@ -18,31 +18,33 @@ package com.bixolabs.cascading.local;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.bixolabs.cascading.NullContext;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
 import cascading.scheme.SinkCall;
 import cascading.scheme.SourceCall;
+import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tuple.Fields;
-import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 import cascading.tuple.TupleEntrySchemeCollector;
 import cascading.tuple.TupleEntrySchemeIterator;
 
+import com.bixolabs.cascading.NullContext;
+
 @SuppressWarnings("serial")
-public class InMemoryTap<Config, Input, Output> extends Tap<Config, Input, Output> {
+public class InMemoryTap extends Tap<Properties, InputStream, OutputStream> {
 
     private static class CloseableList<T> implements List<T>, Closeable {
         
@@ -158,70 +160,67 @@ public class InMemoryTap<Config, Input, Output> extends Tap<Config, Input, Outpu
         }
     }
 
-    private static class InMemoryScheme<Config, Input, Output> extends Scheme<Config, Input, Output, AtomicInteger, NullContext> {
-
-        public InMemoryScheme(Fields fields) {
-            super(fields);
-        }
+    private static class InMemoryScheme<Properties, InputStream, OutputStream> extends Scheme<Properties, InputStream, OutputStream, AtomicInteger, NullContext> {
 
         public InMemoryScheme(Fields sourceFields, Fields sinkFields) {
             super(sourceFields, sinkFields);
         }
 
         @Override
-        public void sourceConfInit(FlowProcess<Config> flowProcess, Tap<Config, Input, Output> tap, Config conf) {
+        public void sourceConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
             // TODO anything I should be doing here?
         }
 
         @Override
-        public void sourcePrepare(FlowProcess<Config> flowProcess, SourceCall<AtomicInteger, Input> sourceCall) throws IOException {
+        public void sourcePrepare(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             super.sourcePrepare(flowProcess, sourceCall);
             
             sourceCall.setContext(new AtomicInteger(0));
         }
         
         @Override
-        public void sinkConfInit(FlowProcess<Config> flowProcess, Tap<Config, Input, Output> tap, Config conf) {
+        public void sinkConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
             // TODO anything I should be doing here?
         }
 
         @Override
-        public boolean source(FlowProcess<Config> flowProcess, SourceCall<AtomicInteger, Input> sourceCall) throws IOException {
+        public boolean source(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             AtomicInteger curIndex = sourceCall.getContext();
-            CloseableList<Tuple> sourceValues = (CloseableList<Tuple>)sourceCall.getInput();
+            CloseableList<TupleEntry> sourceValues = (CloseableList<TupleEntry>)sourceCall.getInput();
             if (curIndex.get() >= sourceValues.size()) {
                 return false;
             } else {
-                sourceCall.getIncomingEntry().setTuple(sourceValues.get(curIndex.get()));
+                sourceCall.getIncomingEntry().setTuple(sourceValues.get(curIndex.get()).getTuple());
                 curIndex.incrementAndGet();
                 return true;
             }
         }
 
         @Override
-        public void sink(FlowProcess<Config> flowProcess, SinkCall<NullContext, Output> sinkCall) throws IOException {
+        public void sink(FlowProcess<Properties> flowProcess, SinkCall<NullContext, OutputStream> sinkCall) throws IOException {
             List<TupleEntry> list = (List<TupleEntry>)sinkCall.getOutput();
             list.add(new TupleEntry(getSinkFields(), sinkCall.getOutgoingEntry().getTuple()));
         }
     }
     
-    private List<Tuple> _inputValues;
-    private List<TupleEntry> _outputValues;
+    private List<TupleEntry> _values;
     
-    public InMemoryTap(Fields sourceFields, Tuple... inputValues) {
-        super(new InMemoryScheme<Config, Input, Output>(sourceFields));
-        
-        _inputValues = new ArrayList<Tuple>(Arrays.asList(inputValues));
+    public InMemoryTap(Fields sourceFields) {
+        this(sourceFields, sourceFields);
     }
     
-    public InMemoryTap(Fields sinkFields) {
-        super(new InMemoryScheme<Config, Input, Output>(sinkFields, sinkFields));
+    public InMemoryTap(Fields sourceFields, Fields sinkFields) {
+        this(sourceFields, sinkFields, SinkMode.KEEP);
+    }
+    
+    public InMemoryTap(Fields sourceFields, Fields sinkFields, SinkMode sinkMode) {
+        super(new InMemoryScheme<Properties, InputStream, OutputStream>(sourceFields, sinkFields), sinkMode);
         
-        _outputValues = new ArrayList<TupleEntry>();
+        _values = new ArrayList<TupleEntry>();
     }
     
     public List<TupleEntry> getOutput() {
-        return _outputValues;
+        return _values;
     }
     
     @Override
@@ -230,35 +229,47 @@ public class InMemoryTap<Config, Input, Output> extends Tap<Config, Input, Outpu
     }
 
     @Override
-    public TupleEntryIterator openForRead(FlowProcess<Config> flowProcess, Input input) throws IOException {
-        return new TupleEntrySchemeIterator<Config, List<Tuple>>(flowProcess, getScheme(), new CloseableList<Tuple>(_inputValues));
+    public boolean equals(Object object) {
+        if (object instanceof InMemoryTap) {
+            // We're only the same if we're actually the same object.
+            return this == object;
+        } else {
+            return super.equals(object);
+        }
+    }
+    
+    @Override
+    public TupleEntryIterator openForRead(FlowProcess<Properties> flowProcess, InputStream input) throws IOException {
+        return new TupleEntrySchemeIterator<Properties, List<TupleEntry>>(flowProcess, getScheme(), new CloseableList<TupleEntry>(_values));
     }
 
     @Override
-    public TupleEntryCollector openForWrite(FlowProcess<Config> flowProcess, Output output) throws IOException {
-        return new TupleEntrySchemeCollector<Config, List<TupleEntry>>(flowProcess, getScheme(), _outputValues);
+    public TupleEntryCollector openForWrite(FlowProcess<Properties> flowProcess, OutputStream output) throws IOException {
+        return new TupleEntrySchemeCollector<Properties, List<TupleEntry>>(flowProcess, getScheme(), _values);
     }
 
     @Override
-    public boolean createResource(Config conf) throws IOException {
+    public boolean createResource(Properties conf) throws IOException {
         // TODO clear out output list?
+        _values.clear();
         return true;
     }
 
     @Override
-    public boolean deleteResource(Config conf) throws IOException {
+    public boolean deleteResource(Properties conf) throws IOException {
         // TODO clear out output list? And StdOutTap returns false here.
+        _values.clear();
         return true;
     }
 
     @Override
-    public boolean resourceExists(Config conf) throws IOException {
+    public boolean resourceExists(Properties conf) throws IOException {
         // TODO what to return here?
         return true;
     }
 
     @Override
-    public long getModifiedTime(Config conf) throws IOException {
+    public long getModifiedTime(Properties conf) throws IOException {
         // TODO what to return here? Mimic what StdInTap/StdOutTap do
         if (isSource()) {
             return System.currentTimeMillis();
