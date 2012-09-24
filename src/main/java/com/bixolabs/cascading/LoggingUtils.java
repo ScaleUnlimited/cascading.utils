@@ -16,6 +16,7 @@
 
 package com.bixolabs.cascading;
 
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.Level;
@@ -33,7 +34,7 @@ public class LoggingUtils {
      * @param props Properties to modify/update.
      * @param myLevel Logging level for our code (not Hadoop/Cascading)
      */
-    public static void setLoggingProperties(Properties props, Level myLevel) {
+    public static void setLoggingProperties(Map<Object, Object> props, Level myLevel) {
         Level cascadingLevel = Level.INFO;
         Level bixoLevel = myLevel;
         
@@ -63,7 +64,7 @@ public class LoggingUtils {
      * @param props Properties to modify/update.
      * @param options Tool options that provide log level info
      */
-    public static void setLoggingProperties(Properties props, BaseOptions options) {
+    public static void setLoggingProperties(Map<Object, Object> props, BaseOptions options) {
     	Level ourLevel;
     	
         if (options.isTraceLogging()) {
