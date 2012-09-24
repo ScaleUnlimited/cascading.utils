@@ -1,5 +1,5 @@
 <!--
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2012 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
       
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.bixolabs</groupId>
+    <groupId>com.scaleunlimited</groupId>
 	<artifactId>cascading.utils</artifactId>
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
@@ -39,30 +39,41 @@
         
 	</repositories>
 	
+    <properties>
+        <cascading.version>2.0.4</cascading.version>
+        <hadoop.version>1.0.3</hadoop.version>
+    </properties>
+    
 	<dependencies>
 		<dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
-            <version>1.0.3</version>
+            <version>${hadoop.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>provided</scope>
         </dependency>
         
 		<dependency>
             <groupId>cascading</groupId>
             <artifactId>cascading-core</artifactId>
-            <version>2.0.4</version>
+            <version>${cascading.version}</version>
         </dependency>
          
         <dependency>
             <groupId>cascading</groupId>
             <artifactId>cascading-local</artifactId>
-            <version>2.0.4</version>
+            <version>${cascading.version}</version>
         </dependency>
          
         <dependency>
             <groupId>cascading</groupId>
             <artifactId>cascading-hadoop</artifactId>
-            <version>2.0.4</version>
+            <version>${cascading.version}</version>
         </dependency>
          
         <!-- For KryoScheme -->
@@ -114,7 +125,7 @@
 		<dependency>
             <groupId>cascading</groupId>
             <artifactId>cascading-test</artifactId>
-            <version>2.0.4</version>
+            <version>${cascading.version}</version>
             <scope>test</scope>
         </dependency>
         
