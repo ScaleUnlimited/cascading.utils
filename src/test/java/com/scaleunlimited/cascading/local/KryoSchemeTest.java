@@ -57,9 +57,8 @@ public class KryoSchemeTest {
         public void write(DataOutput out) throws IOException {
             out.writeInt((Integer)_value);
         }
-        
-        
     }
+    
     @Test
     public void testSimple() throws Exception {
         final String targetDir = "build/test/KryoSchemeTest/testSimple";
@@ -157,28 +156,30 @@ public class KryoSchemeTest {
     @Test
     public void testInWorkflow() throws Exception {
         final String srcDir = "build/test/KryoSchemeTest/testInWorkflow/src";
-        final String destDir = "build/test/KryoSchemeTest/testInWorkflow/dst";
+        final String dstFile = "build/test/KryoSchemeTest/testInWorkflow/dstFile";
         
         // Create a local tap that uses the KryoScheme
         Fields fields = new Fields("key", "value");
         
-        Tap srcTap = new FileTap(new KryoScheme(fields), srcDir);
-        TupleEntryCollector writer = srcTap.openForWrite(new LocalFlowProcess());
+        Tap tap = new DirectoryTap(new KryoScheme(fields), srcDir, SinkMode.REPLACE);
+        TupleEntryCollector writer = tap.openForWrite(new LocalFlowProcess());
         
         writer.add(new Tuple("key1", 11));
         writer.add(new Tuple("key1", 12));
         writer.add(new Tuple("key2", 21));
         writer.close();
 
+        Tap sourceTap = new DirectoryTap(new KryoScheme(fields), srcDir);
+        
         Pipe p = new Pipe("pipe");
         p = new SumBy(p, new Fields("key"), new Fields("value"), new Fields("sum"), Integer.class);
         
-        Tap sinkTap = new FileTap(new TextLine(), destDir, SinkMode.REPLACE);
-        Flow f = new LocalFlowConnector().connect(srcTap, sinkTap, p);
+        Tap sinkTap = new FileTap(new TextLine(), dstFile, SinkMode.REPLACE);
+        Flow f = new LocalFlowConnector().connect(sourceTap, sinkTap, p);
         f.complete();
         
         // TODO verify we have expected output
-        Tap validationTap = new FileTap(new TextDelimited(new Fields("key", "sum"), "\t", new Class[] {String.class, Integer.class}), destDir);
+        Tap validationTap = new FileTap(new TextDelimited(new Fields("key", "sum"), "\t", new Class[] {String.class, Integer.class}), dstFile);
         TupleEntryIterator iter = validationTap.openForRead(new LocalFlowProcess());
         
         assertTrue(iter.hasNext());

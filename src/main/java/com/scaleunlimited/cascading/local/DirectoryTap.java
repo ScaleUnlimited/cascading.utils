@@ -131,7 +131,18 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     @Override
     public TupleEntryCollector openForWrite(FlowProcess<Properties> flowProcess, OutputStream output) throws IOException {
         if (output == null) {
-            output = new DirectoryFileOutputStream(this, "part-00000", isUpdate()); // append
+            if (getSinkMode() == SinkMode.REPLACE) {
+                File dirFile = new File(getPath());
+                if (dirFile.exists()) {
+                    if (dirFile.isDirectory()) {
+                        FileUtils.deleteDirectory(dirFile);
+                    } else {
+                        dirFile.delete();
+                    }
+                }
+            }
+            
+            output = new DirectoryFileOutputStream(this, "part-00000", isUpdate());
         }
 
         return new TupleEntrySchemeCollector<Properties, OutputStream>(flowProcess, getScheme(), output, path);
