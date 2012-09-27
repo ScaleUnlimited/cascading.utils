@@ -206,22 +206,27 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     }
 
     @Override
-    public boolean equals(Object object) {
-        if (this == object) {
+    public boolean equals(Object obj) {
+        if (this == obj)
             return true;
-        }
-        
-        if (object == null || getClass() != object.getClass()) {
+        if (!super.equals(obj))
             return false;
-        }
-
-        return Arrays.equals(_taps.toArray(), ((DirectoryTap) object)._taps.toArray());
+        if (getClass() != obj.getClass())
+            return false;
+        DirectoryTap other = (DirectoryTap) obj;
+        if (path == null) {
+            if (other.path != null)
+                return false;
+        } else if (!path.equals(other.path))
+            return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
+        final int prime = 31;
         int result = super.hashCode();
-        result = 31 * result + (_taps != null ? Arrays.hashCode(_taps.toArray()) : 0);
+        result = prime * result + ((path == null) ? 0 : path.hashCode());
         return result;
     }
 
