@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -20,6 +21,7 @@ import cascading.tap.SinkMode;
 import cascading.tap.local.FileTap;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
+import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 
@@ -81,6 +83,35 @@ public class DirectoryTapTest {
         assertEquals("key1\t11", lines.get(0));
         assertEquals("key1\t12", lines.get(1));
         assertEquals("key2\t21", lines.get(2));
+    }
+
+    @Test
+    public void testWithOneInputFile() throws Exception {
+        final String dirPath = "build/test/DirectoryTapTest/testWithOneInputFile/";
+        
+        DirectoryTap outTap = new DirectoryTap(new TextLine(), dirPath, SinkMode.REPLACE);
+        TupleEntryCollector writer = outTap.openForWrite(new LocalFlowProcess());
+        writer.add(new Tuple("key1", 11));
+        writer.add(new Tuple("key2", 21));
+        writer.close();
+
+        // We should have a single file, called part-00000, in the output directory
+        File dirFile = new File(dirPath);
+        File resultFile = new File(dirFile, "part-00000");
+
+        DirectoryTap inTap = new DirectoryTap(new TextLine(), resultFile.getAbsolutePath(), SinkMode.KEEP);
+        TupleEntryIterator iter = inTap.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("key1\t11", te.getString("line"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key2\t21", te.getString("line"));
+        
+        assertFalse(iter.hasNext());
+        iter.close();
     }
 
 }

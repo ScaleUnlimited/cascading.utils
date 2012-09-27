@@ -58,7 +58,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     }
 
     private String path;
-    private List<FileTap> _taps;
+    private transient List<FileTap> _taps;
     
     /**
      * Constructor FileTap creates a new FileTap instance using the given
@@ -101,33 +101,44 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     @SuppressWarnings("unchecked")
     @Override
     public TupleEntryIterator openForRead(FlowProcess<Properties> flowProcess, InputStream input) throws IOException {
-        File dir = new File(path);
-        
-        if (!dir.exists()) {
-            throw new IllegalArgumentException("Path provided doesn't exist: " + path);
-        } else if (!dir.isDirectory()) {
-            throw new IllegalArgumentException("Path provided isn't a directory: " + path);
-        }
-        
-        File[] files = dir.listFiles();
-        _taps = new ArrayList<FileTap>(files.length);
-        
-        for (File file : files) {
-            if (file.isFile()) {
-                _taps.add(new FileTap(getScheme(), file.getAbsolutePath()));
-            }
-        }
-
         // TODO what to do about input? Why does MultiSourceTap check for input != null, and return first tap's TEI?
         
+        List<FileTap> taps = getTaps();
         List<Iterator<Tuple>> iterators = new ArrayList<Iterator<Tuple>>();
-        for (FileTap tap : _taps) {
+        for (FileTap tap : taps) {
             iterators.add(new TupleIterator(tap.openForRead(flowProcess)));
         }
         
-        return new TupleEntryChainIterator(getSourceFields(), iterators.toArray(new Iterator[_taps.size()]));
+        return new TupleEntryChainIterator(getSourceFields(), iterators.toArray(new Iterator[taps.size()]));
     }
 
+    private List<FileTap> getTaps() {
+        if (_taps == null) {
+            File dir = new File(path);
+            List<FileTap> result = new ArrayList<FileTap>();
+
+            if (!dir.exists()) {
+                throw new IllegalArgumentException("Path provided doesn't exist: " + path);
+            } else if (dir.isDirectory()) {
+                File[] files = dir.listFiles();
+
+                for (File file : files) {
+                    if (file.isFile()) {
+                        result.add(new FileTap(getScheme(), file.getAbsolutePath()));
+                    }
+                }
+            } else if (dir.isFile()) {
+                result.add(new FileTap(getScheme(), dir.getAbsolutePath()));
+            } else {
+                throw new IllegalArgumentException("Path provided isn't a directory or a file: " + path);
+            }
+
+            _taps = result;
+        }
+        
+        return _taps;
+    }
+    
     @Override
     public TupleEntryCollector openForWrite(FlowProcess<Properties> flowProcess, OutputStream output) throws IOException {
         if (output == null) {
@@ -158,7 +169,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
      */
     public long getSize(Properties conf) throws IOException {
         long totalSize = 0;
-        for (FileTap tap : _taps) {
+        for (FileTap tap : getTaps()) {
             totalSize += tap.getSize(conf);
         }
 
@@ -185,7 +196,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
 
     @Override
     public boolean resourceExists(Properties conf) throws IOException {
-        for (FileTap tap : _taps) {
+        for (FileTap tap : getTaps()) {
             if (!tap.resourceExists(conf)) {
                 return false;
             }
@@ -198,7 +209,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     public long getModifiedTime(Properties conf) throws IOException {
         long modified = 0;
         
-        for (FileTap tap : _taps) {
+        for (FileTap tap : getTaps()) {
             modified = Math.max(modified, tap.getModifiedTime(conf));
         }
 
@@ -240,11 +251,11 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
 
     @Override
     public Iterator<FileTap> getChildTaps() {
-        return _taps.iterator();
+        return getTaps().iterator();
     }
 
     @Override
     public long getNumChildTaps() {
-        return _taps.size();
+        return getTaps().size();
     }
 }
