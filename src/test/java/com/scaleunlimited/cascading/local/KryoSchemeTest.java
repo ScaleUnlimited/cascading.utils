@@ -98,6 +98,25 @@ public class KryoSchemeTest {
     }
 
     @Test
+    public void testEmptyFile() throws Exception {
+        final String targetDir = "build/test/KryoSchemeTest/testEmptyFile";
+        
+        // Create a local tap that uses the KryoScheme, but don't write anything.
+        // This will create an empty file.
+        Fields fields = new Fields("key", "value");
+        
+        Tap out = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryCollector writer = out.openForWrite(new LocalFlowProcess());
+        writer.close();
+        
+        Tap in = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryIterator iter = in.openForRead(new LocalFlowProcess());
+        
+        assertFalse(iter.hasNext());
+        iter.close();
+    }
+
+    @Test
     public void testWritable() throws Exception {
         final String targetDir = "build/test/KryoSchemeTest/testWritable";
         

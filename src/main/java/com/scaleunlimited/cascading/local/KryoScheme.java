@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
+
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
 import cascading.scheme.SinkCall;
@@ -13,7 +15,6 @@ import cascading.tap.Tap;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -24,7 +25,8 @@ import com.esotericsoftware.kryo.io.Output;
  */
 @SuppressWarnings("serial")
 public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, KryoContext, KryoContext> {
-
+    private static final Logger LOGGER = Logger.getLogger(KryoScheme.class);
+    
     public KryoScheme(Fields fields) {
         super(fields);
     }
@@ -37,10 +39,14 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
 
     @Override
     public void sinkConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
-        // TODO Auto-generated method stub
-        
+        LOGGER.trace("KryoScheme - sinkConfInit");
     }
 
+    @Override
+    public void presentSinkFields(FlowProcess<Properties> flowProcess, Tap tap, Fields fields) {
+        super.presentSinkFields(flowProcess, tap, fields);
+    }
+    
     @Override
     public void sourcePrepare(FlowProcess<Properties> flowProcess, SourceCall<KryoContext, InputStream> sourceCall) throws IOException {
         super.sourcePrepare(flowProcess, sourceCall);
@@ -81,8 +87,6 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
         sinkCall.getContext().close();
         
         super.sinkCleanup(flowProcess, sinkCall);
-        
-        
     }
 
 }

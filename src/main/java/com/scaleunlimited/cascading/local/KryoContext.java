@@ -15,16 +15,21 @@ public class KryoContext implements Serializable {
     private Kryo _kryo;
     private Input _input;
     private Output _output;
+    private boolean _emptyFile;
     
     public KryoContext(Input input, Fields fields) {
         _input = input;
-        
+
         init();
-        
-        // TODO save sinked fields, so we can use this will selecting
-        Fields sinkedFields = _kryo.readObject(_input, Fields.class);
-        if (!sinkedFields.contains(fields)) {
-            throw new IllegalArgumentException("Source fields not found in sinked data");
+
+        // We might not have any data, since if somebody calls openForWrite() and then doesn't
+        // write anything, you wind up with an empty file.
+        _emptyFile = !_input.canReadInt();
+        if (!_emptyFile) {
+            Fields sinkedFields = _kryo.readObject(_input, Fields.class);
+            if (!sinkedFields.contains(fields)) {
+                throw new IllegalArgumentException("Source fields not found in sinked data");
+            }
         }
     }
     
@@ -49,7 +54,11 @@ public class KryoContext implements Serializable {
     }
     
     public Tuple deserialize() {
-        return _kryo.readObjectOrNull(_input, Tuple.class);
+        if (_emptyFile) {
+            return null;
+        } else {
+            return _kryo.readObjectOrNull(_input, Tuple.class);
+        }
     }
     
     public void close() {
