@@ -114,4 +114,37 @@ public class DirectoryTapTest {
         iter.close();
     }
 
+    @Test
+    public void testIgnoreCRCFiles() throws Exception {
+        final String dirPath = "build/test/DirectoryTapTest/testIgnoreCRCFiles/";
+        
+        DirectoryTap outTap = new DirectoryTap(new TextLine(), dirPath, SinkMode.REPLACE);
+        TupleEntryCollector writer = outTap.openForWrite(new LocalFlowProcess());
+        writer.add(new Tuple("key1", 11));
+        writer.add(new Tuple("key2", 21));
+        writer.close();
+
+        // We should have a single file, called part-00000, in the output directory.
+        // Let's add a file called .part-00000.crc
+        File dirFile = new File(dirPath);
+        File crcFile = new File(dirFile, ".part-00000.crc");
+        crcFile.createNewFile();
+        
+        DirectoryTap inTap = new DirectoryTap(new TextLine(), dirPath, SinkMode.KEEP);
+        assertEquals(1, inTap.getNumChildTaps());
+        
+        TupleEntryIterator iter = inTap.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("key1\t11", te.getString("line"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key2\t21", te.getString("line"));
+        
+        assertFalse(iter.hasNext());
+        iter.close();
+    }
+
 }

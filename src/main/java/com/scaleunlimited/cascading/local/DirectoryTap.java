@@ -123,7 +123,8 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
                 File[] files = dir.listFiles();
 
                 for (File file : files) {
-                    if (file.isFile()) {
+                    // Ignore .xxx files, like .part-00000.crc
+                    if (file.isFile() && (!file.getName().startsWith("."))) {
                         result.add(new FileTap(getScheme(), file.getAbsolutePath()));
                     }
                 }
