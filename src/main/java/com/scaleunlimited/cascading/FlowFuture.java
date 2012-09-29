@@ -137,24 +137,24 @@ public class FlowFuture implements Future<FlowResult> {
     }
     
     private FlowResult makeFlowResult() {
-        Map<String, Long> result = new HashMap<String, Long>();
-
-        FlowStats stats = _flow.getFlowStats();
-        Collection<String> counterGroups = stats.getCounterGroups();
-        for (String counterGroup : counterGroups) {
-            Collection<String> counters = stats.getCountersFor(counterGroup);
-            for (String counter : counters) {
-                long counterValue = stats.getCounterValue(counterGroup, counter);
-                String counterName = counterGroup + "." + counter;
-                if (result.containsKey(counterName)) {
-                    result.put(counterName, counterValue + result.get(counterName));
-                } else {
-                    result.put(counterName, counterValue);
-                }
-            }
-        }
-
-        return new FlowResult(result);
+//        Map<String, Long> result = new HashMap<String, Long>();
+//
+//        FlowStats stats = _flow.getFlowStats();
+//        Collection<String> counterGroups = stats.getCounterGroups();
+//        for (String counterGroup : counterGroups) {
+//            Collection<String> counters = stats.getCountersFor(counterGroup);
+//            for (String counter : counters) {
+//                long counterValue = stats.getCounterValue(counterGroup, counter);
+//                String counterName = counterGroup + "." + counter;
+//                if (result.containsKey(counterName)) {
+//                    result.put(counterName, counterValue + result.get(counterName));
+//                } else {
+//                    result.put(counterName, counterValue);
+//                }
+//            }
+//        }
+//
+        return new FlowResult(FlowCounters.getCounters(_flow));
     }
     
 

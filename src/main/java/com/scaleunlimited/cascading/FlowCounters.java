@@ -75,7 +75,7 @@ public class FlowCounters {
     
     // TODO Use this routine with the above code? Would need to map from Enum to name,
     // compare against what we get back here.
-    public Map<String, Long> getCounters(Flow flow) {
+    public static Map<String, Long> getCounters(Flow flow) {
         Map<String, Long> result = new HashMap<String, Long>();
         
         FlowStats stats = flow.getFlowStats();
@@ -87,7 +87,13 @@ public class FlowCounters {
                 Collection<String> counters = stepStat.getCountersFor(counterGroup);
                 for (String counter : counters) {
                     long counterValue = stepStat.getCounterValue(counterGroup, counter);
-                    result.put(counterGroup + "." + counter, counterValue);
+                    String counterKey = counterGroup + "." + counter;
+                    if (result.containsKey(counterKey)) {
+                        LOGGER.warn("Multiple steps in flow are returning the same counter: " + counterKey);
+                        counterValue += result.get(counter);
+                    }
+                    
+                    result.put(counterKey, counterValue);
                 }
             }
         }
