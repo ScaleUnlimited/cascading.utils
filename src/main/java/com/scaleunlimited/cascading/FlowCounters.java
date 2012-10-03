@@ -90,7 +90,7 @@ public class FlowCounters {
                     String counterKey = counterGroup + "." + counter;
                     if (result.containsKey(counterKey)) {
                         LOGGER.warn("Multiple steps in flow are returning the same counter: " + counterKey);
-                        counterValue += result.get(counter);
+                        counterValue += result.get(counterKey);
                     }
                     
                     result.put(counterKey, counterValue);
