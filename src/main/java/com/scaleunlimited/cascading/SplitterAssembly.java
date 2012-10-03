@@ -19,7 +19,6 @@ package com.scaleunlimited.cascading;
 import java.security.InvalidParameterException;
 
 import cascading.flow.FlowProcess;
-import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Filter;
 import cascading.operation.FilterCall;
@@ -57,7 +56,7 @@ public class SplitterAssembly extends SubAssembly {
 	    public void prepare(FlowProcess flowProcess,
 	                        OperationCall<NullContext> operationCall) {
 	        super.prepare(flowProcess, operationCall);
-	        _flowProcess = new LoggingFlowProcess((HadoopFlowProcess) flowProcess);
+	        _flowProcess = new LoggingFlowProcess(flowProcess);
 	        _flowProcess.addReporter(new LoggingFlowReporter());
 	    }
 	    
