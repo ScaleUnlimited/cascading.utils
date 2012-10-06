@@ -39,7 +39,7 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
     public void prepare(FlowProcess flowProcess, OperationCall<NullContext> operationCall) {
         super.prepare(flowProcess, operationCall);
         
-        _flowProcess = new LoggingFlowProcess((HadoopFlowProcess) flowProcess);
+        _flowProcess = new LoggingFlowProcess(flowProcess);
         _flowProcess.addReporter(new LoggingFlowReporter());
         
         String bufferClassName = this.getClass().getSimpleName();
