@@ -132,15 +132,15 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
         _reporters.add(reporter);
     }
     
-    @SuppressWarnings("deprecation")
-    public JobConf getJobConf() throws IOException {
-        if (getDelegate() instanceof HadoopFlowProcess) {
-            return ((HadoopFlowProcess)getDelegate()).getJobConf();
-        } else {
-            return new JobConf();
-        }
-    }
-
+//    @SuppressWarnings("deprecation")
+//    public JobConf getJobConf() throws IOException {
+//        if (getDelegate() instanceof HadoopFlowProcess) {
+//            return ((HadoopFlowProcess)getDelegate()).getJobConf();
+//        } else {
+//            return new JobConf();
+//        }
+//    }
+//
     public void setStatus(String msg) {
         setStatus(Level.INFO, msg);
     }
