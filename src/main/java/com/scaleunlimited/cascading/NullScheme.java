@@ -19,8 +19,8 @@ class NullScheme<Config> extends Scheme<Config, InputStream, Object, Reader, Wri
         super();
     }
 
-    public NullScheme(Fields sinkFields) {
-        super(new Fields(), sinkFields);
+    public NullScheme(Fields fields) {
+        super(new Fields(), fields);
     }
 
     @Override

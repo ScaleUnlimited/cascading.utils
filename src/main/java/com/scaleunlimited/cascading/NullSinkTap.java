@@ -24,16 +24,21 @@ import cascading.tap.SinkTap;
 import cascading.tuple.Fields;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntrySchemeCollector;
+import cascading.util.Util;
 
 @SuppressWarnings({ "serial" })
 public class NullSinkTap extends SinkTap<NullContext, Object> {
 	
-	public NullSinkTap(Fields sourceFields) {
-        super(new NullScheme<NullContext>(sourceFields));
+    private String _id;
+    
+	public NullSinkTap(Fields fields) {
+        super(new NullScheme<NullContext>(fields));
+        _id = makeUniqueId();
     }
 
     public NullSinkTap() {
         super(new NullScheme<NullContext>());
+        _id = makeUniqueId();
     }
 
     @Override
@@ -48,9 +53,13 @@ public class NullSinkTap extends SinkTap<NullContext, Object> {
 
     @Override
     public String getIdentifier() {
-        return "null";
+        return _id;
     }
 
+    private String makeUniqueId() {
+        return "NullSinkTap-" + Util.createUniqueID();
+    }
+    
     @Override
     public long getModifiedTime(NullContext properties) throws IOException {
         return 0;
