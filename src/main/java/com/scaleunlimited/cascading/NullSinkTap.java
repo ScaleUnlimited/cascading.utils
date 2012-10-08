@@ -27,27 +27,27 @@ import cascading.tuple.TupleEntrySchemeCollector;
 import cascading.util.Util;
 
 @SuppressWarnings({ "serial" })
-public class NullSinkTap extends SinkTap<NullContext, Object> {
+public class NullSinkTap extends SinkTap<Object, Object> {
 	
     private String _id;
     
 	public NullSinkTap(Fields fields) {
-        super(new NullScheme<NullContext>(fields));
+        super(new NullScheme(fields));
         _id = makeUniqueId();
     }
 
     public NullSinkTap() {
-        super(new NullScheme<NullContext>());
+        super(new NullScheme());
         _id = makeUniqueId();
     }
 
     @Override
-    public boolean createResource(NullContext properties) throws IOException {
+    public boolean createResource(Object properties) throws IOException {
         return true;
     }
 
     @Override
-    public boolean deleteResource(NullContext properties) throws IOException {
+    public boolean deleteResource(Object properties) throws IOException {
         return false;
     }
 
@@ -61,13 +61,13 @@ public class NullSinkTap extends SinkTap<NullContext, Object> {
     }
     
     @Override
-    public long getModifiedTime(NullContext properties) throws IOException {
+    public long getModifiedTime(Object properties) throws IOException {
         return 0;
     }
 
     @Override
-    public TupleEntryCollector openForWrite(FlowProcess<NullContext> flowProcess, Object out) throws IOException {
-        return new TupleEntrySchemeCollector<NullContext, OutputStream>(flowProcess, getScheme(), new OutputStream() {
+    public TupleEntryCollector openForWrite(FlowProcess<Object> flowProcess, Object out) throws IOException {
+        return new TupleEntrySchemeCollector<Object, OutputStream>(flowProcess, getScheme(), new OutputStream() {
 
             @Override
             public void write(int b) throws IOException { }
@@ -75,7 +75,7 @@ public class NullSinkTap extends SinkTap<NullContext, Object> {
     }
 
     @Override
-    public boolean resourceExists(NullContext properties) throws IOException {
+    public boolean resourceExists(Object properties) throws IOException {
         return true;
     }
 

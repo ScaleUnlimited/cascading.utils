@@ -1,9 +1,6 @@
 package com.scaleunlimited.cascading;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.Writer;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
@@ -13,7 +10,7 @@ import cascading.tap.Tap;
 import cascading.tuple.Fields;
 
 @SuppressWarnings("serial")
-class NullScheme<Config> extends Scheme<Config, InputStream, Object, Reader, Writer> {
+class NullScheme extends Scheme<Object, Object, Object, Object, Object> {
     
     public NullScheme() {
         super();
@@ -34,20 +31,20 @@ class NullScheme<Config> extends Scheme<Config, InputStream, Object, Reader, Wri
     }
     
     @Override
-    public void sink(FlowProcess<Config> flowProcess, SinkCall<Writer, Object> sinkCall) throws IOException {
+    public void sink(FlowProcess<Object> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
     }
 
     @Override
-    public void sinkConfInit(FlowProcess<Config> flowProcess, Tap<Config, InputStream, Object> tap, Config properties) {
+    public void sinkConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
     }
 
     @Override
-    public boolean source(FlowProcess<Config> flowProcess, SourceCall<Reader, InputStream> sourceCall) throws IOException {
+    public boolean source(FlowProcess<Object> flowProcess, SourceCall<Object, Object> sourceCall) throws IOException {
         throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
     }
 
     @Override
-    public void sourceConfInit(FlowProcess<Config> flowProcess, Tap<Config, InputStream, Object> tap, Config properties) {
+    public void sourceConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
         throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
     }
     
