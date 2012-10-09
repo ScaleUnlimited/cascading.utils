@@ -57,14 +57,16 @@ public class NullSinkTapHadoopTest {
     
     @Test
     public void testNullSinkTapWrongOutputFields() throws IOException {
-        Lfs in = new Lfs(new SequenceFile(new Fields("input")), "build/test/NullSinkTapHadoopTest/testNullSinkTapWrongOutputFields/in", true);
+        final Fields sourceFields = new Fields("input");
+        Lfs in = new Lfs(new SequenceFile(sourceFields), "build/test/NullSinkTapHadoopTest/testNullSinkTapWrongOutputFields/in", true);
         TupleEntryCollector write = in.openForWrite(new HadoopFlowProcess());
         Tuple tuple = new Tuple("value");
         write.add(tuple);
         write.close();
 
         // Set up output where it's got an extra field
-        NullSinkTap out = new NullSinkTap(new Fields("input", "missing-bogus"));
+        final Fields sinkFields = new Fields("input", "bogus");
+        NullSinkTap out = new NullSinkTap(sinkFields);
 
         Pipe pipe = new Pipe("pipe");
         pipe = new Each("pipe", new Identity());

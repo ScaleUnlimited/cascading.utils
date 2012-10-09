@@ -20,7 +20,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import cascading.flow.FlowProcess;
+import cascading.scheme.Scheme;
+import cascading.scheme.SinkCall;
+import cascading.scheme.SourceCall;
 import cascading.tap.SinkTap;
+import cascading.tap.Tap;
 import cascading.tuple.Fields;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntrySchemeCollector;
@@ -29,6 +33,46 @@ import cascading.util.Util;
 @SuppressWarnings({ "serial" })
 public class NullSinkTap extends SinkTap<Object, Object> {
 	
+    private static class NullScheme extends Scheme<Object, Object, Object, Object, Object> {
+        
+        public NullScheme() {
+            super();
+        }
+        
+        public NullScheme(Fields fields) {
+            super(Fields.UNKNOWN, fields);
+        }
+        
+        @Override
+        public boolean isSink() {
+            return true;
+        }
+        
+        @Override
+        public boolean isSource() {
+            return false;
+        }
+        
+        @Override
+        public void sink(FlowProcess<Object> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
+        }
+
+        @Override
+        public void sinkConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
+        }
+
+        @Override
+        public boolean source(FlowProcess<Object> flowProcess, SourceCall<Object, Object> sourceCall) throws IOException {
+            throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
+        }
+
+        @Override
+        public void sourceConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
+            throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
+        }
+        
+    }
+    
     private String _id;
     
 	public NullSinkTap(Fields fields) {
@@ -41,6 +85,10 @@ public class NullSinkTap extends SinkTap<Object, Object> {
         _id = makeUniqueId();
     }
 
+    private String makeUniqueId() {
+        return "NullSinkTap-" + Util.createUniqueID();
+    }
+    
     @Override
     public boolean createResource(Object properties) throws IOException {
         return true;
@@ -56,10 +104,11 @@ public class NullSinkTap extends SinkTap<Object, Object> {
         return _id;
     }
 
-    private String makeUniqueId() {
-        return "NullSinkTap-" + Util.createUniqueID();
+    @Override
+    public boolean resourceExists(Object properties) throws IOException {
+        return true;
     }
-    
+
     @Override
     public long getModifiedTime(Object properties) throws IOException {
         return 0;
@@ -72,11 +121,6 @@ public class NullSinkTap extends SinkTap<Object, Object> {
             @Override
             public void write(int b) throws IOException { }
         });
-    }
-
-    @Override
-    public boolean resourceExists(Object properties) throws IOException {
-        return true;
     }
 
 }
