@@ -262,8 +262,14 @@ public class KryoSchemeTest {
         iter.close();
         
         // And that we don't have fields we don't expect to have.
-        validationTap = new DirectoryTap(new KryoScheme(fields), dstFile);
-        iter = validationTap.openForRead(new LocalFlowProcess());
+        
+        try {
+            validationTap = new DirectoryTap(new KryoScheme(fields), dstFile);
+            validationTap.openForRead(new LocalFlowProcess());
+            fail("Should have thrown exception");
+        } catch (Exception e) {
+            // expected
+        }
         
     }
 
