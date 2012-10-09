@@ -14,7 +14,6 @@ import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
-import cascading.pipe.assembly.AggregateBy;
 import cascading.pipe.assembly.AggregateBy.CompositeFunction;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
@@ -27,10 +26,12 @@ public class FirstBy extends SubAssembly {
         private Fields _groupingFields;
         private Fields _sortingFields;
         private int _threshold;
+        private boolean _reverseSort;
         
-        public FirstByFilter(Fields groupingFields, Fields sortingFields, int threshold) {
+        public FirstByFilter(Fields groupingFields, Fields sortingFields, boolean reverseSort, int threshold) {
             _groupingFields = groupingFields;
             _sortingFields = sortingFields;
+            _reverseSort = reverseSort;
             _threshold = threshold;
         }
         
@@ -55,7 +56,7 @@ public class FirstBy extends SubAssembly {
             if (curSort == null) {
                 filterCall.getContext().put(incomingGroup, incomingSort);
                 return false;
-            } else if (incomingSort.compareTo(curSort) < 0) {
+            } else if ((incomingSort.compareTo(curSort) < 0) != _reverseSort) {
                 filterCall.getContext().put(incomingGroup, incomingSort);
                 return false;
             } else {
@@ -87,7 +88,7 @@ public class FirstBy extends SubAssembly {
     
     public FirstBy(String name, Pipe[] pipes, Fields groupingFields, Fields sortingFields, boolean reverseSort, Fields declaredFields, int threshold) {
         
-        FirstByFilter filter = new FirstByFilter(groupingFields, sortingFields, threshold);
+        FirstByFilter filter = new FirstByFilter(groupingFields, sortingFields, reverseSort, threshold);
         Fields argumentSelector = Fields.merge(groupingFields, sortingFields);
         
         Pipe[] functions = new Pipe[pipes.length];
