@@ -19,7 +19,7 @@ public class KryoContext implements Serializable {
     
     public KryoContext(Input input, Fields fields) {
         _input = input;
-
+        
         init();
 
         // We might not have any data, since if somebody calls openForWrite() and then doesn't

@@ -27,8 +27,12 @@ import com.esotericsoftware.kryo.io.Output;
 public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, KryoContext, KryoContext> {
     private static final Logger LOGGER = Logger.getLogger(KryoScheme.class);
     
-    public KryoScheme(Fields fields) {
-        super(fields);
+    public KryoScheme(Fields sourceFields) {
+        super(sourceFields);
+    }
+    
+    public KryoScheme(Fields sourceFields, Fields sinkFields) {
+        super(sourceFields, sinkFields);
     }
     
     @Override

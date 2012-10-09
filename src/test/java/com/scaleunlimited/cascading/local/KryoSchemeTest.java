@@ -216,4 +216,55 @@ public class KryoSchemeTest {
         iter.close();
     }
 
+    @Test
+    public void testFieldSelection() throws Exception {
+        final String srcDir = "build/test/KryoSchemeTest/testFieldSelection/src";
+        final String dstFile = "build/test/KryoSchemeTest/testFieldSelection/dst";
+        
+        // Create a local tap that uses the KryoScheme
+        Fields fields = new Fields("key", "value");
+        
+        Tap tap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, fields), srcDir, SinkMode.REPLACE);
+        TupleEntryCollector writer = tap.openForWrite(new LocalFlowProcess());
+        
+        writer.add(new Tuple("key1", 11));
+        writer.add(new Tuple("key1", 12));
+        writer.add(new Tuple("key2", 21));
+        writer.close();
+
+        Tap sourceTap = new DirectoryTap(new KryoScheme(fields), srcDir);
+        
+        Pipe p = new Pipe("pipe");
+        
+        // Create a sink where we're only writing out one of the fields.
+        Tap sinkTap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, new Fields("value")), dstFile, SinkMode.REPLACE);
+        Flow f = new LocalFlowConnector().connect(sourceTap, sinkTap, p);
+        f.complete();
+        
+        // Verify we have expected output
+        Tap validationTap = new DirectoryTap(new KryoScheme(new Fields("value")), dstFile);
+        TupleEntryIterator iter = validationTap.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("11", te.getString("value"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals(12, te.getInteger("value"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals(21, te.getInteger("value"));
+        
+        assertFalse(iter.hasNext());
+        
+        iter.close();
+        
+        // And that we don't have fields we don't expect to have.
+        validationTap = new DirectoryTap(new KryoScheme(fields), dstFile);
+        iter = validationTap.openForRead(new LocalFlowProcess());
+        
+    }
+
 }
