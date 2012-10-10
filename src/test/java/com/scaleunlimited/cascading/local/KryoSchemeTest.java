@@ -10,6 +10,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Writable;
 import org.junit.Test;
 
+import com.scaleunlimited.cascading.TupleLogger;
 import com.scaleunlimited.cascading.local.KryoScheme;
 
 import cascading.flow.Flow;
@@ -18,6 +19,7 @@ import cascading.flow.local.LocalFlowProcess;
 import cascading.operation.Identity;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
+import cascading.pipe.assembly.Rename;
 import cascading.pipe.assembly.SumBy;
 import cascading.scheme.local.TextDelimited;
 import cascading.scheme.local.TextLine;
@@ -222,39 +224,42 @@ public class KryoSchemeTest {
         final String dstFile = "build/test/KryoSchemeTest/testFieldSelection/dst";
         
         // Create a local tap that uses the KryoScheme
-        Fields fields = new Fields("key", "value");
+        Fields fields = new Fields("key", "value", "index");
         
         Tap tap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, fields), srcDir, SinkMode.REPLACE);
         TupleEntryCollector writer = tap.openForWrite(new LocalFlowProcess());
         
-        writer.add(new Tuple("key1", 11));
-        writer.add(new Tuple("key1", 12));
-        writer.add(new Tuple("key2", 21));
+        writer.add(new Tuple("key1", 11, 1));
+        writer.add(new Tuple("key1", 12, 2));
+        writer.add(new Tuple("key2", 21, 3));
         writer.close();
 
-        Tap sourceTap = new DirectoryTap(new KryoScheme(fields), srcDir);
+        Tap sourceTap = new DirectoryTap(new KryoScheme(fields), srcDir, SinkMode.KEEP);
         
         Pipe p = new Pipe("pipe");
         
-        // Create a sink where we're only writing out one of the fields.
-        Tap sinkTap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, new Fields("value")), dstFile, SinkMode.REPLACE);
+        // Create a sink where we're writing out a subset of the fields, in a different order.
+        Tap sinkTap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, new Fields("index", "value")), dstFile, SinkMode.REPLACE);
         Flow f = new LocalFlowConnector().connect(sourceTap, sinkTap, p);
         f.complete();
         
         // Verify we have expected output
-        Tap validationTap = new DirectoryTap(new KryoScheme(new Fields("value")), dstFile);
+        Tap validationTap = new DirectoryTap(new KryoScheme(new Fields("index", "value")), dstFile);
         TupleEntryIterator iter = validationTap.openForRead(new LocalFlowProcess());
         
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
-        assertEquals("11", te.getString("value"));
+        assertEquals(1, te.getInteger("index"));
+        assertEquals(11, te.getInteger("value"));
         
         assertTrue(iter.hasNext());
         te = iter.next();
+        assertEquals(2, te.getInteger("index"));
         assertEquals(12, te.getInteger("value"));
         
         assertTrue(iter.hasNext());
         te = iter.next();
+        assertEquals(3, te.getInteger("index"));
         assertEquals(21, te.getInteger("value"));
         
         assertFalse(iter.hasNext());
@@ -270,6 +275,58 @@ public class KryoSchemeTest {
         } catch (Exception e) {
             // expected
         }
+        
+    }
+
+    @Test
+    public void testFieldReordering() throws Exception {
+        final String srcDir = "build/test/KryoSchemeTest/testFieldReordering/src";
+        final String dstFile = "build/test/KryoSchemeTest/testFieldReordering/dst";
+        
+        // Create a local tap that uses the KryoScheme
+        Fields fields = new Fields("key", "value");
+        
+        Tap tap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, fields), srcDir, SinkMode.REPLACE);
+        TupleEntryCollector writer = tap.openForWrite(new LocalFlowProcess());
+        
+        writer.add(new Tuple("key1", 11));
+        writer.add(new Tuple("key1", 12));
+        writer.add(new Tuple("key2", 21));
+        writer.close();
+
+        Tap sourceTap = new DirectoryTap(new KryoScheme(fields), srcDir, SinkMode.KEEP);
+        
+        Pipe p = new Pipe("pipe");
+        p = new Rename(p, new Fields("key"), new Fields("kee"));
+        p = TupleLogger.makePipe(p, true);
+        
+        // Create a sink where we're writing out the fields in a different order.
+        Tap sinkTap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, new Fields("kee", "value")), dstFile, SinkMode.REPLACE);
+        Flow f = new LocalFlowConnector().connect(sourceTap, sinkTap, p);
+        f.complete();
+        
+        // Verify we have expected output
+        Tap validationTap = new DirectoryTap(new KryoScheme(new Fields("kee", "value")), dstFile);
+        TupleEntryIterator iter = validationTap.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("key1", te.getString("kee"));
+        assertEquals(11, te.getInteger("value"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key1", te.getString("kee"));
+        assertEquals(12, te.getInteger("value"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key2", te.getString("kee"));
+        assertEquals(21, te.getInteger("value"));
+        
+        assertFalse(iter.hasNext());
+        
+        iter.close();
         
     }
 
