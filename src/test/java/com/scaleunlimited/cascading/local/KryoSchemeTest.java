@@ -300,8 +300,10 @@ public class KryoSchemeTest {
         p = new Rename(p, new Fields("key"), new Fields("kee"));
         p = TupleLogger.makePipe(p, true);
         
-        // Create a sink where we're writing out the fields in a different order.
-        Tap sinkTap = new DirectoryTap(new KryoScheme(Fields.UNKNOWN, new Fields("kee", "value")), dstFile, SinkMode.REPLACE);
+        // Create a sink where we're writing out the fields in a different order. We also
+        // test that we handle getting passed a single field when we're being used as a
+        // sink (implicitly used for both source & sink).
+        Tap sinkTap = new DirectoryTap(new KryoScheme(new Fields("kee", "value")), dstFile, SinkMode.REPLACE);
         Flow f = new LocalFlowConnector().connect(sourceTap, sinkTap, p);
         f.complete();
         

@@ -28,7 +28,7 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     private static final Logger LOGGER = Logger.getLogger(KryoScheme.class);
     
     public KryoScheme(Fields sourceFields) {
-        super(sourceFields);
+        super(sourceFields, sourceFields);
     }
     
     public KryoScheme(Fields sourceFields, Fields sinkFields) {
