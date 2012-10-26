@@ -1,21 +1,14 @@
 package com.scaleunlimited.cascading;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.FlowCounters;
-import com.scaleunlimited.cascading.NullContext;
-import com.scaleunlimited.cascading.NullSinkTap;
-import com.scaleunlimited.cascading.local.DirectoryTap;
-import com.scaleunlimited.cascading.local.KryoScheme;
-
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
@@ -27,7 +20,6 @@ import cascading.operation.FilterCall;
 import cascading.operation.expression.ExpressionFilter;
 import cascading.operation.state.Counter;
 import cascading.pipe.Each;
-import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.pipe.assembly.SumBy;
 import cascading.scheme.hadoop.SequenceFile;
@@ -37,6 +29,9 @@ import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
+
+import com.scaleunlimited.cascading.local.DirectoryTap;
+import com.scaleunlimited.cascading.local.KryoScheme;
 
 
 public class FlowCountersTest {
@@ -55,6 +50,7 @@ public class FlowCountersTest {
     @SuppressWarnings("serial")
     private static class CountTuplesFunction extends BaseOperation<NullContext> implements Filter<NullContext> {
         
+        @SuppressWarnings("rawtypes")
         @Override
         public boolean isRemove(FlowProcess flowProcess, FilterCall<NullContext> filterCall) {
             flowProcess.increment(FlowCountersTestEnum.TUPLE_COUNT, 1);
@@ -62,8 +58,16 @@ public class FlowCountersTest {
         }
     }
     
-    @SuppressWarnings("deprecation")
     @Test
+    public void testGetCounterKey() throws Throwable {
+        assertEquals(   FlowCountersTestEnum.class.getName() + "." + FlowCountersTestEnum.TUPLE_COUNT.name(),
+                        FlowCounters.getCounterKey(FlowCountersTestEnum.TUPLE_COUNT));
+        assertEquals(   "group.counter", 
+                        FlowCounters.getCounterKey("group", "counter"));
+    }
+    
+    @Test
+    @SuppressWarnings("rawtypes")
     public void testCounters() throws Throwable {
         final Fields testFields = new Fields("user", "value");
         
@@ -90,12 +94,13 @@ public class FlowCountersTest {
         Map<Enum, Long> counters = FlowCounters.run(flow, FlowCountersTestEnum.TUPLE_COUNT,
                         FlowCountersTestEnum.UNUSED_COUNT);
         
-        Assert.assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.TUPLE_COUNT));
-        Assert.assertEquals(0, (long)counters.get(FlowCountersTestEnum.UNUSED_COUNT));
-        Assert.assertNull(counters.get(FlowCountersTestEnum.BOGUS_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.TUPLE_COUNT));
+        assertEquals(0, (long)counters.get(FlowCountersTestEnum.UNUSED_COUNT));
+        assertNull(counters.get(FlowCountersTestEnum.BOGUS_COUNT));
     }
     
     @Test
+    @SuppressWarnings("rawtypes")
     public void testCountersWithLocalMode() throws Exception {
         
         // We want to create a Flow with two tail pipes, and have each of the
@@ -143,9 +148,9 @@ public class FlowCountersTest {
         Map<Enum, Long> counters = FlowCounters.run(flow, FlowCountersTestEnum.PRE_BREAK_COUNT, FlowCountersTestEnum.POST_BREAK_COUNT,
                         FlowCountersTestEnum.LEFT_COUNT, FlowCountersTestEnum.RIGHT_COUNT);
         
-        Assert.assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
-        Assert.assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
-        Assert.assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
-        Assert.assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
+        assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
+        assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
     }
 }

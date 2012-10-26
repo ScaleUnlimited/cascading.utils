@@ -27,6 +27,7 @@ import cascading.flow.Flow;
 import cascading.stats.FlowStats;
 import cascading.stats.FlowStepStats;
 
+@SuppressWarnings("rawtypes")
 public class FlowCounters {
     static final Logger LOGGER = Logger.getLogger(FlowCounters.class);
 
@@ -39,7 +40,6 @@ public class FlowCounters {
      * @param counters Which counters to return in the map.
      * @return Map of counter enum to counts.
      */
-    @SuppressWarnings("unchecked")
     public static Map<Enum, Long> run(Flow flow, Enum... counters) {
 
         flow.complete();
@@ -73,6 +73,17 @@ public class FlowCounters {
         return result;
     }
     
+    // This is how LocalStepStats.increment(Enum) and LocalStepStats.getCounterValue(Enum)
+    // are currently implemented and seems to match the Hadoop internal implementation as well.
+    public static String getCounterKey(Enum counter) {
+        return counter.getDeclaringClass().getName() + "." + counter.name();
+    }
+    
+    // This is how we store grouped counters in the map returned by getCounters.
+    public static String getCounterKey(String groupName, String counterName) {
+        return groupName + "." + counterName;
+    }
+    
     // TODO Use this routine with the above code? Would need to map from Enum to name,
     // compare against what we get back here.
     public static Map<String, Long> getCounters(Flow flow) {
@@ -87,7 +98,7 @@ public class FlowCounters {
                 Collection<String> counters = stepStat.getCountersFor(counterGroup);
                 for (String counter : counters) {
                     long counterValue = stepStat.getCounterValue(counterGroup, counter);
-                    String counterKey = counterGroup + "." + counter;
+                    String counterKey = getCounterKey(counterGroup, counter);
                     if (result.containsKey(counterKey)) {
                         LOGGER.warn("Multiple steps in flow are returning the same counter: " + counterKey);
                         counterValue += result.get(counterKey);
