@@ -28,12 +28,12 @@ public abstract class BasePlatform {
     
     protected Map<Object, Object> _props;
     
-    public BasePlatform() {
+    public BasePlatform(Class applicationJarClass) {
         _props = new Properties();
         
         // We assume that this is getting called from some main() method, so Cascading
         // can find the application main class.
-        AppProps.setApplicationJarClass(_props, BasePlatform.class);
+        AppProps.setApplicationJarClass(_props, applicationJarClass);
     }
     
     public void setProperty(String name, String value) {

@@ -18,8 +18,8 @@ import com.scaleunlimited.cascading.BasePlatform;
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class LocalPlatform extends BasePlatform {
 
-    public LocalPlatform() {
-        super();
+    public LocalPlatform(Class applicationJarClass) {
+        super(applicationJarClass);
     }
     
     @Override

@@ -20,7 +20,7 @@ public class HadoopPlatformTest {
         FileUtils.deleteDirectory(targetDirFile);
         assertFalse(targetDirFile.exists());
         
-        BasePlatform platform = new HadoopPlatform();
+        BasePlatform platform = new HadoopPlatform(HadoopPlatformTest.class);
         
         BasePath path = platform.makePath(targetDirname);
         assertEquals(targetDirname, path.getPath());

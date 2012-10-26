@@ -22,7 +22,7 @@ public class LocalPlatformTest {
         FileUtils.deleteDirectory(targetDirFile);
         assertFalse(targetDirFile.exists());
         
-        BasePlatform platform = new LocalPlatform();
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         
         BasePath path = platform.makePath(targetDirname);
         assertEquals(targetDirname, path.getPath());

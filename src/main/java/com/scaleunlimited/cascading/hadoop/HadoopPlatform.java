@@ -29,12 +29,12 @@ public class HadoopPlatform extends BasePlatform {
 
     private JobConf _conf;
     
-    public HadoopPlatform() {
-        this(new JobConf());
+    public HadoopPlatform(Class applicationJarClass) {
+        this(applicationJarClass, new JobConf());
     }
     
-    public HadoopPlatform(JobConf jobConf) {
-        super();
+    public HadoopPlatform(Class applicationJarClass, JobConf jobConf) {
+        super(applicationJarClass);
         
         _conf = jobConf;
     }
