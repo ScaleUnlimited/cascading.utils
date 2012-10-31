@@ -56,19 +56,16 @@ public class HadoopUtils {
      * @throws IOException
      * @throws InterruptedException
      */
-    @SuppressWarnings("deprecation")
     public static int getNumReducers(JobConf conf) throws IOException, InterruptedException {
         ClusterStatus status = safeGetClusterStatus(conf);
         return status.getMaxReduceTasks();
     }
     
-    @SuppressWarnings("deprecation")
     public static int getTaskTrackers(JobConf conf) throws IOException, InterruptedException {
         ClusterStatus status = safeGetClusterStatus(conf);
         return status.getTaskTrackers();
     }
     
-    @SuppressWarnings("deprecation")
     public static JobConf getDefaultJobConf() throws IOException, InterruptedException {
         JobConf conf = new JobConf();
         
