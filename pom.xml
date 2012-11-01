@@ -23,7 +23,7 @@
 	<artifactId>cascading.utils</artifactId>
 	<name>Bixo Labs Utilities for Cascading</name>
 	<packaging>jar</packaging>
-	<version>1.2-SNAPSHOT</version>
+	<version>1.2</version>
 	<repositories>
 		<repository>
 			<id>BixoLabs</id>
@@ -52,14 +52,6 @@
             <version>1.2.1</version>
         </dependency>
          
-        <!-- 
-        <dependency>
-			<groupId>cascading</groupId>
-			<artifactId>cascading-hadoop</artifactId>
-			<version>2.0.0-wip-142</version>
-        </dependency>
-         -->
-
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
@@ -83,18 +75,21 @@
             <artifactId>log4j</artifactId>
             <version>1.2.14</version>
         </dependency>
+        
 		<dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.7</version>
             <scope>test</scope>
         </dependency>
+        
 		<dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>1.8.0</version>
             <scope>test</scope>
         </dependency>
+        
 		<dependency>
             <groupId>ant-eclipse</groupId>
             <artifactId>ant-eclipse-jvm1.2</artifactId>

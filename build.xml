@@ -60,13 +60,22 @@
         </artifact:dependencies>
     </target>
 
-    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="mvn-init">
+    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="jar">
         <artifact:install file="${build.dir}/${jar.name}">
             <pom refid="maven.project"/>
         </artifact:install>
     </target>
 
-	
+    <target name="mvn-deploy" xmlns:artifact="urn:maven-artifact-ant" depends="jar">
+        <artifact:deploy file="${build.dir}/${jar.name}">
+            
+            <remoteRepository id="conjars" url="http://conjars.org/repo">
+            </remoteRepository>
+            
+            <pom refid="maven.project"/>
+        </artifact:deploy>
+    </target>
+
 	<!-- ================================================================== -->
 	<!-- Build sources                                                      -->
 	<!-- ================================================================== -->
@@ -194,29 +203,17 @@
     <!-- ================================================================== -->
 
     <target name="install"
-            depends="jar, mvn-install"
+            depends="mvn-install"
             description="--> install SNAPSHOT jar to local repository">
     </target>
 
     <!-- ================================================================== -->
-    <!-- Deploy to Conjars repository (requires $ANT_HOME/lb/ant-jsch.jar)  -->
+    <!-- Deploy to Conjars repository                                       -->
     <!-- ================================================================== -->
 
     <target name="deploy"
-            depends="jar"
-            description="--> deploy jar to Conjars repository (requires $ANT_HOME/lb/ant-jsch.jar)">
-        <condition property="deploy.private.key.file" 
-        	value="${deploy.private.key.file}" 
-        	else="${user.home}/.ssh/id_rsa_bixolabs">
-            <isset property="deploy.private.key.file"/>
-        </condition>
-    	<scp remoteTodir="${deploy.remoteToDir}"
-    		keyfile="${deploy.private.key.file}">
-            <fileset>
-                <include name="pom.xml"/>
-                <include name="${build.dir}/${jar.name}"/>
-            </fileset>
-    	</scp>
+            depends="mvn-deploy"
+            description="--> deploy jar to Conjars repository">
     </target>
 
 	<!-- ================================================================== -->
