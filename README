@@ -3,7 +3,7 @@ Introduction
 ===============================
 
 cascading.utils is an open source set of utilities for Cascading workflows that we
-use here at Bixo Labs for the Bixo Java web mining toolkit and other projects.
+use here at Scale Unlimited for the Bixo Java web mining toolkit and other projects.
 There are classes that wrap Cascading Tuples with "datum" objects, a few utility classes
 such as TupleLogger and SplitterAssembly, some classes to help monitor running
 workflows, etc.
@@ -37,5 +37,4 @@ To create Eclipse project files:
 % ant eclipse
 
 Then, from Eclipse follow the standard procedure to import an existing Java project into your Workspace.
-
 
