@@ -2,6 +2,8 @@ package com.scaleunlimited.cascading;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.assertFalse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -64,6 +66,21 @@ public class FlowCountersTest {
                         FlowCounters.getCounterKey(FlowCountersTestEnum.TUPLE_COUNT));
         assertEquals(   "group.counter", 
                         FlowCounters.getCounterKey("group", "counter"));
+    }
+    
+    @Test
+    public void testIsCounterKeyInGroup() throws Throwable {
+        assertTrue(FlowCounters.isCounterKeyInGroup("group.counter", "group"));
+        assertFalse(FlowCounters.isCounterKeyInGroup("group.counter", "group.counter"));
+    }
+    
+    @Test
+    public void testGetCounterNameFromCounterKey() throws Throwable {
+        assertEquals(   "counter",
+                        FlowCounters.getCounterNameFromCounterKey(  "group.counter",
+                                                                    "group"));
+        assertNull(FlowCounters.getCounterNameFromCounterKey(   "group.counter", 
+                                                                "group.counter"));
     }
     
     @Test

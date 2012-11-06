@@ -29,13 +29,11 @@ public class FlowResult {
     
     public Map<String, Long> getGroupCounterValues(String group) {
         Map<String, Long>result = new HashMap<String, Long>();
-        String groupCounterKeyPrefix = FlowCounters.getCounterKey(group, "");
-        int prefixLength = groupCounterKeyPrefix.length();
         for (Entry<String, Long> entry : _counters.entrySet()) {
-            String counterKey = entry.getKey();
-            if (counterKey.startsWith(groupCounterKeyPrefix)) {
-                String counterKeySuffix = counterKey.substring(prefixLength);
-                result.put(counterKeySuffix, entry.getValue());
+            String counterName = 
+                FlowCounters.getCounterNameFromCounterKey(entry.getKey(), group);
+            if (counterName != null) {
+                result.put(counterName, entry.getValue());
             }
         }
         return result;

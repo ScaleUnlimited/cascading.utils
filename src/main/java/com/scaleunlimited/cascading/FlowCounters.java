@@ -76,12 +76,25 @@ public class FlowCounters {
     // This is how LocalStepStats.increment(Enum) and LocalStepStats.getCounterValue(Enum)
     // are currently implemented and seems to match the Hadoop internal implementation as well.
     public static String getCounterKey(Enum counter) {
-        return counter.getDeclaringClass().getName() + "." + counter.name();
+        return getCounterKey(counter.getDeclaringClass().getName(), counter.name());
     }
     
     // This is how we store grouped counters in the map returned by getCounters.
     public static String getCounterKey(String groupName, String counterName) {
         return groupName + "." + counterName;
+    }
+    
+    public static boolean isCounterKeyInGroup(String counterKey, String groupName) {
+        return (counterKey.startsWith(getCounterKey(groupName, "")));
+    }
+    
+    public static String getCounterNameFromCounterKey(String counterKey, String groupName) {
+        String groupCounterKeyPrefix = getCounterKey(groupName, "");
+        if (counterKey.startsWith(groupCounterKeyPrefix)) {
+            int prefixLength = groupCounterKeyPrefix.length();
+            return counterKey.substring(prefixLength);
+        }
+        return null;
     }
     
     // TODO Use this routine with the above code? Would need to map from Enum to name,
