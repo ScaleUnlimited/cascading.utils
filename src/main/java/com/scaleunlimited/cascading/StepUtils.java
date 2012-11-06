@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import cascading.flow.planner.BaseFlowStep;
+import cascading.flow.planner.NamingFlowStep;
 import cascading.operation.Operation;
 import cascading.pipe.Group;
 import cascading.stats.FlowStepStats;
@@ -30,8 +31,7 @@ public class StepUtils {
     private static final Pattern DEFAULT_OPERATION_NAME_PATTERN =
         Pattern.compile("(.+)\\[.+\\]");
 
-    @SuppressWarnings("unchecked")
-    public static long safeGetCounter(FlowStepStats stepStats, Enum counter) {
+    public static long safeGetCounter(FlowStepStats stepStats, Enum<?> counter) {
         try {
             return stepStats.getCounterValue(counter);
         } catch (NullPointerException e) {
@@ -44,12 +44,7 @@ public class StepUtils {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void nameFlowStep(BaseFlowStep step) {
-        
         Group group = step.getGroup();
-        
-        // Here's a version of the line above that works with Cascading 1.1.1:
-        //
-        // Group group = step.group;
         
         String stepName = "";
         if (group == null) {
@@ -62,6 +57,7 @@ public class StepUtils {
                 }
                 stepName = stepName + operationName + "+";
             }
+            
             if (operations.size() > 0) {
                 stepName = stepName.substring(0, stepName.length()-1);
             }
@@ -69,7 +65,8 @@ public class StepUtils {
             stepName = group.getName();
         }
         
-        // TODO figure out how to do this, if needed
-        // step.setFlowName(stepName);
+        // setName exists, but it's protected. So we use our special class that's in the
+        // same package, to work around this.
+        NamingFlowStep.setName(step, stepName);
     }
 }

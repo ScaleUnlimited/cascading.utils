@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2012 TransPac Software, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.scaleunlimited.cascading;
 
 import java.util.List;
 
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.kohsuke.args4j.CmdLineException;
@@ -25,6 +26,7 @@ import org.kohsuke.args4j.CmdLineParser;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowStep;
+import cascading.flow.planner.BaseFlowStep;
 
 public class BaseTool {
 
@@ -51,8 +53,15 @@ public class BaseTool {
         return getBaseDotFileName(options) + "-" + suffix + ".dot";
     }
     
+    @SuppressWarnings("rawtypes")
     protected static void nameFlowSteps(Flow flow) {
-        // TODO make this name the flow steps, if needed.
+        List<FlowStep> steps = flow.getFlowSteps();
+        
+        for (FlowStep step : steps) {
+            if (step instanceof BaseFlowStep) {
+                StepUtils.nameFlowStep((BaseFlowStep)step);
+            }
+        }
     }
     
     protected static CmdLineParser parse(String[] args, BaseOptions options) {
