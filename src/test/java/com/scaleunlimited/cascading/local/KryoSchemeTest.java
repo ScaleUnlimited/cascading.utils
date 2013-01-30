@@ -34,6 +34,18 @@ import cascading.tuple.TupleEntryIterator;
 
 public class KryoSchemeTest {
 
+    private static class MyIntClass {
+        private int _value;
+        
+        public MyIntClass(int value) {
+            _value = value;
+        }
+        
+        public int getValue() {
+            return _value;
+        }
+    }
+    
     private static class MyWritable implements Writable {
         private Object _value;
         
@@ -168,6 +180,50 @@ public class KryoSchemeTest {
         mw = (MyWritable)te.getObject("value");
         assertNotNull(mw);
         assertEquals(2, mw.getValue());
+        
+        assertFalse(iter.hasNext());
+        
+        iter.close();
+    }
+    
+    @Test
+    public void testCustomClassNoEmptyConstructor() throws Exception {
+        final String targetDir = "build/test/KryoSchemeTest/testCustomClassNoEmptyConstructor";
+        
+        // Create a local tap that uses the KryoScheme
+        Fields fields = new Fields("key", "value");
+        
+        Tap out = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryCollector writer = out.openForWrite(new LocalFlowProcess());
+        
+        writer.add(new Tuple("key1", new MyIntClass(1)));
+        writer.add(new Tuple("key1", new MyIntClass(1)));
+        writer.add(new Tuple("key2", new MyIntClass(2)));
+        writer.close();
+        
+        Tap in = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryIterator iter = in.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("key1", te.getString("key"));
+        MyIntClass mic = (MyIntClass)te.getObject("value");
+        assertNotNull(mic);
+        assertEquals(1, mic.getValue());
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key1", te.getString("key"));
+        mic = (MyIntClass)te.getObject("value");
+        assertNotNull(mic);
+        assertEquals(1, mic.getValue());
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key2", te.getString("key"));
+        mic = (MyIntClass)te.getObject("value");
+        assertNotNull(mic);
+        assertEquals(2, mic.getValue());
         
         assertFalse(iter.hasNext());
         

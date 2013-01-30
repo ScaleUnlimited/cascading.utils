@@ -9,6 +9,12 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
+import cascading.scheme.Scheme;
+import cascading.tap.Tap;
+import cascading.tuple.Fields;
+import cascading.tuple.Tuple;
+import cascading.tuple.TupleEntryCollector;
+
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
 
@@ -51,6 +57,24 @@ public class LocalPlatformTest {
         
         assertTrue(subDirFile.exists());
         assertTrue(subDirFile.isDirectory());
+    }
+    
+    private static BasePlatform makePlatform(boolean testing) {
+        return new LocalPlatform(LocalPlatformTest.class);
+    }
+    
+    @Test
+    public void testBinaryScheme() throws Exception {
+        boolean testing = true;
+        BasePlatform platform = makePlatform(testing);
+        final String targetDirname = "build/test/LocalPlatformTest/testPathCreation";
+        BasePath path = platform.makePath(targetDirname);
+
+        Scheme scheme = platform.makeBinaryScheme(new Fields("name", "age"));
+        Tap tap = platform.makeTap(scheme, path);
+        TupleEntryCollector writer = tap.openForWrite(platform.makeFlowProcess());
+        writer.add(new Tuple("ken", 37));
+        writer.close();
     }
 
 }

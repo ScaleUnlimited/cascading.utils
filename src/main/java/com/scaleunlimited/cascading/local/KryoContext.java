@@ -2,6 +2,8 @@ package com.scaleunlimited.cascading.local;
 
 import java.io.Serializable;
 
+import org.objenesis.strategy.StdInstantiatorStrategy;
+
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 
@@ -47,6 +49,9 @@ public class KryoContext implements Serializable {
         
         // Register tuple class so storage is more efficient (no full class names).
         _kryo.register(Tuple.class);
+        
+        // Support for custom classes w/o empty constructor
+        _kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
     }
     
     public void serialize(Tuple t) {
