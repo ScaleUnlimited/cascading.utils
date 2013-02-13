@@ -99,8 +99,25 @@
 		</javac>
 	</target>
 
+	  <target name="dc-init" depends="compile, compile-test">
+	      <!-- We need to set up the classpath with jars we're
+	           using (from compile.claspath), our DatumCompilter
+	           (from build.dir.main-classes), and the test
+	           class that we're using as the input to our test
+	           (from build.dir.test-classes). Normally the
+	           caller would just need the compile and main classes
+	           directory. -->
+          <path id="datacompiler.classpath">
+              <path refid="compile.classpath" />
+  			  <pathelement location="${build.dir.main-classes}" />
+  			  <pathelement location="${build.dir.test-classes}" />
+          </path>
 
-
+	    <taskdef name="dc" 
+	             classname="com.scaleunlimited.cascading.DatumCompilerAntTask"
+	             classpathref="datacompiler.classpath" />
+	  </target>
+	
 	<!-- ================================================================== -->
 	<!-- Unit Tests                                                         -->
 	<!-- ================================================================== -->
@@ -172,6 +189,39 @@
 		<fail if="tests.failed">Unit tests failed!</fail>
 	</target>
 
+	<!-- ================================================================== -->
+	<!-- Datum Compiler Tests                                               -->
+	<!-- ================================================================== -->
+
+	<target name="datum-compile" depends="dc-init, compile-test">
+		<mkdir dir="build/generated" />
+
+	    <dc classname="com.scaleunlimited.cascading.SomeDatumTemplateTest" srcDir="build/generated" />
+	</target>
+		
+	<target name="datum-test" depends="datum-compile">
+		<echo>*** Building Unit Tests Sources ***</echo>
+		<mkdir dir="build/generated-classes" />
+		<path id="test.path">
+			<pathelement location="${build.dir.main-classes}" />
+		</path>
+
+		<javac encoding="${build.encoding}"
+		       srcdir="build/generated"
+		       includes="**/*.java"
+		       destdir="build/generated-classes"
+		       debug="${javac.debug}"
+		       optimize="${javac.optimize}"
+		       target="${javac.version}"
+		       source="${javac.version}"
+		       includeantruntime="false"
+		       deprecation="${javac.deprecation}">
+			<compilerarg line="${javac.args} ${javac.args.warnings}" />
+			<classpath refid="test.classpath" />
+			<classpath refid="test.path" />
+		</javac>
+	</target>
+		
 
 	<!-- ================================================================== -->
 	<!-- Build jar                                               -->
