@@ -35,6 +35,7 @@ import cascading.scheme.SourceCall;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tuple.Fields;
+import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
@@ -199,7 +200,9 @@ public class InMemoryTap extends Tap<Properties, InputStream, OutputStream> {
         @Override
         public void sink(FlowProcess<Properties> flowProcess, SinkCall<NullContext, OutputStream> sinkCall) throws IOException {
             List<TupleEntry> list = (List<TupleEntry>)sinkCall.getOutput();
-            list.add(new TupleEntry(getSinkFields(), sinkCall.getOutgoingEntry().getTuple()));
+            
+            // we have to clone the Tuple, so the caller can re-use it.
+            list.add(new TupleEntry(getSinkFields(), new Tuple(sinkCall.getOutgoingEntry().getTuple())));
         }
     }
     
