@@ -6,12 +6,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.log4j.Logger;
 
 import com.scaleunlimited.cascading.BasePath;
 
 public class HadoopPath extends BasePath {
     private static final Logger LOGGER = Logger.getLogger(HadoopPath.class);
+
+    private static final String DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX = "_$folder$";
+
+    private static final long S3_DELETION_LATENCY_MILLISECONDS = 10 * 1000L;
     
     private Configuration _conf;
     private Path _hadoopPath;
@@ -100,8 +105,54 @@ public class HadoopPath extends BasePath {
     @Override
     public boolean delete(boolean isRecursive) {
         try {
-            return _hadoopFS.delete(_hadoopPath, isRecursive);
-        } catch (IOException e) {
+            
+            // Try really hard to make things easy for S3 folder deletions
+            // by ensuring that folder names always end with a slash.
+            Path parentPath = _hadoopPath.getParent();
+            String targetName = _hadoopPath.getName();
+            Path targetPath = _hadoopPath;
+            boolean isFolder = !(_hadoopFS.isFile(targetPath));
+            if  (   isFolder
+                &&  (!(targetName.endsWith(Path.SEPARATOR)))) {
+                targetName = targetName + Path.SEPARATOR;
+                targetPath = new Path(parentPath, targetName);
+                
+            }
+            boolean result = _hadoopFS.delete(targetPath, isRecursive);
+            
+            // Apparently, a folder delete in S3 can return true, even though
+            // the folder might still exist. :(
+            if (result) {
+                
+                // Give S3 some time to finish deleting the object so we
+                // won't think the deletion failed when it actually
+                // succeeded.
+                if (_hadoopFS instanceof S3FileSystem) {
+                    Thread.sleep(S3_DELETION_LATENCY_MILLISECONDS);
+                }
+                
+                // Ensure that the special folder file associated with
+                // (i.e., defining) S3 "folders" is always deleted as well.
+                if  (   isFolder
+                    &&  (_hadoopFS instanceof S3FileSystem)) {
+                    String folderMarkerFileName =
+                        (   targetName.substring(0, targetName.length()-1)
+                        +   DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX);
+                    Path folderMarkerPath = 
+                        new Path(parentPath, folderMarkerFileName);
+                    if (_hadoopFS.exists(folderMarkerPath)) {
+                        _hadoopFS.delete(folderMarkerPath, false);
+                    }
+                }
+                if (exists()) {
+                    return false;
+                }
+            }
+            
+            // Pass the result of the target deletion on to the caller
+            return result;
+            
+        } catch (Exception e) {
             LOGGER.error("Exception deleting Hadoop path: " + e.getMessage(), e);
             return false;
         }
