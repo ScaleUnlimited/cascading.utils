@@ -16,7 +16,8 @@ public class HadoopPath extends BasePath {
 
     private static final String DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX = "_$folder$";
 
-    private static final long S3_DELETION_LATENCY_MILLISECONDS = 10 * 1000L;
+    private static final long S3_DELETION_LATENCY_MILLISECONDS = 5 * 60 * 1000L;
+    private static final long S3_DELETION_RETRY_MILLISECONDS = 10 * 1000L;
     
     private Configuration _conf;
     private Path _hadoopPath;
@@ -125,25 +126,43 @@ public class HadoopPath extends BasePath {
             if (result) {
                 
                 // Give S3 some time to finish deleting the object so we
-                // won't think the deletion failed when it actually
-                // succeeded.
+                // won't think the deletion failed when it is really going to
+                // succeed soon.
                 if (_hadoopFS instanceof S3FileSystem) {
-                    Thread.sleep(S3_DELETION_LATENCY_MILLISECONDS);
-                }
-                
-                // Ensure that the special folder file associated with
-                // (i.e., defining) S3 "folders" is always deleted as well.
-                if  (   isFolder
-                    &&  (_hadoopFS instanceof S3FileSystem)) {
-                    String folderMarkerFileName =
-                        (   targetName.substring(0, targetName.length()-1)
-                        +   DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX);
-                    Path folderMarkerPath = 
-                        new Path(parentPath, folderMarkerFileName);
-                    if (_hadoopFS.exists(folderMarkerPath)) {
-                        _hadoopFS.delete(folderMarkerPath, false);
+                    long shouldBeCompleteTime = System.currentTimeMillis();
+                    while (exists()) {
+                        long extraTime =    (   System.currentTimeMillis()
+                                            -   shouldBeCompleteTime);
+                        if (extraTime > S3_DELETION_LATENCY_MILLISECONDS) {
+                            String message = 
+                                String.format(  "I have patiently waited %d seconds, but S3 still has not finished deleting %s - aborting!",
+                                                (extraTime / 1000),
+                                                _hadoopPath);
+                            LOGGER.error(message);
+                            return false;
+                        }
+                        String message = 
+                            String.format(  "S3 still has not finished deleting %s after %d seconds, continuing to wait...",
+                                            _hadoopPath,
+                                            (extraTime / 1000));
+                        LOGGER.error(message);
+                        Thread.sleep(S3_DELETION_RETRY_MILLISECONDS);
+                    }
+                    
+                    // Ensure that the special folder file associated with
+                    // (i.e., defining) S3 "folders" is always deleted as well.
+                    if (isFolder) {
+                        String folderMarkerFileName =
+                            (   targetName.substring(0, targetName.length()-1)
+                            +   DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX);
+                        Path folderMarkerPath = 
+                            new Path(parentPath, folderMarkerFileName);
+                        if (_hadoopFS.exists(folderMarkerPath)) {
+                            _hadoopFS.delete(folderMarkerPath, false);
+                        }
                     }
                 }
+                
                 if (exists()) {
                     return false;
                 }
