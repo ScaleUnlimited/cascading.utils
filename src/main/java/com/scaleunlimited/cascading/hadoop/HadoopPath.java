@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
+import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
 import org.apache.log4j.Logger;
 
 import com.scaleunlimited.cascading.BasePath;
@@ -128,7 +129,8 @@ public class HadoopPath extends BasePath {
                 // Give S3 some time to finish deleting the object so we
                 // won't think the deletion failed when it is really going to
                 // succeed soon.
-                if (_hadoopFS instanceof S3FileSystem) {
+                if  (   (_hadoopFS instanceof S3FileSystem)
+                    ||  (_hadoopFS instanceof NativeS3FileSystem)) {
                     long shouldBeCompleteTime = System.currentTimeMillis();
                     while (exists()) {
                         long extraTime =    (   System.currentTimeMillis()
@@ -158,14 +160,31 @@ public class HadoopPath extends BasePath {
                         Path folderMarkerPath = 
                             new Path(parentPath, folderMarkerFileName);
                         if (_hadoopFS.exists(folderMarkerPath)) {
-                            _hadoopFS.delete(folderMarkerPath, false);
+                            boolean folderMarkerDeleteResult =
+                                _hadoopFS.delete(folderMarkerPath, false);
+                            String message = 
+                                String.format(  "Extra [Native]S3FileSystem.delete of %s returned %s",
+                                                folderMarkerPath,
+                                                folderMarkerDeleteResult);
+                            LOGGER.info(message);
                         }
                     }
                 }
                 
                 if (exists()) {
+                    String message = 
+                        String.format(  "FileSystem.delete of %s returned true but exists still returns true",
+                                        _hadoopPath);
+                    LOGGER.error(message);
                     return false;
                 }
+                
+            } else {
+                String message = 
+                    String.format(  "Initial FileSystem.delete of %s failed!",
+                                    _hadoopPath);
+                LOGGER.error(message);
+                return false;
             }
             
             // Pass the result of the target deletion on to the caller
