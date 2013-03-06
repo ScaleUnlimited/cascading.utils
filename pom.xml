@@ -1,5 +1,5 @@
 <!--
- * Copyright 2010-2012 Scale Unlimited.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 	<artifactId>cascading.utils</artifactId>
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
-	<version>2.1-SNAPSHOT</version>
+	<version>2.2-SNAPSHOT</version>
 	<repositories>
 		<repository>
 			<id>BixoLabs</id>
