@@ -39,7 +39,7 @@ public class HadoopPlatformTest {
         File subDirFile = new File(targetDirFile, "subdir");
 
         BasePath child = platform.makePath(path, "subdir");
-        assertEquals("subdir", child.getPath());
+        assertEquals(targetDirname + "/" + "subdir", child.getPath());
         assertEquals(subDirFile.toURI().toString(), child.getAbsolutePath());
         
         assertFalse(child.exists());

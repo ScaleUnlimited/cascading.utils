@@ -30,6 +30,11 @@ public class HadoopPathTest extends Assert {
         assertFalse(path.isFile());
         assertTrue(targetDirFile.exists());
         assertTrue(targetDirFile.isDirectory());
+        
+        // Now try out relative paths.
+        final String subdirName = "subdir";
+        BasePath subPath = new HadoopPath(path, subdirName);
+        assertEquals(targetDirname + "/subdir", subPath.getPath());
     }
 
 }

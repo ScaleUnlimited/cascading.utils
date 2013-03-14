@@ -48,7 +48,7 @@ public class HadoopPath extends BasePath {
     }
     
     public HadoopPath(BasePath parent, String subdir, Configuration conf) throws IOException {
-        this(subdir);
+        this(parent.getPath() + "/" + subdir);
         
         Path parentPath = new Path(parent.getAbsolutePath());
         _hadoopFS = parentPath.getFileSystem(conf);
