@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,15 +191,18 @@ public abstract class BaseDatum implements Serializable {
     /**
      * Create a unique field name
      * 
-     * Combines the class name and the user-defined field name
+     * Combines the class name and the user-defined field name. The format we use is
+     * "fnXXX_YYY", where XXX is the class name and YYY is the field name. This gives us
+     * names that are generally unique (so we avoid collisions in CoGroups), and are safe
+     * to use with expressions compiled by Janino (for ExpressionFunction and ExpressionFilter)
      * 
      * @param clazz
      * @param field
      * @return
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public static String fieldName(Class clazz, String field) {
-        return clazz.getSimpleName() + "-" + field;
+        return String.format("fn%s_%s", clazz.getSimpleName(), field);
     }
     
     @SuppressWarnings("unchecked")
