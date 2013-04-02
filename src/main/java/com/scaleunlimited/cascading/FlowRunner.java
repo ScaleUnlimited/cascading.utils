@@ -74,13 +74,28 @@ public class FlowRunner {
     }
     
     /**
+     * @return false if there is room to add at least one more flow.
+     */
+    public boolean isFull() {
+        
+        // Release any completed flows
+        isDone();
+        
+        return (_flowFutures.size() >= _maxFlows);
+    }
+    
+    /**
      * Return true if all of the flows are done running.
      * 
      * @return
      */
     public boolean isDone() {
-        for (FlowFuture ff : _flowFutures) {
-            if ((!ff.isDone())) {
+        Iterator<FlowFuture> iter = _flowFutures.iterator();
+        while (iter.hasNext()) {
+            FlowFuture ff = iter.next();
+            if (ff.isDone()) {
+                iter.remove();
+            } else {
                 return false;
             }
         }

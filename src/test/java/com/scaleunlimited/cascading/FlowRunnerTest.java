@@ -9,14 +9,9 @@ import java.util.concurrent.TimeoutException;
 
 import junit.framework.Assert;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.FlowFuture;
-import com.scaleunlimited.cascading.FlowRunner;
-
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
@@ -38,7 +33,7 @@ public class FlowRunnerTest {
         FILTER_REQUESTS,
     }
     
-    @SuppressWarnings({ "serial", "unchecked" })
+    @SuppressWarnings({ "serial", "rawtypes" })
     private static class MyFilter extends BaseOperation implements Filter {
 
         private boolean _fails;
@@ -132,11 +127,39 @@ public class FlowRunnerTest {
 
     }
     
+    @Test
+    public void testIsFull() throws Throwable {
+        
+        // TODO It would be better to test with a larger capacity, but it only
+        // runs one flow at a time in local mode.
+        
+        // An empty runner shouldn't be full.
+        FlowRunner fr = new FlowRunner(1);
+        Assert.assertFalse(fr.isFull());
+        
+        // There should be no room after we fill it up.
+        FlowFuture result0 = fr.addFlow(makeFlow(10, 0));
+        Assert.assertTrue(fr.isFull());
+        
+        // There should be room after the first flow finishes.
+        result0.get();
+        Assert.assertFalse(fr.isFull());
+
+        // There should be no room after we fill the empty slot.
+        fr.addFlow(makeFlow(10, 1));
+        Assert.assertTrue(fr.isFull());
+
+        // There should be room after everything completes.
+        fr.complete();
+        Assert.assertFalse(fr.isFull());
+    }
+    
+    @SuppressWarnings("rawtypes")
     private Flow makeFlow(int numDatums, int id) throws IOException {
         return makeFlow(numDatums, id, false);
     }
     
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("rawtypes")
     private Flow makeFlow(int numDatums, int id, boolean fails) throws IOException {
         final Fields testFields = new Fields("user", "value");
         
