@@ -49,7 +49,7 @@ public class HadoopPlatform extends BasePlatform {
     
     @Override
     public boolean isLocal() {
-        return HadoopUtils.isJobLocal(_conf);
+        return HadoopUtils.isJobLocal(HadoopUtil.createJobConf(_props, _conf));
     }
     
     @Override
@@ -61,7 +61,7 @@ public class HadoopPlatform extends BasePlatform {
     @Override
     public void setNumReduceTasks(int numReduceTasks) throws Exception {
         if (numReduceTasks == CLUSTER_REDUCER_COUNT) {
-            numReduceTasks = HadoopUtils.getNumReducers(_conf);
+            numReduceTasks = HadoopUtils.getNumReducers(HadoopUtil.createJobConf(_props, _conf));
         }
         
         _conf.setNumReduceTasks(numReduceTasks);
@@ -89,7 +89,9 @@ public class HadoopPlatform extends BasePlatform {
 
     @Override
     public FlowConnector makeFlowConnector() {
-        // Combine _props with JobConf
+        // Combine _props with JobConf. We want the user to call BasePlatform.setProperty to set
+        // all Cascading-specific properties, so we shouldn't get any key overlap between the
+        // Hadoop JobConf and the Cascading Properties.
         Map<Object, Object> hadoopProps = HadoopUtil.createProperties(_conf);
         Map<Object, Object> cascadingProps = new HashMap<Object, Object>(_props);
         
@@ -102,17 +104,17 @@ public class HadoopPlatform extends BasePlatform {
 
     @Override
     public FlowProcess makeFlowProcess() throws Exception {
-        return new HadoopFlowProcess(_conf);
+        return new HadoopFlowProcess(HadoopUtil.createJobConf(_props, _conf));
     }
     
     @Override
     public BasePath makePath(String path) throws IOException {
-        return new HadoopPath(path, _conf);
+        return new HadoopPath(path, HadoopUtil.createJobConf(_props, _conf));
     }
 
     @Override
     public BasePath makePath(BasePath parent, String subdir) throws IOException {
-        return new HadoopPath(parent, subdir, _conf);
+        return new HadoopPath(parent, subdir, HadoopUtil.createJobConf(_props, _conf));
     }
 
     @Override
