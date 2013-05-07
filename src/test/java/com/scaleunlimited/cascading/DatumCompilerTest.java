@@ -28,7 +28,6 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.codehaus.janino.DebuggingInformation;
 import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.JavaSourceClassLoader;
 import org.junit.Test;
@@ -67,8 +66,7 @@ public class DatumCompilerTest extends Assert {
         ClassLoader cl = new JavaSourceClassLoader(
                         this.getClass().getClassLoader(),  // parentClassLoader
                         new File[] { baseDir }, // optionalSourcePath
-                        (String) null,                     // optionalCharacterEncoding
-                        DebuggingInformation.NONE          // debuggingInformation
+                        (String) null                     // optionalCharacterEncoding
                     );
         
         
