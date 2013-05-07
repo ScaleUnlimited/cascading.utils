@@ -54,7 +54,6 @@ public class FlowCounters {
                 long counterValue = stepStat.getCounterValue(counter);
                 if (counterValue != 0) {
                     if (result.containsKey(counter)) {
-                        LOGGER.warn("Multiple steps in flow are returning the same counter: " + counter);
                         counterValue += result.get(counter);
                     }
 
@@ -113,7 +112,6 @@ public class FlowCounters {
                     long counterValue = stepStat.getCounterValue(counterGroup, counter);
                     String counterKey = getCounterKey(counterGroup, counter);
                     if (result.containsKey(counterKey)) {
-                        LOGGER.warn("Multiple steps in flow are returning the same counter: " + counterKey);
                         counterValue += result.get(counterKey);
                     }
                     

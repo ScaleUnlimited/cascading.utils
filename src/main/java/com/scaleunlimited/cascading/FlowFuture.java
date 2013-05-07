@@ -19,9 +19,10 @@ public class FlowFuture implements Future<FlowResult> {
     private static final long FLOW_SLEEP_TIME = 1 * 1000L;
     
     private Flow _flow;
-    private Throwable _flowException;
-    private boolean _canceled;
-    private boolean _done;
+    
+    private volatile Throwable _flowException;
+    private volatile boolean _canceled;
+    private volatile boolean _done;
     
     public FlowFuture(Flow flow) {
         _flow = flow;
@@ -79,6 +80,10 @@ public class FlowFuture implements Future<FlowResult> {
         return true;
     }
 
+    public Flow getFlow() {
+        return _flow;
+    }
+    
     @Override
     public FlowResult get() throws InterruptedException, ExecutionException {
         while (!_done) {

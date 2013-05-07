@@ -1,39 +1,276 @@
 package com.scaleunlimited.cascading;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.JobInProgress;
+import org.apache.hadoop.mapred.RunningJob;
+import org.apache.hadoop.mapred.TaskCompletionEvent;
 import org.apache.log4j.Logger;
 
 import com.scaleunlimited.cascading.hadoop.HadoopUtils;
 
 import cascading.flow.Flow;
+import cascading.flow.FlowStep;
+import cascading.stats.CascadingStats.Status;
+import cascading.stats.FlowStats;
+import cascading.stats.FlowStepStats;
+import cascading.stats.hadoop.HadoopSliceStats;
+import cascading.stats.hadoop.HadoopSliceStats.Kind;
+import cascading.stats.hadoop.HadoopStepStats;
+import cascading.stats.local.LocalStepStats;
 
 public class FlowRunner {
     static final Logger LOGGER = Logger.getLogger(FlowRunner.class);
 
     private static final long FLOW_CHECK_INTERVAL = 5 * 1000L;
     
+    private static final long DEFAULT_STATS_CHECK_INTERVAL = 15 * 60 * 1000L;
+
+    private static class TaskStats {
+        
+        private String _flowName;
+        private String _stepName;
+        
+        private int _mapCount;
+        private int _reduceCount;
+        
+        private long _mapTime;
+        private long _reduceTime;
+        
+        public TaskStats(String flowName, String stepName) {
+            _flowName = flowName;
+            _stepName = stepName;
+            
+            _mapCount = 0;
+            _reduceCount = 0;
+            
+            _mapTime = 0;
+            _reduceTime = 0;
+        }
+        
+        public void incMapCount(int mapCount) {
+            _mapCount += mapCount;
+        }
+        
+        public void incReduceCount(int reduceCount) {
+            _reduceCount += reduceCount;
+        }
+
+        public void incMapTime(long mapTime) {
+            _mapTime += mapTime;
+        }
+        
+        public void incReduceTime(long reduceTime) {
+            _reduceTime += reduceTime;
+        }
+
+        public String getFlowName() {
+            return _flowName;
+        }
+
+        public String getStepName() {
+            return _stepName;
+        }
+
+        public int getMapCount() {
+            return _mapCount;
+        }
+
+        public int getReduceCount() {
+            return _reduceCount;
+        }
+        
+        public long getMapTime() {
+            return _mapTime;
+        }
+        
+        public long getReduceTime() {
+            return _reduceTime;
+        }
+    }
+    
     private int _maxFlows;
-    private List<FlowFuture> _flowFutures;
+    private final List<FlowFuture> _flowFutures = new ArrayList<FlowFuture>();
+    
+    private PrintStream _statsStream;
+    private Thread _statsThread;
     
     public FlowRunner() {
         this(Integer.MAX_VALUE);
     }
     
     public FlowRunner(int maxFlows) {
+        this("FlowRunner", maxFlows, null, DEFAULT_STATS_CHECK_INTERVAL);
+    }
+    
+    public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval) {
         if ((maxFlows > 1) && (HadoopUtils.isJobLocal(new JobConf()))) {
             LOGGER.warn("Running locally, so flows must be run serially for thread safety.");
             _maxFlows = 1;
         } else {
             _maxFlows = maxFlows;
         }
-        _flowFutures = new ArrayList<FlowFuture>();
+        
+        // If the caller wants stats, we need to fire up a thread that will check
+        // the flows on a regular basis.
+        if (statsDir != null) {
+            statsDir.mkdirs();
+            File statsFile = new File(statsDir, runnerName + "-stats.tsv");
+            statsFile.delete();
+            
+            try {
+                _statsStream = new PrintStream(statsFile, "UTF-8");
+                LOGGER.info("Logging stats to " + statsFile);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException("Can't create stats output file: " + statsFile, e);
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException("Impossible exception", e);
+            }
+            
+            _statsThread = new Thread(new Runnable() {
+                
+                @Override
+                public void run() {
+                    long startTime = System.currentTimeMillis();
+                    long nextCheckTime = startTime;
+                    
+                    SimpleDateFormat timeFormatter = new SimpleDateFormat("mm:ss.SSS");
+                    
+                    while (true) {
+                        Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
+
+                        long curCheckTime = nextCheckTime;
+                        nextCheckTime += checkInterval;
+                        for (FlowFuture ff : _flowFutures) {
+                            collectStats(ff, taskCounts);
+                        }
+                        
+                        // Output counts. Format is
+                        // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
+                        String stats = makeStats(taskCounts);
+                        String timeInMinutes = timeFormatter.format(curCheckTime - startTime);
+                        _statsStream.println(String.format("%s\t%s", timeInMinutes, stats));
+                        // System.out.println("" + timeInMinutes + "\t" + stats);
+                        
+                        try {
+                            Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
+                        } catch (InterruptedException e) {
+                            // We were interrupted, so quietly terminate.
+                            break;
+                        }
+                    }
+                }
+
+            }, "FlowRunner stats");
+            
+            _statsThread.start();
+        }
     }
-    
+
+    private String makeStats(Map<String, TaskStats> taskCounts) {
+        // We want <# map tasks><tab><# reduce tasks><tab><task details>
+        // where <task details> looks like <flowname|stepname=mapcount,reducecount; flowname|stepname=mapcount,reducecount>
+        int mapCount = 0;
+        int reduceCount = 0;
+        StringBuilder taskDetails = new StringBuilder();
+        
+        for (TaskStats stats : taskCounts.values()) {
+            
+            if ((stats.getMapCount() == 0) && (stats.getReduceCount() == 0)) {
+                // TODO Figure out why we don't get any total map/reduce time values.
+                // taskDetails.append(String.format("%s|%s=%dms,%dms; ", stats.getFlowName(), stats.getStepName(), stats.getMapTime(), stats.getReduceTime()));
+            } else {
+                mapCount += stats.getMapCount();
+                reduceCount += stats.getReduceCount();
+                
+                taskDetails.append(String.format("%s|%s=%d,%d; ", stats.getFlowName(), stats.getStepName(), stats.getMapCount(), stats.getReduceCount()));
+            }
+        }
+        
+        return String.format("%d\t%d\t%s", mapCount, reduceCount, taskDetails.toString());
+    }
+
+
+    private void collectStats(FlowFuture ff, Map<String, TaskStats> taskCounts) {
+        Flow flow = ff.getFlow();
+        FlowStats fs = flow.getFlowStats();
+        fs.captureDetail();
+
+        String flowId = flow.getID();
+        String flowName = flow.getName();
+        
+        List<FlowStep> flowSteps = flow.getFlowSteps();
+        for (FlowStep flowStep : flowSteps) {
+           FlowStepStats stepStats = flowStep.getFlowStepStats();
+
+           String stepId = flowStep.getID();
+           String stepName = flowStep.getName();
+           
+           String countsKey = String.format("%s-%s", flowId, stepId);
+           if (stepStats instanceof HadoopStepStats) {
+               HadoopStepStats hadoopSS = (HadoopStepStats)stepStats;
+               
+               // We have one child for every task. We have to see if it's
+               // running, and if so, whether it's a mapper or reducer
+               Iterator<HadoopSliceStats> iter = hadoopSS.getChildren().iterator();
+               while (iter.hasNext()) {
+                   HadoopSliceStats sliceStats = iter.next();
+                   // System.out.println(String.format("id=%s, kind=%s, status=%s", sliceStats.getID(), sliceStats.getKind(), sliceStats.getStatus()));
+                   
+                   if (sliceStats.getStatus() == Status.SUCCESSFUL) {
+                       // Set the total time
+                       incrementCounts(taskCounts, countsKey, flowName, stepName, 
+                                       0,
+                                       0, 
+                                       sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_MAPS), 
+                                       sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_REDUCES));
+                   } else if (sliceStats.getStatus() == Status.RUNNING) {
+                       if (sliceStats.getKind() == Kind.MAPPER) {
+                           incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
+                       } else if (sliceStats.getKind() == Kind.REDUCER) {
+                           incrementCounts(taskCounts, countsKey, flowName, stepName, 0, 1, 0, 0);
+                       }
+                   }
+               }
+           } else if (stepStats instanceof LocalStepStats) {
+               // map & reduce kind of run as one, so just add one to both if there's a group.
+               incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
+               if (flowStep.getGroup() != null) {
+                   incrementCounts(taskCounts, countsKey, flowName, stepName, 0, 1, 0, 0);
+               }
+           } else {
+               throw new RuntimeException("Unknown type returned by FlowStep.getFlowStepStats: " + stepStats.getClass());
+           }
+        }
+    }
+
+    private void incrementCounts(Map<String, TaskStats> counts, String countsKey, String flowName, String stepName, int mapCount, int reduceCount, long mapTime, long reduceTime) {
+        TaskStats curStats = counts.get(countsKey);
+        if (curStats == null) {
+            curStats = new TaskStats(flowName, stepName);
+        }
+        
+        curStats.incMapCount(mapCount);
+        curStats.incReduceCount(reduceCount);
+        curStats.incMapTime(mapTime);
+        curStats.incReduceTime(reduceTime);
+        
+        counts.put(countsKey, curStats);
+    }
+
     /**
      * Wait for an open slot, and then start the Flow running, returning
      * the corresponding FlowFuture.
@@ -113,6 +350,12 @@ public class FlowRunner {
         while (!isDone()) {
             Thread.sleep(FLOW_CHECK_INTERVAL);
         }
+        
+        
+    }
+    
+    public void cleanup() {
+        // TODO terminate the stats thread
     }
     
     /**

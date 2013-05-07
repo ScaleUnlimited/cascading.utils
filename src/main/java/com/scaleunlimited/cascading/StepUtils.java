@@ -17,6 +17,7 @@
 package com.scaleunlimited.cascading;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,10 +45,10 @@ public class StepUtils {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void nameFlowStep(BaseFlowStep step) {
-        Group group = step.getGroup();
+        List<Group> groups = step.getGroups();
         
         String stepName = "";
-        if (group == null) {
+        if (groups.size() == 0) {
             Collection<Operation> operations = step.getAllOperations();
             for (Operation operation : operations) {
                 String operationName = operation.toString();
@@ -62,7 +63,11 @@ public class StepUtils {
                 stepName = stepName.substring(0, stepName.length()-1);
             }
         } else {
-            stepName = group.getName();
+            // Get the name of the last group. We should only have one group unless
+            // we're running in Cascading local mode (or maybe HashJoin on map side???)
+            // FUTURE - try to pick the "best" group name?
+            // or combine first/last group names?
+            stepName = groups.get(groups.size() - 1).getName();
         }
         
         // setName exists, but it's protected. So we use our special class that's in the

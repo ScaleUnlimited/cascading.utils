@@ -17,7 +17,6 @@
 package com.scaleunlimited.cascading;
 
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.log4j.Level;
 
@@ -77,5 +76,5 @@ public class LoggingUtils {
         
         setLoggingProperties(props, ourLevel);
     }
-
+    
 }

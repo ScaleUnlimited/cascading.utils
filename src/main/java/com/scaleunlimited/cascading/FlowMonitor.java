@@ -160,7 +160,7 @@ public class FlowMonitor<Config> {
 
             stats = _flow.getFlowStats();
             List<FlowStepStats> stepStats = stats.getFlowStepStats();
-
+         
             for (FlowStepStats stepStat : stepStats) {
                 String stepId = stepStat.getID();
                 StepEntry stepEntry = findStepById(stepId);
@@ -382,7 +382,6 @@ public class FlowMonitor<Config> {
         return result;
     }
     
-    @SuppressWarnings("deprecation")
     private boolean isJobLocal(Config config) {
         if (config instanceof JobConf) {
             JobConf conf = (JobConf)config;

@@ -39,8 +39,8 @@
 	</repositories>
 	
     <properties>
-        <cascading.version>2.0.4</cascading.version>
-        <hadoop.version>1.0.3</hadoop.version>
+        <cascading.version>2.1.5</cascading.version>
+        <hadoop.version>1.0.4</hadoop.version>
     </properties>
     
 	<dependencies>
@@ -154,6 +154,28 @@
         </dependency>
         
         <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-test</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Missing dependency for MiniCluster stuff in Hadoop -->
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>jsr311-api</artifactId>
+            <version>1.1.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.1</version>
+            <scope>test</scope>
+        </dependency>
+
 		<dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -222,8 +244,9 @@
 
 		<dependency>
             <groupId>cascading</groupId>
-            <artifactId>cascading-test</artifactId>
+            <artifactId>cascading-core</artifactId>
             <version>${cascading.version}</version>
+            <classifier>tests</classifier>
             <scope>test</scope>
             <exclusions>
                 <exclusion>

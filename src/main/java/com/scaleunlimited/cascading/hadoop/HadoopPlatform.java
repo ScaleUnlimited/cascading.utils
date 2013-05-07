@@ -1,5 +1,6 @@
 package com.scaleunlimited.cascading.hadoop;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +53,41 @@ public class HadoopPlatform extends BasePlatform {
         return HadoopUtils.isJobLocal(HadoopUtil.createJobConf(_props, _conf));
     }
     
+    @Override
+    public File getDefaultLogDir() {
+        File result = super.getDefaultLogDir();
+        if (result == null) {
+            String hadoopLogDir = System.getProperty("HADOOP_LOG_DIR");
+            if (hadoopLogDir == null) {
+                hadoopLogDir = System.getProperty("hadoop.log.dir");
+            }
+            
+            if (hadoopLogDir == null) {
+                String hadoopHomeDir = System.getProperty("HADOOP_HOME");
+                if (hadoopHomeDir != null) {
+                    hadoopLogDir = hadoopHomeDir = "/logs";
+                }
+            }
+            
+            if (hadoopLogDir == null) {
+                if (isLocal()) {
+                    hadoopLogDir = "./";
+                } else {
+                    hadoopLogDir = "/mnt/hadoop/logs/";
+                }
+            }
+            
+            result = new File(hadoopLogDir);
+        }
+        
+        if (!result.exists()) {
+            result.mkdirs();
+        }
+        
+        return result;
+    }
+
+
     @Override
     public boolean isTextSchemeCompressable() {
         // TextLine for Hadoop can read/write compressed files.

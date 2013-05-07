@@ -1,7 +1,12 @@
 package com.scaleunlimited.cascading;
 
+import java.util.List;
+
 import cascading.flow.Flow;
+import cascading.flow.FlowStep;
+import cascading.flow.planner.BaseFlowStep;
 import cascading.stats.CascadingStats.Status;
+import cascading.stats.FlowStepStats;
 
 public class FlowUtils {
 
@@ -33,4 +38,16 @@ public class FlowUtils {
             }
         }
     }
+    
+    public static void nameFlowSteps(Flow flow) {
+        List<FlowStep> steps = flow.getFlowSteps();
+        
+        for (FlowStep step : steps) {
+            if (step instanceof BaseFlowStep) {
+                BaseFlowStep baseStep = (BaseFlowStep)step;
+                StepUtils.nameFlowStep(baseStep);
+            }
+        }
+    }
+
 }

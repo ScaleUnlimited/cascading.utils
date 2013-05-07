@@ -1,5 +1,6 @@
 package com.scaleunlimited.cascading.local;
 
+import java.io.File;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -25,6 +26,20 @@ public class LocalPlatform extends BasePlatform {
     @Override
     public boolean isLocal() {
         return true;
+    }
+
+    @Override
+    public File getDefaultLogDir() {
+        File result = super.getDefaultLogDir();
+        if (result == null) {
+            result = new File("./");
+        }
+        
+        if (!result.exists()) {
+            result.mkdirs();
+        }
+        
+        return result;
     }
 
     @Override

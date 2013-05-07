@@ -1,5 +1,6 @@
 package com.scaleunlimited.cascading;
 
+import java.io.File;
 import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Properties;
@@ -25,8 +26,9 @@ public abstract class BasePlatform {
     }
 
     // Cascading properties, used when constructing the FlowConnector
-    
     protected Map<Object, Object> _props;
+    
+    protected File _defaultLogDir;
     
     public BasePlatform(Class applicationJarClass) {
         _props = new Properties();
@@ -89,6 +91,14 @@ public abstract class BasePlatform {
     }
 
     public abstract boolean isLocal();
+    
+    public File getDefaultLogDir() {
+        return _defaultLogDir;
+    }
+    
+    public void setDefaultLogDir(File defaultLogDir) {
+        _defaultLogDir = defaultLogDir;
+    }
     
     public abstract boolean isTextSchemeCompressable();
 

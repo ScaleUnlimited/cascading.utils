@@ -53,15 +53,16 @@ public class BaseTool {
         return getBaseDotFileName(options) + "-" + suffix + ".dot";
     }
     
+    /**
+     * Name the steps (jobs) in the flow, using the operation (or pipe) names
+     * Use FlowUtils.nameFlowSteps instead.
+     * 
+     * @param flow
+     */
+    @Deprecated
     @SuppressWarnings("rawtypes")
     protected static void nameFlowSteps(Flow flow) {
-        List<FlowStep> steps = flow.getFlowSteps();
-        
-        for (FlowStep step : steps) {
-            if (step instanceof BaseFlowStep) {
-                StepUtils.nameFlowStep((BaseFlowStep)step);
-            }
-        }
+        FlowUtils.nameFlowSteps(flow);
     }
     
     protected static CmdLineParser parse(String[] args, BaseOptions options) {
