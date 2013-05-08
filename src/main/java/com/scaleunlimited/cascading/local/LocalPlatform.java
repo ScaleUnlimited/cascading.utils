@@ -30,16 +30,7 @@ public class LocalPlatform extends BasePlatform {
 
     @Override
     public File getDefaultLogDir() {
-        File result = super.getDefaultLogDir();
-        if (result == null) {
-            result = new File("./");
-        }
-        
-        if (!result.exists()) {
-            result.mkdirs();
-        }
-        
-        return result;
+        return new File("./");
     }
 
     @Override

@@ -28,7 +28,7 @@ public abstract class BasePlatform {
     // Cascading properties, used when constructing the FlowConnector
     protected Map<Object, Object> _props;
     
-    protected File _defaultLogDir;
+    protected File _logDir;
     
     public BasePlatform(Class applicationJarClass) {
         _props = new Properties();
@@ -92,15 +92,24 @@ public abstract class BasePlatform {
 
     public abstract boolean isLocal();
     
-    // This is protected so that concrete implementations have to implement their
-    // version, but they can call the base to see if it's been set to an explicit value.
-    protected File getDefaultLogDir() {
-        return _defaultLogDir;
+    public File getLogDir() {
+        File result = _logDir;
+        if (result == null) {
+            result = getDefaultLogDir();
+        }
+        
+        if (!result.exists()) {
+            result.mkdirs();
+        }
+        
+        return result;
     }
     
-    public void setDefaultLogDir(File defaultLogDir) {
-        _defaultLogDir = defaultLogDir;
+    public void setLogDir(File logDir) {
+        _logDir = logDir;
     }
+    
+    public abstract File getDefaultLogDir();
     
     public abstract boolean isTextSchemeCompressable();
 

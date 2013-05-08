@@ -55,36 +55,27 @@ public class HadoopPlatform extends BasePlatform {
     
     @Override
     public File getDefaultLogDir() {
-        File result = super.getDefaultLogDir();
-        if (result == null) {
-            String hadoopLogDir = System.getProperty("HADOOP_LOG_DIR");
-            if (hadoopLogDir == null) {
-                hadoopLogDir = System.getProperty("hadoop.log.dir");
-            }
-            
-            if (hadoopLogDir == null) {
-                String hadoopHomeDir = System.getProperty("HADOOP_HOME");
-                if (hadoopHomeDir != null) {
-                    hadoopLogDir = hadoopHomeDir = "/logs";
-                }
-            }
-            
-            if (hadoopLogDir == null) {
-                if (isLocal()) {
-                    hadoopLogDir = "./";
-                } else {
-                    hadoopLogDir = "/mnt/hadoop/logs/";
-                }
-            }
-            
-            result = new File(hadoopLogDir);
+        String hadoopLogDir = System.getProperty("HADOOP_LOG_DIR");
+        if (hadoopLogDir == null) {
+            hadoopLogDir = System.getProperty("hadoop.log.dir");
         }
-        
-        if (!result.exists()) {
-            result.mkdirs();
+
+        if (hadoopLogDir == null) {
+            String hadoopHomeDir = System.getProperty("HADOOP_HOME");
+            if (hadoopHomeDir != null) {
+                hadoopLogDir = hadoopHomeDir = "/logs";
+            }
         }
-        
-        return result;
+
+        if (hadoopLogDir == null) {
+            if (isLocal()) {
+                hadoopLogDir = "./";
+            } else {
+                hadoopLogDir = "/mnt/hadoop/logs/";
+            }
+        }
+
+        return new File(hadoopLogDir);
     }
 
 
