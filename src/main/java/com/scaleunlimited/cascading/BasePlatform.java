@@ -92,7 +92,9 @@ public abstract class BasePlatform {
 
     public abstract boolean isLocal();
     
-    public File getDefaultLogDir() {
+    // This is protected so that concrete implementations have to implement their
+    // version, but they can call the base to see if it's been set to an explicit value.
+    protected File getDefaultLogDir() {
         return _defaultLogDir;
     }
     

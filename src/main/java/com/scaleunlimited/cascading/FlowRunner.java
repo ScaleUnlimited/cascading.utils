@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobInProgress;
 import org.apache.hadoop.mapred.RunningJob;
@@ -105,7 +106,6 @@ public class FlowRunner {
     private int _maxFlows;
     private final List<FlowFuture> _flowFutures = new ArrayList<FlowFuture>();
     
-    private PrintStream _statsStream;
     private Thread _statsThread;
     
     public FlowRunner() {
@@ -131,8 +131,10 @@ public class FlowRunner {
             File statsFile = new File(statsDir, runnerName + "-stats.tsv");
             statsFile.delete();
             
+            final PrintStream statsStream;
+
             try {
-                _statsStream = new PrintStream(statsFile, "UTF-8");
+                statsStream = new PrintStream(statsFile, "UTF-8");
                 LOGGER.info("Logging stats to " + statsFile);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException("Can't create stats output file: " + statsFile, e);
@@ -145,14 +147,19 @@ public class FlowRunner {
                 @Override
                 public void run() {
                     long startTime = System.currentTimeMillis();
-                    long nextCheckTime = startTime;
                     
-                    SimpleDateFormat timeFormatter = new SimpleDateFormat("mm:ss.SSS");
+                    // We want to set our next check time so that when the checkInterval is
+                    // added to it, we're on a checkInterval boundary. So that way we'd
+                    // get a check time of say 03:34:57, and the next check time would
+                    // be 03:35:00, if the interval was every minute.
+                    long nextCheckTime = startTime - (startTime % checkInterval);
+                    
+                    SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyddMM hh:mm:ss");
                     
                     while (true) {
                         Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
 
-                        long curCheckTime = nextCheckTime;
+                        String timestamp = timeFormatter.format(nextCheckTime);
                         nextCheckTime += checkInterval;
                         for (FlowFuture ff : _flowFutures) {
                             collectStats(ff, taskCounts);
@@ -161,8 +168,7 @@ public class FlowRunner {
                         // Output counts. Format is
                         // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
                         String stats = makeStats(taskCounts);
-                        String timeInMinutes = timeFormatter.format(curCheckTime - startTime);
-                        _statsStream.println(String.format("%s\t%s", timeInMinutes, stats));
+                        statsStream.println(String.format("%s\t%s", timestamp, stats));
                         // System.out.println("" + timeInMinutes + "\t" + stats);
                         
                         try {
@@ -172,9 +178,23 @@ public class FlowRunner {
                             break;
                         }
                     }
+                    
+                    IOUtils.closeQuietly(statsStream);
                 }
 
             }, "FlowRunner stats");
+            
+            // We don't want to hold up the JVM for this one thread.
+            _statsThread.setDaemon(true);
+            
+            // We want to make sure the thread gets terminated on shutdown
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    terminate();
+                }
+            }, "FlowRunner stats shutdown hook"));
             
             _statsThread.start();
         }
@@ -351,11 +371,37 @@ public class FlowRunner {
             Thread.sleep(FLOW_CHECK_INTERVAL);
         }
         
-        
+        terminate();
     }
     
-    public void cleanup() {
-        // TODO terminate the stats thread
+    public void terminate() {
+        if (_statsThread != null) {
+            synchronized(_statsThread) {
+                // Somebody might have cleared the thread
+                if ((_statsThread != null) && _statsThread.isAlive()) {
+                    _statsThread.interrupt();
+                    _statsThread = null;
+                }
+            }
+        }
+        
+        // Now terminate all of the running flows.
+        Iterator<FlowFuture> iter = _flowFutures.iterator();
+        while (iter.hasNext()) {
+            FlowFuture ff = iter.next();
+            if (ff.isDone()) {
+                iter.remove();
+            } else {
+                ff.cancel(true);
+            }
+        }
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        terminate();
+        
+        super.finalize();
     }
     
     /**

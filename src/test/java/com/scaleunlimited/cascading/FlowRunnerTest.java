@@ -198,11 +198,33 @@ public class FlowRunnerTest extends Assert {
     }
     
     @Test
+    public void testTerminationHadoop() throws Exception {
+        System.setProperty("java.security.krb5.realm", "");
+        System.setProperty("java.security.krb5.kdc", "");
+
+        BasePlatform platform = new HadoopPlatform(FlowRunnerTest.class);
+        FlowRunner fr = new FlowRunner("testTerminationHadoop", 1, new File("build/test/testTerminationHadoop/log"), 100);
+        fr.addFlow(makeFlow("testTerminationHadoop", 10, 0, false, platform));
+        fr.terminate();
+    }
+    
+    @Test
+    public void testTerminationLocal() throws Exception {
+        BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
+        FlowRunner fr = new FlowRunner("testTerminationLocal", 1, new File("build/test/testTerminationLocal/log"), 10);
+        fr.addFlow(makeFlow("testTerminationLocal", 10, 0, false, platform));
+        fr.terminate();
+    }
+    
+    @Test
     public void testStatsHadoopMiniCluster() throws Exception {
+        // TODO create MiniClusterPlatform that extends HadoopPlatform, with
+        // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
+        // and defaults for everything
         final String logDirName = "build/test/testStatsHadoopMiniCluster/log";
         System.setProperty("hadoop.log.dir", logDirName);
 
-        if( Util.isEmpty( System.getProperty("hadoop.tmp.dir") ) )
+        if( Util.isEmpty(System.getProperty("hadoop.tmp.dir") ) )
             System.setProperty("hadoop.tmp.dir", "build/test/testStatsHadoopMiniCluster/tmp");
 
         System.setProperty("java.security.krb5.realm", "");
