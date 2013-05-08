@@ -2,7 +2,9 @@ package com.scaleunlimited.cascading;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -61,10 +63,9 @@ public class FlowRunnerTest extends Assert {
             
             if (!_didDelay) {
                 _didDelay = true;
-                System.out.println("Delaying...");
                 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100L);
                 } catch (InterruptedException e) {
                     // ignore exception
                 }
@@ -180,10 +181,14 @@ public class FlowRunnerTest extends Assert {
     
     @Test
     public void testStatsLocal() throws Exception {
+        final String logDirName = "build/test/testStatsLocal/log";
         BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
-        FlowRunner fr = new FlowRunner("testStatsLocal", 1, new File("build/test/testStatsLocal/log"), 10);
+        FlowRunner fr = new FlowRunner("testStatsLocal", 1, new File(logDirName), 10);
         FlowFuture result0 = fr.addFlow(makeFlow("testStatsLocal", 10, 0, false, platform));
         result0.get();
+        
+        // We should some number of entries in the stats file
+        checkStatsFile(logDirName, "testStatsLocal", "group on total", 1, 1);
     }
     
     @Test
@@ -191,10 +196,16 @@ public class FlowRunnerTest extends Assert {
         System.setProperty("java.security.krb5.realm", "");
         System.setProperty("java.security.krb5.kdc", "");
 
+        final String logDirName = "build/test/testStatsHadoop/log";
         BasePlatform platform = new HadoopPlatform(FlowRunnerTest.class);
-        FlowRunner fr = new FlowRunner("testStatsHadoop", 1, new File("build/test/testStatsHadoop/log"), 100);
-        FlowFuture result0 = fr.addFlow(makeFlow("testStatsHadoop", 10, 0, false, platform));
-        result0.get();
+        FlowRunner fr = new FlowRunner("testStatsHadoop", 1, new File(logDirName), 1000L);
+        FlowFuture result = fr.addFlow(makeFlow("testStatsHadoop", 10, 0, false, platform));
+        result.get();
+        
+        // We should some number of entries in the stats file
+        // Unfortunately you get no stats for Hadoop when running in Hadoop local mode, as there
+        // is no JobTracker
+        // checkStatsFile(logDirName, "testStatsHadoop", "group on total", 0, 1);
     }
     
     @Test
@@ -260,22 +271,29 @@ public class FlowRunnerTest extends Assert {
         result0.get();
         
         // We should some number of entries in the stats file
+        checkStatsFile(logDirName, "testStatsHadoopMiniCluster", "group on total", 0, 2);
+    }
+    
+    private BufferedReader openStatsFile(String logDirName, String testName) throws FileNotFoundException {
         File statsDir = new File(logDirName);
-        File statsFile = new File(statsDir, "testStatsHadoopMiniCluster-stats.tsv");
+        File statsFile = new File(statsDir, testName + "-stats.tsv");
         assertTrue(statsFile.exists());
         
-        BufferedReader br = new BufferedReader(new FileReader(statsFile));
-        boolean foundGoodLine = false;
+        return new BufferedReader(new FileReader(statsFile));
+    }
+    
+    private void checkStatsFile(String logDirName, String testName, String stepName, int numMaps, int numReduces) throws IOException {
+        String targetText = String.format("\t%d\t%d\t%s|%s=%d,%d;", numMaps, numReduces, testName, stepName, numMaps, numReduces);
+        BufferedReader br = openStatsFile(logDirName, testName);
+        
         String curLine;
         while ((curLine = br.readLine()) != null) {
-            String[] pieces = curLine.split("\t");
-            if (pieces[1].equals("0") && pieces[2].equals("2") && pieces[3].equals("testStatsHadoopMiniCluster|group on total=0,2; ")) {
-                foundGoodLine = true;
-                break;
+            if (curLine.contains(targetText)) {
+                return;
             }
         }
         
-        assertTrue(foundGoodLine);
+        fail("Couldn't find target line in stats file");
     }
     
     @SuppressWarnings("rawtypes")

@@ -268,7 +268,7 @@ public class FlowRunner {
            } else if (stepStats instanceof LocalStepStats) {
                // map & reduce kind of run as one, so just add one to both if there's a group.
                incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
-               if (flowStep.getGroup() != null) {
+               if (flowStep.getGroups().size() > 0) {
                    incrementCounts(taskCounts, countsKey, flowName, stepName, 0, 1, 0, 0);
                }
            } else {
