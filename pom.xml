@@ -129,6 +129,14 @@
             <version>2.19</version>
         </dependency>
         
+        <!-- For LogLikelihoodRatio -->
+        <dependency>
+            <groupId>org.apache.mahout</groupId>
+            <artifactId>mahout-math</artifactId>
+            <version>0.7</version>
+        </dependency>
+        
+        
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>

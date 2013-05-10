@@ -1,4 +1,4 @@
-package com.scaleunlimited.cascading;
+package com.scaleunlimited.cascading.ml;
 
 import cascading.operation.Identity;
 import cascading.operation.state.Counter;

@@ -121,7 +121,6 @@ public class UniqueCount extends SubAssembly {
 
         private Fields _uniqueFields;
 
-        private transient Tuple _curGroupValue;
         private transient Tuple _result;;
 
         public CountUniques(Fields uniqueFields, Fields countField) {
@@ -134,7 +133,6 @@ public class UniqueCount extends SubAssembly {
         public void prepare(FlowProcess flowProcess, OperationCall<NullContext> operationCall) {
             super.prepare(flowProcess, operationCall);
 
-            _curGroupValue = Tuple.size(_uniqueFields.size());
             _result = new Tuple(0);
         }
 
@@ -286,18 +284,22 @@ public class UniqueCount extends SubAssembly {
      */
     @ConstructorProperties({ "name", "pipes", "uniqueFields", "threshold" })
     public UniqueCount(String name, Pipe[] pipes, Fields groupFields, Fields uniqueFields, Fields countField, int threshold) {
+        Fields joinedFields = Fields.join(groupFields, uniqueFields);
+        
         Pipe[] filters = new Pipe[pipes.length];
         FilterPartialDuplicates partialDuplicates = new FilterPartialDuplicates(threshold);
 
         for (int i = 0; i < filters.length; i++) {
-            filters[i] = new Each(pipes[i], Fields.join(groupFields, uniqueFields), partialDuplicates);
+            filters[i] = new Each(pipes[i], joinedFields, partialDuplicates);
         }
         
         // At this point we need to group by the groupFields, sort by
         // uniqueFields, and then use a special CountUnique
         // buffer that uses the sort order to generate unique counts.
+        
+        // The output should be a tuple with the groupFields and the countField
         Pipe pipe = new GroupBy(name, filters, groupFields, uniqueFields);
-        pipe = new Every(pipe, Fields.ALL, new CountUniques(uniqueFields, countField), Fields.RESULTS);
+        pipe = new Every(pipe, uniqueFields, new CountUniques(uniqueFields, countField), Fields.REPLACE);
 
         setTails(pipe);
     }
