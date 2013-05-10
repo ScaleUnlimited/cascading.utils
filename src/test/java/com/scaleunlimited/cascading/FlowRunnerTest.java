@@ -232,7 +232,24 @@ public class FlowRunnerTest extends Assert {
         // TODO create MiniClusterPlatform that extends HadoopPlatform, with
         // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
         // and defaults for everything
-        final String logDirName = "build/test/testStatsHadoopMiniCluster/log";
+        BasePlatform platform = makeHadoopMiniClusterPlatform(2, 2, "build/test/testStatsHadoopMiniCluster/log/");
+        platform.setJobPollingInterval(10);
+        
+        // We want regular and details stats
+        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000, true);
+        FlowFuture result = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
+        result.get();
+        
+        // We should some number of entries in the stats file
+        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
+        
+        checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
+    }
+    
+    private BasePlatform makeHadoopMiniClusterPlatform(int numMapSlots, int numReduceSlots, String logDirName) throws IOException {
+        // TODO create MiniClusterPlatform that extends HadoopPlatform, with
+        // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
+        // and defaults for everything
         System.setProperty("hadoop.log.dir", logDirName);
 
         if( Util.isEmpty(System.getProperty("hadoop.tmp.dir") ) )
@@ -247,9 +264,10 @@ public class FlowRunnerTest extends Assert {
 
         conf.setInt("mapred.job.reuse.jvm.num.tasks", -1 );
 
-        MiniDFSCluster dfs = new MiniDFSCluster( conf, 4, true, null );
+        int totalSlots = numMapSlots + numReduceSlots;
+        MiniDFSCluster dfs = new MiniDFSCluster(conf, numMapSlots, true, null);
         FileSystem fileSys = dfs.getFileSystem();
-        MiniMRCluster mr = new MiniMRCluster( 4, fileSys.getUri().toString(), 1, null, null, conf );
+        MiniMRCluster mr = new MiniMRCluster(totalSlots, fileSys.getUri().toString(), 1, null, null, conf);
 
         JobConf jobConf = mr.createJobConf();
 
@@ -262,16 +280,8 @@ public class FlowRunnerTest extends Assert {
 
         jobConf.setNumMapTasks(2);
         jobConf.setNumReduceTasks(2);
-
-        BasePlatform platform = new HadoopPlatform(FlowRunnerTest.class, jobConf);
-        platform.setJobPollingInterval(10);
         
-        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getDefaultLogDir(), 1000);
-        FlowFuture result0 = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
-        result0.get();
-        
-        // We should some number of entries in the stats file
-        checkStatsFile(logDirName, "testStatsHadoopMiniCluster", "group on total", 0, 2);
+        return new HadoopPlatform(FlowRunnerTest.class, jobConf);
     }
     
     private BufferedReader openStatsFile(String logDirName, String testName) throws FileNotFoundException {
@@ -282,9 +292,32 @@ public class FlowRunnerTest extends Assert {
         return new BufferedReader(new FileReader(statsFile));
     }
     
+    private BufferedReader openDetailsFile(String logDirName, String testName) throws FileNotFoundException {
+        File statsDir = new File(logDirName);
+        File statsFile = new File(statsDir, testName + "-details.tsv");
+        assertTrue(statsFile.exists());
+        
+        return new BufferedReader(new FileReader(statsFile));
+    }
+    
+    
     private void checkStatsFile(String logDirName, String testName, String stepName, int numMaps, int numReduces) throws IOException {
         String targetText = String.format("\t%d\t%d\t%s|%s=%d,%d;", numMaps, numReduces, testName, stepName, numMaps, numReduces);
         BufferedReader br = openStatsFile(logDirName, testName);
+        
+        String curLine;
+        while ((curLine = br.readLine()) != null) {
+            if (curLine.contains(targetText)) {
+                return;
+            }
+        }
+        
+        fail("Couldn't find target line in stats file");
+    }
+    
+    private void checkDetailsFile(String logDirName, String testName, String stepName, int numMaps, int numReduces) throws IOException {
+        String targetText = String.format("\t%d\t%d\t%s|%s\t", numMaps, numReduces, testName, stepName);
+        BufferedReader br = openDetailsFile(logDirName, testName);
         
         String curLine;
         while ((curLine = br.readLine()) != null) {

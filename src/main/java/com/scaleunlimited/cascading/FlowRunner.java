@@ -113,10 +113,14 @@ public class FlowRunner {
     }
     
     public FlowRunner(int maxFlows) {
-        this("FlowRunner", maxFlows, null, DEFAULT_STATS_CHECK_INTERVAL);
+        this("FlowRunner", maxFlows, null, 0, false);
     }
     
     public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval) {
+        this(runnerName, maxFlows, statsDir, checkInterval, false);
+    }
+    
+    public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval, boolean includeDetails) {
         if ((maxFlows > 1) && (HadoopUtils.isJobLocal(new JobConf()))) {
             LOGGER.warn("Running locally, so flows must be run serially for thread safety.");
             _maxFlows = 1;
@@ -124,83 +128,115 @@ public class FlowRunner {
             _maxFlows = maxFlows;
         }
         
-        // If the caller wants stats, we need to fire up a thread that will check
-        // the flows on a regular basis.
-        if (statsDir != null) {
-            statsDir.mkdirs();
-            File statsFile = new File(statsDir, runnerName + "-stats.tsv");
-            statsFile.delete();
-            
-            final PrintStream statsStream;
-
-            try {
-                statsStream = new PrintStream(statsFile, "UTF-8");
-                LOGGER.info("Logging stats to " + statsFile);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException("Can't create stats output file: " + statsFile, e);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException("Impossible exception", e);
-            }
-            
-            _statsThread = new Thread(new Runnable() {
-                
-                @Override
-                public void run() {
-                    long startTime = System.currentTimeMillis();
-                    
-                    // We want to set our next check time so that when the checkInterval is
-                    // added to it, we're on a checkInterval boundary. So that way we'd
-                    // get a check time of say 03:34:57, and the next check time would
-                    // be 03:35:00, if the interval was every minute.
-                    long nextCheckTime = startTime - (startTime % checkInterval);
-                    
-                    SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyddMM hh:mm:ss");
-                    
-                    while (true) {
-                        Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
-
-                        String timestamp = timeFormatter.format(nextCheckTime);
-                        nextCheckTime += checkInterval;
-                        for (FlowFuture ff : _flowFutures) {
-                            collectStats(ff, taskCounts);
-                        }
-                        
-                        // Output counts. Format is
-                        // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
-                        String stats = makeStats(taskCounts);
-                        statsStream.println(String.format("%s\t%s", timestamp, stats));
-                        // System.out.println("" + timeInMinutes + "\t" + stats);
-                        
-                        try {
-                            Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
-                        } catch (InterruptedException e) {
-                            // We were interrupted, so quietly terminate.
-                            break;
-                        }
-                    }
-                    
-                    IOUtils.closeQuietly(statsStream);
-                }
-
-            }, "FlowRunner stats");
-            
-            // We don't want to hold up the JVM for this one thread.
-            _statsThread.setDaemon(true);
-            
-            // We want to make sure the thread gets terminated on shutdown
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    terminate();
-                }
-            }, "FlowRunner stats shutdown hook"));
-            
-            _statsThread.start();
-        }
+        createStats(runnerName, statsDir, checkInterval, includeDetails);
     }
 
-    private String makeStats(Map<String, TaskStats> taskCounts) {
+    
+    private void createStats(String runnerName, File statsDir, final long checkInterval, final boolean includeDetails) {
+        if (statsDir == null) {
+            return;
+        }
+
+        // If the caller wants stats, we need to fire up a thread that will check
+        // the flows on a regular basis.
+        statsDir.mkdirs();
+        
+        final PrintStream statsStream = makeStatsStream(statsDir, runnerName, "stats.tsv");
+        final PrintStream detailsStream = includeDetails ? makeStatsStream(statsDir, runnerName, "details.tsv") : null;
+        
+        _statsThread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                long startTime = System.currentTimeMillis();
+
+                // We want to set our next check time so that when the checkInterval is
+                // added to it, we're on a checkInterval boundary. So that way we'd
+                // get a check time of say 03:34:57, and the next check time would
+                // be 03:35:00, if the interval was every minute.
+                long nextCheckTime = startTime - (startTime % checkInterval);
+
+                SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyddMM hh:mm:ss");
+
+                while (true) {
+                    Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
+
+                    String timestamp = timeFormatter.format(nextCheckTime);
+                    nextCheckTime += checkInterval;
+                    for (FlowFuture ff : _flowFutures) {
+                        collectStats(ff, taskCounts);
+                    }
+
+                    // Output counts. Format is
+                    // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
+                    String stats = makeStats(taskCounts, true);
+                    statsStream.println(String.format("%s\t%s", timestamp, stats));
+                    // System.out.println("" + timeInMinutes + "\t" + stats);
+                    
+                    if (includeDetails) {
+                        // Generate a summary line
+                        // <timestamp>    <map tasks>    <reduce tasks>    
+                        stats = makeStats(taskCounts, false);
+                        detailsStream.println(String.format("%s\t%s", timestamp, stats));
+                        
+                        // For each of the tasks, output a separate line after the summary line.
+                        //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
+                        for (TaskStats taskStat : taskCounts.values()) {
+                            detailsStream.println(String.format("\t%d\t%d\t%s|%s\t%s",
+                                                                taskStat.getMapCount(), taskStat.getReduceCount(),
+                                                                taskStat.getFlowName(), taskStat.getStepName(),
+                                                                timestamp));
+                        }
+                    }
+
+                    try {
+                        Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
+                    } catch (InterruptedException e) {
+                        // We were interrupted, so quietly terminate.
+                        break;
+                    }
+                }
+
+                IOUtils.closeQuietly(statsStream);
+            }
+
+        }, "FlowRunner stats");
+
+        // We don't want to hold up the JVM for this one thread.
+        _statsThread.setDaemon(true);
+
+        // We want to make sure the thread gets terminated on shutdown
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                terminate();
+            }
+        }, "FlowRunner stats shutdown hook"));
+
+        _statsThread.start();
+
+    }
+
+    private PrintStream makeStatsStream(File statsDir, String runnerName, String suffix) {
+        File statsFile = new File(statsDir, runnerName + "-" + suffix);
+        statsFile.delete();
+
+        final PrintStream statsStream;
+
+        try {
+            statsStream = new PrintStream(statsFile, "UTF-8");
+            LOGGER.info("Logging stats to " + statsFile);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Can't create stats output file: " + statsFile, e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Impossible exception", e);
+        }
+
+        return statsStream;
+    }
+
+    private String makeStats(Map<String, TaskStats> taskCounts, boolean includeTaskDetails) {
         // We want <# map tasks><tab><# reduce tasks><tab><task details>
         // where <task details> looks like <flowname|stepname=mapcount,reducecount; flowname|stepname=mapcount,reducecount>
         int mapCount = 0;
@@ -216,7 +252,9 @@ public class FlowRunner {
                 mapCount += stats.getMapCount();
                 reduceCount += stats.getReduceCount();
                 
-                taskDetails.append(String.format("%s|%s=%d,%d; ", stats.getFlowName(), stats.getStepName(), stats.getMapCount(), stats.getReduceCount()));
+                if (includeTaskDetails) {
+                    taskDetails.append(String.format("%s|%s=%d,%d; ", stats.getFlowName(), stats.getStepName(), stats.getMapCount(), stats.getReduceCount()));
+                }
             }
         }
         
