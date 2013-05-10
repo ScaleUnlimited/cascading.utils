@@ -235,14 +235,14 @@ public class FlowRunnerTest extends Assert {
         BasePlatform platform = makeHadoopMiniClusterPlatform(2, 2, "build/test/testStatsHadoopMiniCluster/log/");
         platform.setJobPollingInterval(10);
         
-        // We want regular and details stats
-        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000, true);
+        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
         result.get();
         
         // We should some number of entries in the stats file
         checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
         
+        // And check for something similar in the details file
         checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
     }
     

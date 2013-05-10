@@ -113,14 +113,10 @@ public class FlowRunner {
     }
     
     public FlowRunner(int maxFlows) {
-        this("FlowRunner", maxFlows, null, 0, false);
+        this("FlowRunner", maxFlows, null, 0);
     }
     
     public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval) {
-        this(runnerName, maxFlows, statsDir, checkInterval, false);
-    }
-    
-    public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval, boolean includeDetails) {
         if ((maxFlows > 1) && (HadoopUtils.isJobLocal(new JobConf()))) {
             LOGGER.warn("Running locally, so flows must be run serially for thread safety.");
             _maxFlows = 1;
@@ -128,11 +124,11 @@ public class FlowRunner {
             _maxFlows = maxFlows;
         }
         
-        createStats(runnerName, statsDir, checkInterval, includeDetails);
+        createStats(runnerName, statsDir, checkInterval);
     }
 
     
-    private void createStats(String runnerName, File statsDir, final long checkInterval, final boolean includeDetails) {
+    private void createStats(String runnerName, File statsDir, final long checkInterval) {
         if (statsDir == null) {
             return;
         }
@@ -142,7 +138,7 @@ public class FlowRunner {
         statsDir.mkdirs();
         
         final PrintStream statsStream = makeStatsStream(statsDir, runnerName, "stats.tsv");
-        final PrintStream detailsStream = includeDetails ? makeStatsStream(statsDir, runnerName, "details.tsv") : null;
+        final PrintStream detailsStream = makeStatsStream(statsDir, runnerName, "details.tsv");
         
         _statsThread = new Thread(new Runnable() {
 
@@ -172,20 +168,22 @@ public class FlowRunner {
                     String stats = makeStats(taskCounts, true);
                     statsStream.println(String.format("%s\t%s", timestamp, stats));
                     // System.out.println("" + timeInMinutes + "\t" + stats);
-                    
-                    if (includeDetails) {
-                        // Generate a summary line
-                        // <timestamp>    <map tasks>    <reduce tasks>    
-                        stats = makeStats(taskCounts, false);
-                        detailsStream.println(String.format("%s\t%s", timestamp, stats));
-                        
-                        // For each of the tasks, output a separate line after the summary line.
-                        //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
-                        for (TaskStats taskStat : taskCounts.values()) {
+
+                    // Generate a summary line
+                    // <timestamp>    <map tasks>    <reduce tasks>    
+                    stats = makeStats(taskCounts, false);
+                    detailsStream.println(String.format("%s\t%s", timestamp, stats));
+
+                    // For each of the tasks with map/reduce counts, output a separate line after the summary line.
+                    //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
+                    for (TaskStats taskStat : taskCounts.values()) {
+                        int mapCount = taskStat.getMapCount();
+                        int reduceCount = taskStat.getReduceCount();
+                        if (mapCount + reduceCount > 0) {
                             detailsStream.println(String.format("\t%d\t%d\t%s|%s\t%s",
-                                                                taskStat.getMapCount(), taskStat.getReduceCount(),
-                                                                taskStat.getFlowName(), taskStat.getStepName(),
-                                                                timestamp));
+                                            mapCount, reduceCount,
+                                            taskStat.getFlowName(), taskStat.getStepName(),
+                                            timestamp));
                         }
                     }
 
@@ -290,6 +288,7 @@ public class FlowRunner {
                    
                    if (sliceStats.getStatus() == Status.SUCCESSFUL) {
                        // Set the total time
+                       // TODO this doesn't seem to be working, I get 0.
                        incrementCounts(taskCounts, countsKey, flowName, stepName, 
                                        0,
                                        0, 
