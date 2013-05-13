@@ -17,10 +17,12 @@ import cascading.operation.Function;
 import cascading.operation.FunctionCall;
 import cascading.operation.Identity;
 import cascading.operation.OperationCall;
+import cascading.operation.expression.ExpressionFilter;
 import cascading.pipe.CoGroup;
 import cascading.pipe.Each;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
+import cascading.pipe.HashJoin;
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
 import cascading.pipe.assembly.SumBy;
@@ -210,7 +212,13 @@ public class TopTermsByTfIdf extends SubAssembly {
         Pipe docCountPipe = new Pipe("doc count", termsPipe);
         docCountPipe = new UniqueCount(docCountPipe, new Fields("term"), new Fields("docid"), new Fields("doc_count"));
         
-        // In the docCountPipe, we now have (term, doc_count)
+        // In the docCountPipe, we now have (term, doc_count). One of these tuples has ("", total doc count), so
+        // we want to do a filter & HashJoin against itself
+        Pipe totalDocCountPipe = new Pipe("total doc count", docCountPipe);
+        totalDocCountPipe = new Each(totalDocCountPipe, new Fields("term"), new ExpressionFilter("term.isEmpty()", String.class));
+        
+        docCountPipe = new HashJoin(docCountPipe, new Fields("flag"), totalDocCountPipe, new Fields("term"));
+        
         // Generate term, total count. This will
         // include the empty term "" which will be the total count of all terms.
         Pipe termCountPipe = new Pipe("term count", termsPipe);
