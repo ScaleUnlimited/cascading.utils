@@ -115,6 +115,13 @@ public abstract class BasePlatform {
 
     public abstract void setNumReduceTasks(int numReduceTasks) throws Exception;
 
+    /**
+     * Reset the number of reduce tasks to the default for the platform
+     * 
+     * @throws Exception
+     */
+    public abstract void resetNumReduceTasks() throws Exception;
+    
     public abstract void setFlowPriority(FlowPriority priority) throws Exception;
 
     public abstract FlowConnector makeFlowConnector() throws Exception;

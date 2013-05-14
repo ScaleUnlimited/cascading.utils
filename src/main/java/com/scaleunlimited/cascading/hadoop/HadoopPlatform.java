@@ -97,6 +97,11 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
+    public void resetNumReduceTasks() throws Exception {
+        setNumReduceTasks(CLUSTER_REDUCER_COUNT);
+    }
+
+    @Override
     public void setFlowPriority(FlowPriority priority) throws Exception {
         switch (priority) {
             case HIGH:

@@ -46,6 +46,11 @@ public class LocalPlatform extends BasePlatform {
     }
 
     @Override
+    public void resetNumReduceTasks() throws Exception {
+        // As per above, nothing to do here.
+    }
+    
+    @Override
     public void setFlowPriority(FlowPriority priority) throws Exception {
         // Nothing to do here
     }
