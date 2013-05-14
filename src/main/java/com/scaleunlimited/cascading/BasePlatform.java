@@ -132,4 +132,6 @@ public abstract class BasePlatform {
     public abstract Scheme makeTextScheme(boolean isEnableCompression) throws Exception;
     
     public abstract Scheme makeTextScheme() throws Exception;
+    
+    public abstract boolean rename(BasePath src, BasePath dst) throws Exception;
 }

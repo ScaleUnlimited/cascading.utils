@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobPriority;
 
@@ -28,7 +30,7 @@ import com.scaleunlimited.cascading.BasePlatform;
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class HadoopPlatform extends BasePlatform {
 
-    private JobConf _conf;
+    protected JobConf _conf;
     
     public HadoopPlatform(Class applicationJarClass) {
         this(applicationJarClass, new JobConf());
@@ -168,4 +170,12 @@ public class HadoopPlatform extends BasePlatform {
         return new TextLine();
     }
 
+    @Override
+    public boolean rename(BasePath src, BasePath dst) throws Exception {
+        Path srcPath = new Path(src.getAbsolutePath());
+        Path dstPath = new Path(dst.getAbsolutePath());
+        FileSystem fs = srcPath.getFileSystem( HadoopUtil.createJobConf(_props, _conf));
+
+        return fs.rename(srcPath, dstPath);
+    }
 }

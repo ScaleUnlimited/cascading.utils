@@ -51,4 +51,28 @@ public class HadoopPlatformTest {
         assertTrue(subDirFile.isDirectory());
     }
 
+    @Test
+    public void testRename() throws Exception {
+        BasePlatform platform = new HadoopPlatform(HadoopPlatformTest.class);
+        final String targetDirname = "build/test/LocalPlatformTest/testRename";
+        BasePath path = platform.makePath(targetDirname);
+        if (path.exists()) {
+            path.delete(true);
+        }
+        path.mkdirs();
+        
+        BasePath src = platform.makePath(path, "src");
+        src.mkdirs();
+        
+        assertTrue(src.exists());
+        
+        BasePath dst = platform.makePath(path, "dst");
+        assertFalse(dst.exists());
+        platform.rename(src, dst);
+        
+        assertTrue(dst.exists());
+        assertFalse(src.exists());
+        
+    }
+
 }

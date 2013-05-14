@@ -102,4 +102,12 @@ public class LocalPlatform extends BasePlatform {
         return new TextLineScheme();
     }
 
+    @Override
+    public boolean rename(BasePath src, BasePath dst) throws Exception {
+        File srcFile = new File(src.getAbsolutePath());
+        File dstFile = new File (dst.getAbsolutePath());
+        
+        return srcFile.renameTo(dstFile);
+    }
+
 }

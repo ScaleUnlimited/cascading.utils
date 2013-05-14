@@ -63,6 +63,7 @@ public class LocalPlatformTest {
         return new LocalPlatform(LocalPlatformTest.class);
     }
     
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testBinaryScheme() throws Exception {
         boolean testing = true;
@@ -77,4 +78,28 @@ public class LocalPlatformTest {
         writer.close();
     }
 
+    @Test
+    public void testRename() throws Exception {
+        boolean testing = true;
+        BasePlatform platform = makePlatform(testing);
+        final String targetDirname = "build/test/LocalPlatformTest/testRename";
+        BasePath path = platform.makePath(targetDirname);
+        if (path.exists()) {
+            path.delete(true);
+        }
+        path.mkdirs();
+        
+        BasePath src = platform.makePath(path, "src");
+        src.mkdirs();
+        
+        assertTrue(src.exists());
+        
+        BasePath dst = platform.makePath(path, "dst");
+        assertFalse(dst.exists());
+        platform.rename(src, dst);
+        
+        assertTrue(dst.exists());
+        assertFalse(src.exists());
+        
+    }
 }
