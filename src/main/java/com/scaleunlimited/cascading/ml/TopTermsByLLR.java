@@ -7,12 +7,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.apache.mahout.math.stats.LogLikelihood;
 
 import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Buffer;
 import cascading.operation.BufferCall;
+import cascading.operation.Debug;
 import cascading.operation.Function;
 import cascading.operation.FunctionCall;
 import cascading.operation.Identity;
@@ -32,7 +34,8 @@ import com.scaleunlimited.cascading.NullContext;
 
 @SuppressWarnings("serial")
 public class TopTermsByLLR extends SubAssembly {
-
+    private static final Logger LOGGER = Logger.getLogger(TopTermsByLLR.class);
+    
     private static class ExtractTerms extends BaseOperation<NullContext> implements Function<NullContext> {
         
         private ITermsParser _parser;
@@ -44,7 +47,7 @@ public class TopTermsByLLR extends SubAssembly {
 
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall<NullContext> functionCall) {
-            _parser.reset(functionCall.getArguments().getString("text"));
+            _parser.reset(functionCall.getArguments().getString(0));
             
             // TODO use fastutils code, e.g. Object2IntOpenHashMap. Or get long hash from
             // string, but then we'd need to re-join top terms (by hash) against the actual
@@ -66,7 +69,7 @@ public class TopTermsByLLR extends SubAssembly {
                 functionCall.getOutputCollector().add(new Tuple(term, terms.get(term)));
             }
             
-            functionCall.getOutputCollector().add(new Tuple("", totalTerms));
+            functionCall.getOutputCollector().add(new Tuple(null, totalTerms));
         }
     }
 
@@ -91,42 +94,66 @@ public class TopTermsByLLR extends SubAssembly {
         }
     }
 
+    private static class TermAndCounts {
+        public boolean atEnd;
+        
+        public String curTerm;
+        public int docTermCount;
+        public int totalTermCount;
+        
+        // Save information from next term we find.
+        public String nextTerm;
+        public int nextDocTermCount;
+        public int nextTotalTermCount;
+        
+        @Override
+        public String toString() {
+            return String.format("\"%s\"=%d/%d, next \"%s\"=%d", curTerm, docTermCount, totalTermCount, nextTerm, nextDocTermCount);
+        }
+    }
+    
     private static class CalcLLR extends BaseOperation<NullContext> implements Buffer<NullContext> {
         
-        private int _numTerms;
+        private ITermsFilter _filter;
         
-        public CalcLLR(int numTerms) {
-            super(new Fields("docid", "terms", "scores"));
-            _numTerms = numTerms;
+        public CalcLLR(ITermsFilter filter) {
+            super(new Fields("terms", "scores"));
+            
+            _filter = filter;
         }
 
         @Override
         public void operate(FlowProcess flowProcess, BufferCall<NullContext> bufferCall) {
-            String docid = bufferCall.getGroup().getString("docid");
+            TupleEntry docid = bufferCall.getGroup();
             
             Iterator<TupleEntry> iter = bufferCall.getArgumentsIterator();
             if (!iter.hasNext()) {
                 throw new RuntimeException(String.format("Impossible situation - group for docid %s has no members", docid));
             }
             
-            TupleEntry te = iter.next();
-            String term = te.getString("term");
-            if (!term.isEmpty()) {
-                throw new RuntimeException(String.format("Impossible situation - first term for docid %s isn't empty", docid));
+            TermAndCounts termCounts = new TermAndCounts();
+            countTerms(iter, termCounts);
+            LOGGER.info(termCounts);
+            
+            if (termCounts.curTerm != null) {
+                throw new RuntimeException(String.format("Impossible situation - first term for docid %s isn't null", docid));
             }
             
-            int docTermCount = te.getInteger("term_count");
-            int globalTermCount = te.getInteger("total_count");
-            
+            int globalTermCount = termCounts.totalTermCount;
+            int docTermCount = termCounts.docTermCount;
+
+            // We can get multiple 
             // Now we can start iterating over the terms for this document, calculating their LLR score and keeping
             // the top N
             
-            List<TermAndScore> queue = new ArrayList<TermAndScore>(_numTerms);
+            int maxResults = _filter.getMaxResults();
+            List<TermAndScore> queue = new ArrayList<TermAndScore>(maxResults);
 
-            while (iter.hasNext()) {
-                te = iter.next();
-                int termCount = te.getInteger("term_count");
-                int termTotalCount = te.getInteger("total_terms");
+            while (countTerms(iter, termCounts)) {
+                LOGGER.info(termCounts);
+                
+                int termCount = termCounts.docTermCount;
+                int termTotalCount = termCounts.totalTermCount;
                 
                 // k11 is the count of this term in this document
                 long k11 = termCount;
@@ -138,16 +165,23 @@ public class TopTermsByLLR extends SubAssembly {
                 long k21 = termTotalCount - termCount;
                 
                 // k22 is the count of all other terms in all other documents
-                // TODO KKr - should this then be subtracting k21 here, not docTermCount?
-                // And also k12?
-                long k22 = globalTermCount - docTermCount;
+                long k22 = globalTermCount - docTermCount - k21;
                 
-                double score = LogLikelihood.logLikelihoodRatio(k11, k12, k21, k22);
-                if (queue.size() < _numTerms) {
-                    queue.add(new TermAndScore(te.getString("term"), score));
+                double score;
+                
+                try {
+                    score = LogLikelihood.rootLogLikelihoodRatio(k11, k12, k21, k22);
+                } catch (IllegalArgumentException e) {
+                    LOGGER.warn(String.format("Invalid LLR values for %s in %s: k11=%d, k12=%d, k21=%d, k22=%d", 
+                                    termCounts.curTerm, docid.getTuple(), k11, k12, k21, k22));
+                    continue;
+                }
+                
+                if (queue.size() < maxResults) {
+                    queue.add(new TermAndScore(termCounts.curTerm, score));
                     Collections.sort(queue);
-                } else if (queue.get(_numTerms - 1)._score < score) {
-                    queue.add(new TermAndScore(te.getString("term"), score));
+                } else if (queue.get(maxResults - 1)._score < score) {
+                    queue.add(new TermAndScore(termCounts.curTerm, score));
                     Collections.sort(queue);
                 }
             }
@@ -161,33 +195,95 @@ public class TopTermsByLLR extends SubAssembly {
                 scores.add(tas._score);
             }
             
-            bufferCall.getOutputCollector().add(new Tuple(docid, terms, scores));
+            bufferCall.getOutputCollector().add(new Tuple(terms, scores));
+        }
+
+        private boolean countTerms(Iterator<TupleEntry> iter, TermAndCounts termCounts) {
+            if (termCounts.atEnd) {
+                return false;
+            }
+            
+            // While the iterator is returning terms equal to what's in termCounts, keep
+            // counting the number of terms. Once the term changes, or we have no more
+            // terms, return results.
+            termCounts.curTerm = termCounts.nextTerm;
+            termCounts.docTermCount = termCounts.nextDocTermCount;
+            termCounts.totalTermCount = termCounts.nextTotalTermCount;
+            
+            termCounts.nextTerm = null;
+            termCounts.nextDocTermCount = 0;
+            termCounts.nextTotalTermCount = 0;
+            
+            String curTerm = termCounts.curTerm;
+            while (iter.hasNext()) {
+                TupleEntry te = iter.next();
+                String newTerm = te.getString("term");
+                int newTermCount = te.getInteger("term_count");
+                
+                if ((curTerm == null) && (newTerm == null)) {
+                    // We have a match. Special case for when we're processing the special
+                    // null term, since we won't have a previous item.
+                    if (termCounts.totalTermCount == 0) {
+                        termCounts.totalTermCount = te.getInteger("total_count");
+                    }
+                } else if ((curTerm == null) || !newTerm.equals(curTerm)) {
+                    // Switching terms, return what we've got.
+                    termCounts.nextTerm = newTerm;
+                    termCounts.nextDocTermCount = newTermCount;
+                    termCounts.nextTotalTermCount = te.getInteger("total_count");
+                    return true;
+                }
+                
+                termCounts.docTermCount += newTermCount;
+            }
+            
+            // We ran out of terms, so we're done.
+            termCounts.atEnd = true;
+            return true;
         }
     }
 
-    public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, int numTerms) {
+    public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, final int maxTerms) {
+        this(docsPipe, parser, new ITermsFilter() {
+            
+            @Override
+            public int getMaxResults() {
+                return maxTerms;
+            }
+            
+            @Override
+            public boolean filter(float llrScore, String term, ITermsParser parser) {
+                return false;
+            }
+        }, new Fields("docId"), new Fields("text"));
+    }
+
+    public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, ITermsFilter filter, Fields docIdFields, Fields textField) {
         
-        // We assume each document has a docid field, and a text field
+        // We assume each document has one or more fields that identify each "document", and a text field
         Pipe termsPipe = new Pipe("terms", docsPipe);
-        termsPipe = new Each(termsPipe, new Fields("text"), new ExtractTerms(parser), Fields.REPLACE);
+        termsPipe = new Each(termsPipe, textField, new ExtractTerms(parser), Fields.SWAP);
         
         // We've got docid, term, term count. Generate term, total count. This will
-        // include the empty term "" which will be the total count of all terms.
+        // include the null term which will be the total count of all terms.
         Pipe termCountPipe = new Pipe("term count", termsPipe);
-        termCountPipe = new SumBy(termCountPipe, new Fields("term"), new Fields("count"), new Fields("total_count"), Integer.class);
+        termCountPipe = new SumBy(termCountPipe, new Fields("term"), new Fields("term_count"), new Fields("total_count"), Integer.class);
+        // termCountPipe = new Each(termCountPipe, new Debug("summed", true));
         
         // Join termCountsPipe with our termsPipe by term, so we get
         // docid, term, doc term count, total term count
-        // This will include docid, "", total terms in doc, global terms count
-        
+        // This will include docid, null, total terms in doc, global terms count
         Pipe allTermData = new CoGroup( termsPipe,  new Fields("term"), 
                                         termCountPipe, new Fields("term"),
-                                        new Fields("docid", "term", "term_count", "term_ignore", "total_count"),
+                                        docIdFields.append(new Fields("term", "term_count", "term_ignore", "total_count")),
                                         new LeftJoin());
         
-        allTermData = new Each(allTermData, new Fields("docid", "term", "term_count", "total_count"), new Identity());
-        allTermData = new GroupBy(allTermData, new Fields("docid"), new Fields("term"));
-        allTermData = new Every(allTermData, new CalcLLR(numTerms));
+        Fields termFields = new Fields("term", "term_count", "total_count");
+        allTermData = new Each(allTermData, docIdFields.append(termFields), new Identity());
+        // allTermData = new Each(allTermData, new Debug("grouped", true));
+
+        allTermData = new GroupBy(allTermData, docIdFields, new Fields("term"));
+        allTermData = new Every(allTermData, termFields, new CalcLLR(filter), Fields.SWAP);
         
         setTails(allTermData);
     }
