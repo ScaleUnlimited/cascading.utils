@@ -24,6 +24,7 @@ import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
+import cascading.pipe.assembly.AggregateBy;
 import cascading.pipe.assembly.SumBy;
 import cascading.pipe.joiner.LeftJoin;
 import cascading.tuple.Fields;
@@ -115,10 +116,12 @@ public class TopTermsByLLR extends SubAssembly {
     private static class CalcLLR extends BaseOperation<NullContext> implements Buffer<NullContext> {
         
         private ITermsFilter _filter;
+        private ITermsParser _parser;
         
-        public CalcLLR(ITermsFilter filter) {
+        public CalcLLR(ITermsParser parser, ITermsFilter filter) {
             super(new Fields("terms", "scores"));
             
+            _parser = parser;
             _filter = filter;
         }
 
@@ -133,7 +136,6 @@ public class TopTermsByLLR extends SubAssembly {
             
             TermAndCounts termCounts = new TermAndCounts();
             countTerms(iter, termCounts);
-            LOGGER.info(termCounts);
             
             if (termCounts.curTerm != null) {
                 throw new RuntimeException(String.format("Impossible situation - first term for docid %s isn't null", docid));
@@ -150,7 +152,7 @@ public class TopTermsByLLR extends SubAssembly {
             List<TermAndScore> queue = new ArrayList<TermAndScore>(maxResults);
 
             while (countTerms(iter, termCounts)) {
-                LOGGER.info(termCounts);
+                // LOGGER.info(termCounts);
                 
                 int termCount = termCounts.docTermCount;
                 int termTotalCount = termCounts.totalTermCount;
@@ -177,11 +179,19 @@ public class TopTermsByLLR extends SubAssembly {
                     continue;
                 }
                 
+                // See if any filtering is needed.
+                if (_filter.filter(score, termCounts.curTerm, _parser)) {
+                    continue;
+                }
+                
                 if (queue.size() < maxResults) {
                     queue.add(new TermAndScore(termCounts.curTerm, score));
-                    Collections.sort(queue);
+                    if (queue.size() == maxResults) {
+                        // Set up for next call, where last score must be lowest
+                        Collections.sort(queue);
+                    }
                 } else if (queue.get(maxResults - 1)._score < score) {
-                    queue.add(new TermAndScore(termCounts.curTerm, score));
+                    queue.set(maxResults - 1, new TermAndScore(termCounts.curTerm, score));
                     Collections.sort(queue);
                 }
             }
@@ -252,13 +262,13 @@ public class TopTermsByLLR extends SubAssembly {
             }
             
             @Override
-            public boolean filter(float llrScore, String term, ITermsParser parser) {
+            public boolean filter(double llrScore, String term, ITermsParser parser) {
                 return false;
             }
-        }, new Fields("docId"), new Fields("text"));
+        }, new Fields("docId"), new Fields("text"), AggregateBy.CompositeFunction.DEFAULT_THRESHOLD);
     }
 
-    public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, ITermsFilter filter, Fields docIdFields, Fields textField) {
+    public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, ITermsFilter filter, Fields docIdFields, Fields textField, int threshold) {
         
         // We assume each document has one or more fields that identify each "document", and a text field
         Pipe termsPipe = new Pipe("terms", docsPipe);
@@ -267,7 +277,8 @@ public class TopTermsByLLR extends SubAssembly {
         // We've got docid, term, term count. Generate term, total count. This will
         // include the null term which will be the total count of all terms.
         Pipe termCountPipe = new Pipe("term count", termsPipe);
-        termCountPipe = new SumBy(termCountPipe, new Fields("term"), new Fields("term_count"), new Fields("total_count"), Integer.class);
+        termCountPipe = new SumBy(termCountPipe, new Fields("term"), new Fields("term_count"), 
+                        new Fields("total_count"), Integer.class, threshold);
         // termCountPipe = new Each(termCountPipe, new Debug("summed", true));
         
         // Join termCountsPipe with our termsPipe by term, so we get
@@ -283,7 +294,7 @@ public class TopTermsByLLR extends SubAssembly {
         // allTermData = new Each(allTermData, new Debug("grouped", true));
 
         allTermData = new GroupBy(allTermData, docIdFields, new Fields("term"));
-        allTermData = new Every(allTermData, termFields, new CalcLLR(filter), Fields.SWAP);
+        allTermData = new Every(allTermData, termFields, new CalcLLR(parser, filter), Fields.SWAP);
         
         setTails(allTermData);
     }
