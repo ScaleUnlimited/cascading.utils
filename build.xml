@@ -87,6 +87,7 @@
 		<javac encoding="${build.encoding}"
 		       srcdir="${main.src.dir}"
 		       includes="**/*.java"
+			   excludes="**/test/*.java"
 		       destdir="${build.dir.main-classes}"
 		       debug="${javac.debug}"
 		       optimize="${javac.optimize}"
@@ -122,6 +123,30 @@
 	<!-- Unit Tests                                                         -->
 	<!-- ================================================================== -->
 
+	<target name="compile-test-artifacts" depends="compile">
+		<echo>*** Building Unit Tests Sources ***</echo>
+		<mkdir dir="${build.dir.test-classes}" />
+		<path id="test.path">
+			<pathelement location="${build.dir.main-classes}" />
+		</path>
+
+		<javac encoding="${build.encoding}"
+		       srcdir="${main.src.dir}"
+		       includes="**/test/*.java"
+
+		       destdir="${build.dir.test-classes}"
+		       debug="${javac.debug}"
+		       optimize="${javac.optimize}"
+		       target="${javac.version}"
+		       source="${javac.version}"
+		       includeantruntime="false"
+		       deprecation="${javac.deprecation}">
+			<compilerarg line="${javac.args} ${javac.args.warnings}" />
+			<classpath refid="test.classpath" />
+			<classpath refid="test.path" />
+		</javac>
+	</target>
+
 	<target name="compile-test" depends="compile">
 		<echo>*** Building Unit Tests Sources ***</echo>
 		<mkdir dir="${build.dir.test-classes}" />
@@ -132,6 +157,7 @@
 		<javac encoding="${build.encoding}"
 		       srcdir="${test.src.dir}"
 		       includes="**/*.java"
+
 		       destdir="${build.dir.test-classes}"
 		       debug="${javac.debug}"
 		       optimize="${javac.optimize}"
@@ -146,7 +172,7 @@
 	</target>
 
 	<target name="test"
-		    depends="compile-test"
+		    depends="compile-test-artifacts, compile-test"
 			description="--> run unit tests">
 		<delete dir="${build.dir.test-reports}" />
 		<mkdir dir="${build.dir.test-reports}" />

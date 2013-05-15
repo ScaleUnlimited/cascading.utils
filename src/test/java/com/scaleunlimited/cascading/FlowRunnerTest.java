@@ -13,10 +13,6 @@ import java.util.concurrent.TimeoutException;
 
 import junit.framework.Assert;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.MiniMRCluster;
 import org.junit.Test;
 
 import cascading.flow.Flow;
@@ -33,9 +29,9 @@ import cascading.tap.Tap;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
-import cascading.util.Util;
 
 import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
+import com.scaleunlimited.cascading.hadoop.test.MiniClusterPlatform;
 import com.scaleunlimited.cascading.local.LocalPlatform;
 
 public class FlowRunnerTest extends Assert {
@@ -232,7 +228,7 @@ public class FlowRunnerTest extends Assert {
         // TODO create MiniClusterPlatform that extends HadoopPlatform, with
         // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
         // and defaults for everything
-        BasePlatform platform = makeHadoopMiniClusterPlatform(2, 2, "build/test/testStatsHadoopMiniCluster/log/");
+        BasePlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, 2, 2, "build/test/testStatsHadoopMiniCluster/log/", "build/test/testStatsHadoopMiniCluster/tmp");
         platform.setJobPollingInterval(10);
         
         FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
@@ -244,44 +240,6 @@ public class FlowRunnerTest extends Assert {
         
         // And check for something similar in the details file
         checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
-    }
-    
-    private BasePlatform makeHadoopMiniClusterPlatform(int numMapSlots, int numReduceSlots, String logDirName) throws IOException {
-        // TODO create MiniClusterPlatform that extends HadoopPlatform, with
-        // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
-        // and defaults for everything
-        System.setProperty("hadoop.log.dir", logDirName);
-
-        if( Util.isEmpty(System.getProperty("hadoop.tmp.dir") ) )
-            System.setProperty("hadoop.tmp.dir", "build/test/testStatsHadoopMiniCluster/tmp");
-
-        System.setProperty("java.security.krb5.realm", "");
-        System.setProperty("java.security.krb5.kdc", "");
-
-        new File( System.getProperty("hadoop.log.dir")).mkdirs();
-
-        JobConf conf = new JobConf();
-
-        conf.setInt("mapred.job.reuse.jvm.num.tasks", -1 );
-
-        int totalSlots = numMapSlots + numReduceSlots;
-        MiniDFSCluster dfs = new MiniDFSCluster(conf, numMapSlots, true, null);
-        FileSystem fileSys = dfs.getFileSystem();
-        MiniMRCluster mr = new MiniMRCluster(totalSlots, fileSys.getUri().toString(), 1, null, null, conf);
-
-        JobConf jobConf = mr.createJobConf();
-
-        jobConf.set("mapred.child.java.opts", "-Xmx128m");
-        jobConf.setInt("mapred.job.reuse.jvm.num.tasks", -1);
-        jobConf.setInt("jobclient.completion.poll.interval", 50);
-        jobConf.setInt("jobclient.progress.monitor.poll.interval", 50);
-        jobConf.setMapSpeculativeExecution( false );
-        jobConf.setReduceSpeculativeExecution( false );
-
-        jobConf.setNumMapTasks(2);
-        jobConf.setNumReduceTasks(2);
-        
-        return new HadoopPlatform(FlowRunnerTest.class, jobConf);
     }
     
     private BufferedReader openStatsFile(String logDirName, String testName) throws FileNotFoundException {
@@ -339,7 +297,7 @@ public class FlowRunnerTest extends Assert {
         return makeFlow(testName, numDatums, id, fails, new HadoopPlatform(FlowRunnerTest.class));
     }
     
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private Flow makeFlow(String testName, int numDatums, int id, boolean fails, BasePlatform platform) throws Exception {
         final Fields testFields = new Fields("user", "value");
         
