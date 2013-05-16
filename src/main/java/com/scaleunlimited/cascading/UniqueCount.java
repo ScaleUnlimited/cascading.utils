@@ -145,7 +145,7 @@ public class UniqueCount extends SubAssembly {
             // increment the count. At the end we can emit the result.
 
             Iterator<TupleEntry> iter = bufferCall.getArgumentsIterator();
-            int count = 0;
+            int count = 1;
 
             Tuple oldGroupValue = null;
             while (iter.hasNext()) {
@@ -159,7 +159,7 @@ public class UniqueCount extends SubAssembly {
                     oldGroupValue = curGroupValue;
                 }
             }
-
+            
             _result.set(0, count);
             bufferCall.getOutputCollector().add(_result);
         }
