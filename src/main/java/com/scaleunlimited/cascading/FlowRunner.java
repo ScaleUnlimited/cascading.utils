@@ -2,26 +2,21 @@ package com.scaleunlimited.cascading;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobInProgress;
-import org.apache.hadoop.mapred.RunningJob;
-import org.apache.hadoop.mapred.TaskCompletionEvent;
 import org.apache.log4j.Logger;
-
-import com.scaleunlimited.cascading.hadoop.HadoopUtils;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowStep;
@@ -32,6 +27,8 @@ import cascading.stats.hadoop.HadoopSliceStats;
 import cascading.stats.hadoop.HadoopSliceStats.Kind;
 import cascading.stats.hadoop.HadoopStepStats;
 import cascading.stats.local.LocalStepStats;
+
+import com.scaleunlimited.cascading.hadoop.HadoopUtils;
 
 public class FlowRunner {
     static final Logger LOGGER = Logger.getLogger(FlowRunner.class);
@@ -152,8 +149,9 @@ public class FlowRunner {
                 // be 03:35:00, if the interval was every minute.
                 long nextCheckTime = startTime - (startTime % checkInterval);
 
-                SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyddMM hh:mm:ss");
-
+                SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyMMdd hh:mm:ss");
+                timeFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                
                 while (true) {
                     Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
 
