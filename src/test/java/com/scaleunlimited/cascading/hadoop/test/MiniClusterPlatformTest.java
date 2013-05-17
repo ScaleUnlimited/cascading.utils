@@ -66,7 +66,7 @@ public class MiniClusterPlatformTest {
         platform.shutdown();
     }
     
-//    @Test
+    // @Test
     public void testMinConstructor() throws Exception {
         MiniClusterPlatform platform = new MiniClusterPlatform(MiniClusterPlatformTest.class);
         platform.setJobPollingInterval(10);
