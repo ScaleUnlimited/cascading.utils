@@ -2,19 +2,15 @@ package com.scaleunlimited.cascading.hadoop.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MiniMRCluster;
 
-import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
-
-import cascading.flow.hadoop.util.HadoopUtil;
 import cascading.util.Util;
+
+import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
 
 @SuppressWarnings("rawtypes")
 public class MiniClusterPlatform extends HadoopPlatform {
@@ -24,6 +20,8 @@ public class MiniClusterPlatform extends HadoopPlatform {
     private static final String DEFAULT_LOGDIR_NAME = "minicluster-logs";
     private static final String DEFAULT_TEMPDIR_NAME = "minicluster-tmp";
     
+    private MiniMRCluster _mr = null;
+    MiniDFSCluster _dfs = null;
     
     public MiniClusterPlatform(Class applicationJarClass) throws IOException {
         this(applicationJarClass, DEFAULT_NUM_MAP_SLOTS, DEFAULT_NUM_REDUCE_SLOTS, null);
@@ -70,11 +68,11 @@ public class MiniClusterPlatform extends HadoopPlatform {
         conf.setInt("mapred.job.reuse.jvm.num.tasks", -1 );
 
         int totalSlots = numMapSlots + numReduceSlots;
-        MiniDFSCluster dfs = new MiniDFSCluster(conf, numMapSlots, true, null);
-        FileSystem fileSys = dfs.getFileSystem();
-        MiniMRCluster mr = new MiniMRCluster(totalSlots, fileSys.getUri().toString(), 1, null, null, conf);
+        _dfs = new MiniDFSCluster(conf, numMapSlots, true, null);
+        FileSystem fileSys = _dfs.getFileSystem();
+        _mr = new MiniMRCluster(totalSlots, fileSys.getUri().toString(), 1, null, null, conf);
 
-        JobConf jobConf = mr.createJobConf();
+        JobConf jobConf = _mr.createJobConf();
 
         jobConf.set("mapred.child.java.opts", "-Xmx128m");
         jobConf.setInt("mapred.job.reuse.jvm.num.tasks", -1);
@@ -90,5 +88,13 @@ public class MiniClusterPlatform extends HadoopPlatform {
         _conf = new JobConf(jobConf);
     }
 
+    public void shutdown() {
+        if (_dfs != null) {
+            _dfs.shutdown();
+        }
+        if (_mr != null) {
+            _mr.shutdown();
+        }
+    }
 
 }
