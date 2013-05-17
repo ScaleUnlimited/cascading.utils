@@ -124,12 +124,12 @@ public class UniqueCountTest {
         Pipe pipe = new Pipe("test");
         UniqueCount assembly = new UniqueCount(pipe, groupFields, uniqueFields, countField, 2);
 
-        Pipe[] tails = assembly.getTails();
+        Pipe uniqueCountsPipe = assembly.getTailPipe();
         
         BasePath out = platform.makePath(testDir, "out");
         Tap sinkTap = platform.makeTap(platform.makeBinaryScheme(FIELDS), out, SinkMode.REPLACE);
 
-        Flow flow = platform.makeFlowConnector().connect(testName, sourceTap, sinkTap, tails[0]);
+        Flow flow = platform.makeFlowConnector().connect(testName, sourceTap, sinkTap, uniqueCountsPipe);
         FlowUtils.nameFlowSteps(flow);
         return flow;
     }

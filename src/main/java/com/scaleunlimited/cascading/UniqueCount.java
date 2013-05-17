@@ -22,7 +22,7 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "rawtypes"})
 public class UniqueCount extends SubAssembly {
 
     /**
@@ -302,5 +302,10 @@ public class UniqueCount extends SubAssembly {
         pipe = new Every(pipe, uniqueFields, new CountUniques(uniqueFields, countField), Fields.REPLACE);
 
         setTails(pipe);
+    }
+    
+    public Pipe getTailPipe() {
+        Pipe[] tails = getTails();
+        return tails[0];
     }
 }
