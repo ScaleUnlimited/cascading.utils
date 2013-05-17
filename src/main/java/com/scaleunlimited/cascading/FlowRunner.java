@@ -263,7 +263,6 @@ public class FlowRunner {
     private void collectStats(FlowFuture ff, Map<String, TaskStats> taskCounts) {
         Flow flow = ff.getFlow();
         FlowStats fs = flow.getFlowStats();
-        fs.captureDetail();
 
         String flowId = flow.getID();
         String flowName = flow.getName();
@@ -271,13 +270,15 @@ public class FlowRunner {
         List<FlowStep> flowSteps = flow.getFlowSteps();
         for (FlowStep flowStep : flowSteps) {
            FlowStepStats stepStats = flowStep.getFlowStepStats();
-
+           
            String stepId = flowStep.getID();
            String stepName = flowStep.getName();
            
            String countsKey = String.format("%s-%s", flowId, stepId);
            if (stepStats instanceof HadoopStepStats) {
                HadoopStepStats hadoopSS = (HadoopStepStats)stepStats;
+               // We don't want/need info on task attempts
+               hadoopSS.captureDetail(false);
                
                // We have one child for every task. We have to see if it's
                // running, and if so, whether it's a mapper or reducer
@@ -303,6 +304,8 @@ public class FlowRunner {
                    }
                }
            } else if (stepStats instanceof LocalStepStats) {
+               stepStats.captureDetail();
+               
                // map & reduce kind of run as one, so just add one to both if there's a group.
                incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
                if (flowStep.getGroups().size() > 0) {
@@ -314,7 +317,13 @@ public class FlowRunner {
         }
     }
 
-    private void incrementCounts(Map<String, TaskStats> counts, String countsKey, String flowName, String stepName, int mapCount, int reduceCount, long mapTime, long reduceTime) {
+    private void incrementCounts(Map<String, TaskStats> counts, String countsKey, String flowName, String stepName, 
+                    int mapCount, int reduceCount, long mapTime, long reduceTime) {
+        // If they're all zero, just ignore the call so we don't get extra entries.
+        if ((mapCount == 0) && (reduceCount == 0) && (mapTime == 0) && (reduceTime == 0)) {
+            return;
+        }
+        
         TaskStats curStats = counts.get(countsKey);
         if (curStats == null) {
             curStats = new TaskStats(flowName, stepName);
