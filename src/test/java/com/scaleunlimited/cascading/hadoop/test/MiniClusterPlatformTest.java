@@ -43,7 +43,7 @@ public class MiniClusterPlatformTest {
 
     }
     
-//    @Test
+    @Test
     public void testMinConstructor() throws Exception {
         MiniClusterPlatform platform = new MiniClusterPlatform(MiniClusterPlatformTest.class);
         

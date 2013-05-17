@@ -36,7 +36,7 @@ public class HadoopPath extends BasePath {
         Path relativePath = new Path(path);
         _hadoopFS = relativePath.getFileSystem(_conf);
         if (!relativePath.isAbsolute()) {
-            Path parent = _hadoopFS.getFileStatus(new Path(".")).getPath(); 
+            Path parent = _hadoopFS.getWorkingDirectory();
             _hadoopPath = new Path(parent, relativePath);
         } else {
             _hadoopPath = relativePath;

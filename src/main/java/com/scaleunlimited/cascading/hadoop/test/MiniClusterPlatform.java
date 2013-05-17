@@ -87,15 +87,7 @@ public class MiniClusterPlatform extends HadoopPlatform {
         jobConf.setNumReduceTasks(numReduceSlots);
 
         // Clear out the existing job conf properties in HadoopPlatform
-        _conf.clear();
-        
-        // And now set them from the jobConf we just created using MiniMRCluster.
-        Map<Object, Object> props = HadoopUtil.createProperties(jobConf);
-        Set<Entry<Object, Object>> entrySet = props.entrySet();
-        for (Entry<Object, Object> entry : entrySet) {
-            setProperty((String)entry.getKey(), (String)entry.getValue());
-        }
-
+        _conf = new JobConf(jobConf);
     }
 
 
