@@ -177,7 +177,7 @@ public class FlowRunnerTest extends Assert {
     
     @Test
     public void testStatsLocal() throws Exception {
-        final String logDirName = "build/test/testStatsLocal/log";
+        final String logDirName = "build/test/FlowRunnerTest/testStatsLocal/log";
         BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
         FlowRunner fr = new FlowRunner("testStatsLocal", 1, new File(logDirName), 10);
         FlowFuture result0 = fr.addFlow(makeFlow("testStatsLocal", 10, 0, false, platform));
@@ -192,7 +192,7 @@ public class FlowRunnerTest extends Assert {
         System.setProperty("java.security.krb5.realm", "");
         System.setProperty("java.security.krb5.kdc", "");
 
-        final String logDirName = "build/test/testStatsHadoop/log";
+        final String logDirName = "build/test/FlowRunnerTest/testStatsHadoop/log";
         BasePlatform platform = new HadoopPlatform(FlowRunnerTest.class);
         FlowRunner fr = new FlowRunner("testStatsHadoop", 1, new File(logDirName), 1000L);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoop", 10, 0, false, platform));
@@ -210,7 +210,7 @@ public class FlowRunnerTest extends Assert {
         System.setProperty("java.security.krb5.kdc", "");
 
         BasePlatform platform = new HadoopPlatform(FlowRunnerTest.class);
-        FlowRunner fr = new FlowRunner("testTerminationHadoop", 1, new File("build/test/testTerminationHadoop/log"), 100);
+        FlowRunner fr = new FlowRunner("testTerminationHadoop", 1, new File("build/test/FlowRunnerTest/testTerminationHadoop/log"), 100);
         fr.addFlow(makeFlow("testTerminationHadoop", 10, 0, false, platform));
         fr.terminate();
     }
@@ -218,17 +218,16 @@ public class FlowRunnerTest extends Assert {
     @Test
     public void testTerminationLocal() throws Exception {
         BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
-        FlowRunner fr = new FlowRunner("testTerminationLocal", 1, new File("build/test/testTerminationLocal/log"), 10);
+        FlowRunner fr = new FlowRunner("testTerminationLocal", 1, new File("build/test/FlowRunnerTest/testTerminationLocal/log"), 10);
         fr.addFlow(makeFlow("testTerminationLocal", 10, 0, false, platform));
         fr.terminate();
     }
     
     @Test
     public void testStatsHadoopMiniCluster() throws Exception {
-        // TODO create MiniClusterPlatform that extends HadoopPlatform, with
-        // parameters to control log dir, temp dir, # map tasks, # reduce tasks,
-        // and defaults for everything
-        BasePlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, 2, 2, "build/test/testStatsHadoopMiniCluster/log/", "build/test/testStatsHadoopMiniCluster/tmp");
+        MiniClusterPlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, 2, 2, 
+                        "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/log/", 
+                        "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/tmp");
         platform.setJobPollingInterval(10);
         
         FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
@@ -240,6 +239,8 @@ public class FlowRunnerTest extends Assert {
         
         // And check for something similar in the details file
         checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
+    
+        platform.shutdown();
     }
     
     private BufferedReader openStatsFile(String logDirName, String testName) throws FileNotFoundException {
