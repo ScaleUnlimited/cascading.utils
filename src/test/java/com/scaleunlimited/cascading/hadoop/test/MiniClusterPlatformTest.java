@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -23,36 +24,37 @@ import com.scaleunlimited.cascading.BasePath;
 
 public class MiniClusterPlatformTest {
 
-    private static final String OUTPUT_DIR = "build/test/MiniClusterPlatformTest/";
+    private static final String BASE_DIR = "build/test/MiniClusterPlatformTest/";
 
+    private MiniClusterPlatform _platform;
+    
     @Before
     public void setup() throws IOException {
-        File dataDir = new File("build/test/data");
-        if (dataDir.exists()) {
-            FileUtils.deleteDirectory(dataDir);
-        }
-        File mapredDir = new File("build/test/mapred");
-        if (mapredDir.exists()) {
-            FileUtils.deleteDirectory(mapredDir);
-        }
-
-        File outputDir = new File("OUTPUT_DIR");
+        _platform = null;
+        
+        File outputDir = new File(BASE_DIR);
         if (outputDir.exists()) {
             FileUtils.deleteDirectory(outputDir);
         }
     }
     
+    @After
+    public void tearDown() throws InterruptedException {
+        if (_platform != null) {
+            _platform.shutdown();
+            _platform = null;
+        }
+    }
     
     @Test
-    public void testFullConstructor() throws Exception {
-        final String logDirname = "build/test/MiniClusterPlatformTest/log";
-        final String tmpDirname = "build/test/MiniClusterPlatformTest/tmp";
+    public void testFullConstructor1() throws Exception {
+        final String logDirname = BASE_DIR + "log1";
+        final String tmpDirname = BASE_DIR + "tmp1";
         
-        MiniClusterPlatform platform = new MiniClusterPlatform(MiniClusterPlatformTest.class, 
+        _platform = new MiniClusterPlatform(MiniClusterPlatformTest.class, 
                         2, 2, logDirname, tmpDirname);
-        platform.setJobPollingInterval(10);
 
-        Flow flow = makeFlow(platform, "testFullConstructor");
+        Flow flow = makeFlow("testFullConstructor1");
         flow.complete();
         
         File logDir = new File(logDirname);
@@ -62,31 +64,42 @@ public class MiniClusterPlatformTest {
         File tmpDir = new File(tmpDirname);
         assertTrue(tmpDir.exists());
         assertTrue(tmpDir.isDirectory());
+    }
+    
+    // @Test
+    public void testFullConstructor2() throws Exception {
+        final String logDirname = BASE_DIR + "log2";
+        final String tmpDirname = BASE_DIR + "tmp2";
+        
+        _platform = new MiniClusterPlatform(MiniClusterPlatformTest.class, 
+                        2, 2, logDirname, tmpDirname);
 
-        platform.shutdown();
+        Flow flow = makeFlow("testFullConstructor2");
+        flow.complete();
+        
+        File logDir = new File(logDirname);
+        assertTrue(logDir.exists());
+        assertTrue(logDir.isDirectory());
+
+        File tmpDir = new File(tmpDirname);
+        assertTrue(tmpDir.exists());
+        assertTrue(tmpDir.isDirectory());
     }
     
     // @Test
     public void testMinConstructor() throws Exception {
-        MiniClusterPlatform platform = new MiniClusterPlatform(MiniClusterPlatformTest.class);
-        platform.setJobPollingInterval(10);
-
-        Flow flow = makeFlow(platform, "testMinConstructor");
+        _platform = new MiniClusterPlatform(MiniClusterPlatformTest.class);
+        Flow flow = makeFlow("testMinConstructor");
         flow.complete();
-        
-        platform.shutdown();
-
     }
 
     
-    private Flow makeFlow(MiniClusterPlatform platform, String testName) throws Exception {
-        BasePath path = platform.makePath(OUTPUT_DIR);
+    private Flow makeFlow(String testName) throws Exception {
+        BasePath testDir = _platform.makePath(testName);
+        BasePath in = _platform.makePath(testDir, "in");
         
-        BasePath testDir = platform.makePath(path, testName);
-        BasePath in = platform.makePath(testDir, "in");
-        
-        Tap sourceTap = platform.makeTap(platform.makeBinaryScheme(new Fields("user", "val")), in, SinkMode.REPLACE);
-        TupleEntryCollector write = sourceTap.openForWrite(platform.makeFlowProcess());
+        Tap sourceTap = _platform.makeTap(_platform.makeBinaryScheme(new Fields("user", "val")), in, SinkMode.REPLACE);
+        TupleEntryCollector write = sourceTap.openForWrite(_platform.makeFlowProcess());
         int i = 0;
         while (i < 10) {
             String username = "user-" + i;
@@ -97,10 +110,10 @@ public class MiniClusterPlatformTest {
 
         Pipe pipe = new Pipe("test");
         
-        BasePath out = platform.makePath(testDir, "out");
-        Tap sinkTap = platform.makeTap(platform.makeTextScheme(), out, SinkMode.REPLACE);
+        BasePath out = _platform.makePath(testDir, "out");
+        Tap sinkTap = _platform.makeTap(_platform.makeTextScheme(), out, SinkMode.REPLACE);
 
-        Flow flow = platform.makeFlowConnector().connect(testName, sourceTap, sinkTap, pipe);
+        Flow flow = _platform.makeFlowConnector().connect(testName, sourceTap, sinkTap, pipe);
         return flow;
     }
 }
