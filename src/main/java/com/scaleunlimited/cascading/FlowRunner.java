@@ -35,8 +35,6 @@ public class FlowRunner {
 
     private static final long FLOW_CHECK_INTERVAL = 5 * 1000L;
     
-    private static final long DEFAULT_STATS_CHECK_INTERVAL = 15 * 60 * 1000L;
-
     private static class TaskStats {
         
         private String _flowName;
@@ -125,7 +123,7 @@ public class FlowRunner {
     }
 
     
-    private void createStats(String runnerName, File statsDir, final long checkInterval) {
+    private void createStats(final String runnerName, File statsDir, final long checkInterval) {
         if (statsDir == null) {
             return;
         }
@@ -152,50 +150,56 @@ public class FlowRunner {
                 SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyMMdd hh:mm:ss");
                 timeFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
                 
-                while (true) {
-                    Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
+                try {
+                    while (true) {
+                        Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
 
-                    String timestamp = timeFormatter.format(nextCheckTime);
-                    nextCheckTime += checkInterval;
-                    for (FlowFuture ff : _flowFutures) {
-                        collectStats(ff, taskCounts);
-                    }
+                        String timestamp = timeFormatter.format(nextCheckTime);
+                        nextCheckTime += checkInterval;
+                        synchronized (_flowFutures) {
+                            for (FlowFuture ff : _flowFutures) {
+                                collectStats(ff, taskCounts);
+                            }
+                        }
+                        
+                        // Output counts. Format is
+                        // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
+                        String stats = makeStats(taskCounts, true);
+                        statsStream.println(String.format("%s\t%s", timestamp, stats));
+                        // System.out.println("" + timeInMinutes + "\t" + stats);
 
-                    // Output counts. Format is
-                    // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
-                    String stats = makeStats(taskCounts, true);
-                    statsStream.println(String.format("%s\t%s", timestamp, stats));
-                    // System.out.println("" + timeInMinutes + "\t" + stats);
+                        // Generate a summary line
+                        // <timestamp>    <map tasks>    <reduce tasks>    
+                        stats = makeStats(taskCounts, false);
+                        detailsStream.println(String.format("%s\t%s", timestamp, stats));
 
-                    // Generate a summary line
-                    // <timestamp>    <map tasks>    <reduce tasks>    
-                    stats = makeStats(taskCounts, false);
-                    detailsStream.println(String.format("%s\t%s", timestamp, stats));
+                        // For each of the tasks with map/reduce counts, output a separate line after the summary line.
+                        //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
+                        for (TaskStats taskStat : taskCounts.values()) {
+                            int mapCount = taskStat.getMapCount();
+                            int reduceCount = taskStat.getReduceCount();
+                            if (mapCount + reduceCount > 0) {
+                                detailsStream.println(String.format("\t%d\t%d\t%s|%s\t%s",
+                                                mapCount, reduceCount,
+                                                taskStat.getFlowName(), taskStat.getStepName(),
+                                                timestamp));
+                            }
+                        }
 
-                    // For each of the tasks with map/reduce counts, output a separate line after the summary line.
-                    //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
-                    for (TaskStats taskStat : taskCounts.values()) {
-                        int mapCount = taskStat.getMapCount();
-                        int reduceCount = taskStat.getReduceCount();
-                        if (mapCount + reduceCount > 0) {
-                            detailsStream.println(String.format("\t%d\t%d\t%s|%s\t%s",
-                                            mapCount, reduceCount,
-                                            taskStat.getFlowName(), taskStat.getStepName(),
-                                            timestamp));
+                        try {
+                            Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
+                        } catch (InterruptedException e) {
+                            // We were interrupted, so terminate.
+                            LOGGER.info("Terminating Flow stats thread");
+                            break;
                         }
                     }
-
-                    try {
-                        Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
-                    } catch (InterruptedException e) {
-                        // We were interrupted, so quietly terminate.
-                        break;
-                    }
+                } catch (Throwable t) {
+                    LOGGER.error("Exception while collecting stats for " + runnerName, t);
+                } finally {
+                    IOUtils.closeQuietly(statsStream);
                 }
-
-                IOUtils.closeQuietly(statsStream);
             }
-
         }, "FlowRunner stats");
 
         // We don't want to hold up the JVM for this one thread.
@@ -315,6 +319,25 @@ public class FlowRunner {
         }
     }
 
+    /**
+     * Cascading will hang on to the HadoopStepStats for every flow, until we get rid of them. So we'll clear out
+     * stats once a FlowFuture is done.
+     */
+    private void clearStats(FlowFuture ff) {
+        Flow flow = ff.getFlow();
+        FlowStats fs = ff.getFlow().getFlowStats();
+
+        List<FlowStep> flowSteps = flow.getFlowSteps();
+        for (FlowStep flowStep : flowSteps) {
+           FlowStepStats stepStats = flowStep.getFlowStepStats();
+           
+           if (stepStats instanceof HadoopStepStats) {
+               HadoopStepStats hadoopSS = (HadoopStepStats)stepStats;
+               hadoopSS.getTaskStats().clear();
+           }
+        }
+    }
+    
     private void incrementCounts(Map<String, TaskStats> counts, String countsKey, String flowName, String stepName, 
                     int mapCount, int reduceCount, long mapTime, long reduceTime) {
         // If they're all zero, just ignore the call so we don't get extra entries.
@@ -353,20 +376,23 @@ public class FlowRunner {
         
         // Find an open spot, or loop until we get one.
         while (true) {
-            Iterator<FlowFuture> iter = _flowFutures.iterator();
-            while (iter.hasNext()) {
-               FlowFuture ff = iter.next();
-                if (ff.isDone()) {
-                    iter.remove();
+            synchronized (_flowFutures) {
+                Iterator<FlowFuture> iter = _flowFutures.iterator();
+                while (iter.hasNext()) {
+                    FlowFuture ff = iter.next();
+                    if (ff.isDone()) {
+                        clearStats(ff);
+                        iter.remove();
+                    }
                 }
-            }
-            
-            // Now that we've removed any flows that are done, see if we
-            // can add the new flow.
-            if (_flowFutures.size() < _maxFlows) {
-                FlowFuture ff = new FlowFuture(flow);
-                _flowFutures.add(ff);
-                return ff;
+
+                // Now that we've removed any flows that are done, see if we
+                // can add the new flow.
+                if (_flowFutures.size() < _maxFlows) {
+                    FlowFuture ff = new FlowFuture(flow);
+                    _flowFutures.add(ff);
+                    return ff;
+                }
             }
             
             // No open slots, so loop
@@ -382,7 +408,9 @@ public class FlowRunner {
         // Release any completed flows
         isDone();
         
-        return (_flowFutures.size() >= _maxFlows);
+        synchronized (_flowFutures) {
+            return (_flowFutures.size() >= _maxFlows);
+        }
     }
     
     /**
@@ -391,13 +419,15 @@ public class FlowRunner {
      * @return
      */
     public boolean isDone() {
-        Iterator<FlowFuture> iter = _flowFutures.iterator();
-        while (iter.hasNext()) {
-            FlowFuture ff = iter.next();
-            if (ff.isDone()) {
-                iter.remove();
-            } else {
-                return false;
+        synchronized (_flowFutures) {
+            Iterator<FlowFuture> iter = _flowFutures.iterator();
+            while (iter.hasNext()) {
+                FlowFuture ff = iter.next();
+                if (ff.isDone()) {
+                    iter.remove();
+                } else {
+                    return false;
+                }
             }
         }
         
@@ -430,13 +460,15 @@ public class FlowRunner {
         }
         
         // Now terminate all of the running flows.
-        Iterator<FlowFuture> iter = _flowFutures.iterator();
-        while (iter.hasNext()) {
-            FlowFuture ff = iter.next();
-            if (ff.isDone()) {
-                iter.remove();
-            } else {
-                ff.cancel(true);
+        synchronized (_flowFutures) {
+            Iterator<FlowFuture> iter = _flowFutures.iterator();
+            while (iter.hasNext()) {
+                FlowFuture ff = iter.next();
+                if (ff.isDone()) {
+                    iter.remove();
+                } else {
+                    ff.cancel(true);
+                }
             }
         }
     }
