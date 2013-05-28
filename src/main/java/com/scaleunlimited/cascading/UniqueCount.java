@@ -140,9 +140,9 @@ public class UniqueCount extends SubAssembly {
         public void operate(FlowProcess flowProcess, BufferCall<NullContext> bufferCall) {
             // We are being called with all entries for the target group, sorted
             // by _uniqueFields
+            
             // Keep track of the current value(s) for the unique fields, and
-            // when it changes
-            // increment the count. At the end we can emit the result.
+            // when it changes increment the count. At the end we can emit the result.
 
             Iterator<TupleEntry> iter = bufferCall.getArgumentsIterator();
             int count = 1;
@@ -299,7 +299,7 @@ public class UniqueCount extends SubAssembly {
         
         // The output should be a tuple with the groupFields and the countField
         Pipe pipe = new GroupBy(name, filters, groupFields, uniqueFields);
-        pipe = new Every(pipe, uniqueFields, new CountUniques(uniqueFields, countField), Fields.REPLACE);
+        pipe = new Every(pipe, uniqueFields, new CountUniques(uniqueFields, countField), Fields.SWAP);
 
         setTails(pipe);
     }
