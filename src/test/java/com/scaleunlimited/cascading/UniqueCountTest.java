@@ -146,7 +146,6 @@ public class UniqueCountTest extends Assert {
                 } else {
                     Tuple t = new Tuple(username, i % 2, i);
                     write.add(t);
-                    System.out.println(t);
                 }
                 i++;
                 j++;
