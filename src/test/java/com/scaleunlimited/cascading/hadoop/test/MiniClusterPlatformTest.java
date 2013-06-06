@@ -66,25 +66,9 @@ public class MiniClusterPlatformTest {
         assertTrue(tmpDir.isDirectory());
     }
     
-    // @Test
-    public void testFullConstructor2() throws Exception {
-        final String logDirname = BASE_DIR + "log2";
-        final String tmpDirname = BASE_DIR + "tmp2";
-        
-        _platform = new MiniClusterPlatform(MiniClusterPlatformTest.class, 
-                        2, 2, logDirname, tmpDirname);
-
-        Flow flow = makeFlow("testFullConstructor2");
-        flow.complete();
-        
-        File logDir = new File(logDirname);
-        assertTrue(logDir.exists());
-        assertTrue(logDir.isDirectory());
-
-        File tmpDir = new File(tmpDirname);
-        assertTrue(tmpDir.exists());
-        assertTrue(tmpDir.isDirectory());
-    }
+    // TODO currently this test will fail, because you can't run the mini cluster in
+    // the same JVM twice in a row, because shutting it down doesn't really shut things
+    // down properly.
     
     // @Test
     public void testMinConstructor() throws Exception {
