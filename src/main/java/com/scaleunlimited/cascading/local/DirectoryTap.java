@@ -32,7 +32,7 @@ import cascading.util.Util;
  * 
  */
 @SuppressWarnings("serial")
-public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> implements CompositeTap<FileTap> {
+public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
 
     private class TupleIterator implements Iterator<Tuple> {
         final TupleEntryIterator iterator;
@@ -57,7 +57,6 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
         }
     }
 
-    private String path;
     private transient List<FileTap> _taps;
     
     /**
@@ -70,7 +69,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
      *            of type String
      */
     public DirectoryTap(Scheme<Properties, InputStream, OutputStream, ?, ?> scheme, String path) {
-        this(scheme, path, SinkMode.KEEP);
+        super(scheme, path);
     }
 
     /**
@@ -85,17 +84,11 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
      *            of type SinkMode
      */
     public DirectoryTap(Scheme<Properties, InputStream, OutputStream, ?, ?> scheme, String path, SinkMode sinkMode) {
-        super(scheme, sinkMode);
-        this.path = path;
-    }
-
-    @Override
-    public String getIdentifier() {
-        return path;
+        super(scheme, path, sinkMode);
     }
 
     public String getPath() {
-        return path;
+        return getIdentifier();
     }
     
     @SuppressWarnings("unchecked")
@@ -114,11 +107,11 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
 
     private List<FileTap> getTaps() {
         if (_taps == null) {
-            File dir = new File(path);
+            File dir = new File(getPath());
             List<FileTap> result = new ArrayList<FileTap>();
 
             if (!dir.exists()) {
-                throw new IllegalArgumentException("Path provided doesn't exist: " + path);
+                throw new IllegalArgumentException("Path provided doesn't exist: " + getPath());
             } else if (dir.isDirectory()) {
                 File[] files = dir.listFiles();
 
@@ -131,7 +124,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
             } else if (dir.isFile()) {
                 result.add(new FileTap(getScheme(), dir.getAbsolutePath()));
             } else {
-                throw new IllegalArgumentException("Path provided isn't a directory or a file: " + path);
+                throw new IllegalArgumentException("Path provided isn't a directory or a file: " + getPath());
             }
 
             _taps = result;
@@ -157,7 +150,7 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
             output = new DirectoryFileOutputStream(this, "part-00000", isUpdate());
         }
 
-        return new TupleEntrySchemeCollector<Properties, OutputStream>(flowProcess, getScheme(), output, path);
+        return new TupleEntrySchemeCollector<Properties, OutputStream>(flowProcess, getScheme(), output, getPath());
     }
 
     /**
@@ -179,14 +172,14 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
 
     @Override
     public boolean createResource(Properties conf) throws IOException {
-        File dir = new File(path);
+        File dir = new File(getPath());
 
         return dir.exists() || dir.mkdirs();
     }
 
     @Override
     public boolean deleteResource(Properties conf) throws IOException {
-        FileUtils.deleteDirectory(new File(path));
+        FileUtils.deleteDirectory(new File(getPath()));
         return true;
     }
 
@@ -226,10 +219,10 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
         if (getClass() != obj.getClass())
             return false;
         DirectoryTap other = (DirectoryTap) obj;
-        if (path == null) {
-            if (other.path != null)
+        if (getPath() == null) {
+            if (other.getPath() != null)
                 return false;
-        } else if (!path.equals(other.path))
+        } else if (!getPath().equals(other.getPath()))
             return false;
         return true;
     }
@@ -238,14 +231,14 @@ public class DirectoryTap extends Tap<Properties, InputStream, OutputStream> imp
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((path == null) ? 0 : path.hashCode());
+        result = prime * result + ((getPath() == null) ? 0 : getPath().hashCode());
         return result;
     }
 
     @Override
     public String toString() {
-        if (path != null)
-            return getClass().getSimpleName() + "[\"" + getScheme() + "\"]" + "[\"" + Util.sanitizeUrl(path) + "\"]"; // sanitize
+        if (getPath() != null)
+            return getClass().getSimpleName() + "[\"" + getScheme() + "\"]" + "[\"" + Util.sanitizeUrl(getPath()) + "\"]"; // sanitize
         else
             return getClass().getSimpleName() + "[\"" + getScheme() + "\"]" + "[not initialized]";
     }
