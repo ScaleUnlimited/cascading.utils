@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
@@ -26,6 +27,7 @@ import cascading.tuple.Fields;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.local.LocalPath;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class HadoopPlatform extends BasePlatform {
@@ -50,9 +52,13 @@ public class HadoopPlatform extends BasePlatform {
         _conf.setReduceSpeculativeExecution(speculativeExecution);
     }
     
+    public JobConf getJobConf() {
+        return HadoopUtil.createJobConf(_props, _conf);
+    }
+    
     @Override
     public boolean isLocal() {
-        return HadoopUtils.isJobLocal(HadoopUtil.createJobConf(_props, _conf));
+        return HadoopUtils.isJobLocal(getJobConf());
     }
     
     @Override
@@ -80,6 +86,10 @@ public class HadoopPlatform extends BasePlatform {
         return new File(hadoopLogDir);
     }
 
+    @Override
+    public BasePath getTempDir() throws Exception {
+        return new HadoopPath(Hfs.getTempPath(getJobConf()).getName(), _conf);
+    }
 
     @Override
     public boolean isTextSchemeCompressable() {
@@ -90,7 +100,7 @@ public class HadoopPlatform extends BasePlatform {
     @Override
     public void setNumReduceTasks(int numReduceTasks) throws Exception {
         if (numReduceTasks == CLUSTER_REDUCER_COUNT) {
-            numReduceTasks = HadoopUtils.getNumReducers(HadoopUtil.createJobConf(_props, _conf));
+            numReduceTasks = HadoopUtils.getNumReducers(getJobConf());
         }
         
         _conf.setNumReduceTasks(numReduceTasks);
@@ -138,17 +148,17 @@ public class HadoopPlatform extends BasePlatform {
 
     @Override
     public FlowProcess makeFlowProcess() throws Exception {
-        return new HadoopFlowProcess(HadoopUtil.createJobConf(_props, _conf));
+        return new HadoopFlowProcess(getJobConf());
     }
     
     @Override
     public BasePath makePath(String path) throws IOException {
-        return new HadoopPath(path, HadoopUtil.createJobConf(_props, _conf));
+        return new HadoopPath(path, getJobConf());
     }
 
     @Override
     public BasePath makePath(BasePath parent, String subdir) throws IOException {
-        return new HadoopPath(parent, subdir, HadoopUtil.createJobConf(_props, _conf));
+        return new HadoopPath(parent, subdir, getJobConf());
     }
 
     @Override
@@ -179,7 +189,7 @@ public class HadoopPlatform extends BasePlatform {
     public boolean rename(BasePath src, BasePath dst) throws Exception {
         Path srcPath = new Path(src.getAbsolutePath());
         Path dstPath = new Path(dst.getAbsolutePath());
-        FileSystem fs = srcPath.getFileSystem( HadoopUtil.createJobConf(_props, _conf));
+        FileSystem fs = srcPath.getFileSystem(getJobConf());
 
         return fs.rename(srcPath, dstPath);
     }

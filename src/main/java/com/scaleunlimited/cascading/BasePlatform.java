@@ -111,6 +111,8 @@ public abstract class BasePlatform {
     
     public abstract File getDefaultLogDir();
     
+    public abstract BasePath getTempDir() throws Exception;
+    
     public abstract boolean isTextSchemeCompressable();
 
     public abstract void setNumReduceTasks(int numReduceTasks) throws Exception;

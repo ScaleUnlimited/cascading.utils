@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
+
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.local.LocalFlowConnector;
@@ -31,6 +33,11 @@ public class LocalPlatform extends BasePlatform {
     @Override
     public File getDefaultLogDir() {
         return new File("./");
+    }
+
+    @Override
+    public BasePath getTempDir() throws Exception {
+        return new LocalPath(FileUtils.getTempDirectoryPath());
     }
 
     @Override
