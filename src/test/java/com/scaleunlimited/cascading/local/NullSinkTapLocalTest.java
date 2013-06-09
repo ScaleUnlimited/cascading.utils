@@ -23,26 +23,20 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.NullContext;
-import com.scaleunlimited.cascading.NullSinkTap;
-
 import cascading.flow.FlowConnector;
-import cascading.flow.hadoop.HadoopFlowConnector;
-import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.flow.local.LocalFlowConnector;
 import cascading.flow.local.LocalFlowProcess;
 import cascading.operation.Identity;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
-import cascading.scheme.hadoop.SequenceFile;
 import cascading.scheme.local.TextLine;
 import cascading.tap.SinkMode;
-import cascading.tap.Tap;
-import cascading.tap.hadoop.Lfs;
 import cascading.tap.local.FileTap;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
+
+import com.scaleunlimited.cascading.NullSinkTap;
 
 public class NullSinkTapLocalTest {
     

@@ -4,53 +4,45 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.FirstBy;
-import com.scaleunlimited.cascading.local.DirectoryTap;
-import com.scaleunlimited.cascading.local.KryoScheme;
-
 import cascading.flow.FlowConnector;
-import cascading.flow.hadoop.HadoopFlowConnector;
-import cascading.flow.hadoop.HadoopFlowProcess;
-import cascading.flow.local.LocalFlowConnector;
-import cascading.flow.local.LocalFlowProcess;
 import cascading.pipe.Pipe;
 import cascading.pipe.assembly.AggregateBy.CompositeFunction;
-import cascading.scheme.hadoop.SequenceFile;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
-import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 
+import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
+import com.scaleunlimited.cascading.local.LocalPlatform;
+
 
 public class FirstByTest {
 
     @Test
-    public void testFindingFirst() throws IOException {
+    public void testFindingFirst() throws Exception {
+        BasePlatform platform = new LocalPlatform(FirstByTest.class);
         Fields testFields = new Fields("grouping", "value", "data");
-        Lfs in = makeInputData("build/test/FirstByTest/testFindingFirst/in", testFields, false);
+        Tap in = makeInputData(platform, "build/test/FirstByTest/testFindingFirst/in", testFields, false);
         
         // Now create a flow that does an FirstBy
         Pipe pipe = new Pipe("aggregate");
         pipe = new FirstBy(pipe, new Fields("grouping"), new Fields("value"));
         
-        File tmpOutDir = new File("build/test/FirstByTest/testFindingFirst/out");
-        Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
+        BasePath tmpOutDir = platform.makePath("build/test/FirstByTest/testFindingFirst/out");
+        Tap out = platform.makeTap(platform.makeBinaryScheme(testFields), tmpOutDir, SinkMode.REPLACE);
 
-        FlowConnector flowConnector = new HadoopFlowConnector();
+        FlowConnector flowConnector = platform.makeFlowConnector();
         flowConnector.connect(in, out, pipe).complete();
         
-        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
+        TupleEntryIterator iter = out.openForRead(platform.makeFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("a", te.getString("grouping"));
@@ -67,38 +59,19 @@ public class FirstByTest {
     }
     
     @Test
-    public void testReverseSort() throws Exception {
-        Fields testFields = new Fields("grouping", "value", "data");
-        Lfs in = makeInputData("build/test/FirstByTest/testReverseSort/in", testFields, true);
-        
-        // Now create a flow that does an FirstBy. We sort by value (reverse order), and the
-        // only data we want to output is the data field.
-        Pipe pipe = new Pipe("aggregate");
-        pipe = new FirstBy("reverse sort", pipe, new Fields("grouping"), new Fields("value"), true, new Fields("data"));
-        
-        File tmpOutDir = new File("build/test/FirstByTest/testReverseSort/out");
-        Lfs out = new Lfs(new SequenceFile(new Fields("data")), tmpOutDir.getAbsolutePath(), true);
-
-        FlowConnector flowConnector = new HadoopFlowConnector();
-        flowConnector.connect(in, out, pipe).complete();
-        
-        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
-        assertTrue(iter.hasNext());
-        TupleEntry te = iter.next();
-        assertEquals("b-extra", te.getString("data"));
-        
-        assertTrue(iter.hasNext());
-        te = iter.next();
-        assertEquals("a-extra1", te.getString("data"));
-        
-        assertFalse(iter.hasNext());
+    public void testReverseSortHadoop() throws Exception {
+        testReverseSort(new HadoopPlatform(FirstByTest.class));
     }
     
     @Test
     public void testReverseSortLocal() throws Exception {
+        testReverseSort(new LocalPlatform(FirstByTest.class));
+    }
+    
+    private void testReverseSort(BasePlatform platform) throws Exception {
         Fields testFields = new Fields("grouping", "value", "data");
-        DirectoryTap in1 = makeInputDataLocalLeft("build/test/FirstByTest/testReverseSort/left", testFields);
-        DirectoryTap in2 = makeInputDataLocalRight("build/test/FirstByTest/testReverseSort/right", testFields);
+        Tap in1 = makeInputDataLeft(platform, "build/test/FirstByTest/testReverseSort/left", testFields);
+        Tap in2 = makeInputDataRight(platform, "build/test/FirstByTest/testReverseSort/right", testFields);
         
         // Now create a flow that does an FirstBy. We sort by value (reverse order), and the
         // only data we want to output is the data field.
@@ -106,17 +79,17 @@ public class FirstByTest {
         Pipe pipe2 = new Pipe("pipe2");
         Pipe aggregate = new FirstBy("reverse sort", Pipe.pipes(pipe1, pipe2), new Fields("grouping"), new Fields("value"), true, Fields.ALL, CompositeFunction.DEFAULT_THRESHOLD);
         
-        File tmpOutDir = new File("build/test/FirstByTest/testReverseSort/out");
-        DirectoryTap out = new DirectoryTap(new KryoScheme(testFields), tmpOutDir.getAbsolutePath(), SinkMode.REPLACE);
+        BasePath tmpOutDir = platform.makePath("build/test/FirstByTest/testReverseSort/out");
+        Tap out = platform.makeTap(platform.makeBinaryScheme(testFields), tmpOutDir, SinkMode.REPLACE);
 
         Map<String, Tap> sources = new HashMap<String, Tap>();
         sources.put(pipe1.getName(), in1);
         sources.put(pipe2.getName(), in2);
         
-        FlowConnector flowConnector = new LocalFlowConnector();
+        FlowConnector flowConnector = platform.makeFlowConnector();
         flowConnector.connect(sources, out, aggregate).complete();
         
-        TupleEntryIterator iter = out.openForRead(new LocalFlowProcess());
+        TupleEntryIterator iter = out.openForRead(platform.makeFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("b-extra", te.getString("data"));
@@ -128,12 +101,11 @@ public class FirstByTest {
         assertFalse(iter.hasNext());
     }
     
-
-    private Lfs makeInputData(String inputDir, Fields testFields, boolean reversed) throws IOException {
-        File tmpInDir = new File(inputDir);
-        Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
+    private Tap makeInputData(BasePlatform platform, String inputDir, Fields testFields, boolean reversed) throws Exception {
+        BasePath tmpInDir = platform.makePath(inputDir);
+        Tap in = platform.makeTap(platform.makeBinaryScheme(testFields), tmpInDir, SinkMode.REPLACE);
         
-        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
+        TupleEntryCollector writer = in.openForWrite(platform.makeFlowProcess());
         if (!reversed) {
             writer.add(new Tuple("a", 2, "a-extra1"));
         }
@@ -150,22 +122,22 @@ public class FirstByTest {
         return in;
     }
 
-    private DirectoryTap makeInputDataLocalLeft(String inputDir, Fields testFields) throws IOException {
-        File tmpInDir = new File(inputDir);
-        DirectoryTap in = new DirectoryTap(new KryoScheme(testFields), tmpInDir.getAbsolutePath(), SinkMode.REPLACE);
+    private Tap makeInputDataLeft(BasePlatform platform, String inputDir, Fields testFields) throws Exception {
+        BasePath tmpInDir = platform.makePath(inputDir);
+        Tap in = platform.makeTap(platform.makeBinaryScheme(testFields), tmpInDir, SinkMode.REPLACE);
         
-        TupleEntryCollector writer = in.openForWrite(new LocalFlowProcess());
+        TupleEntryCollector writer = in.openForWrite(platform.makeFlowProcess());
         writer.add(new Tuple("b", 5, "b-extra"));
         writer.close();
         
         return in;
     }
 
-    private DirectoryTap makeInputDataLocalRight(String inputDir, Fields testFields) throws IOException {
-        File tmpInDir = new File(inputDir);
-        DirectoryTap in = new DirectoryTap(new KryoScheme(testFields), tmpInDir.getAbsolutePath(), SinkMode.REPLACE);
+    private Tap makeInputDataRight(BasePlatform platform, String inputDir, Fields testFields) throws Exception {
+        BasePath tmpInDir = platform.makePath(inputDir);
+        Tap in = platform.makeTap(platform.makeBinaryScheme(testFields), tmpInDir, SinkMode.REPLACE);
         
-        TupleEntryCollector writer = in.openForWrite(new LocalFlowProcess());
+        TupleEntryCollector writer = in.openForWrite(platform.makeFlowProcess());
         writer.add(new Tuple("a", 1, "a-extra2"));
         writer.add(new Tuple("a", 2, "a-extra1"));
         writer.close();

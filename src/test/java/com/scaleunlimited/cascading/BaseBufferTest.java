@@ -5,30 +5,25 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.util.Iterator;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
-
-import com.scaleunlimited.cascading.BaseBuffer;
-import com.scaleunlimited.cascading.NullContext;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
-import cascading.flow.hadoop.HadoopFlowConnector;
-import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BufferCall;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
-import cascading.scheme.hadoop.SequenceFile;
-import cascading.tap.hadoop.Lfs;
+import cascading.tap.SinkMode;
+import cascading.tap.Tap;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
+
+import com.scaleunlimited.cascading.local.LocalPlatform;
 
 public class BaseBufferTest {
 
@@ -66,10 +61,11 @@ public class BaseBufferTest {
     public void testSimple() throws Exception {
         Fields testFields = new Fields("key", "value");
         
-        File tmpInDir = new File("build/test/BaseBufferTest/testSimple/in");
-        Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
+        BasePlatform platform = new LocalPlatform(BaseBufferTest.class);
+        BasePath tmpInDir = platform.makePath("build/test/BaseBufferTest/testSimple/in");
+        Tap in = platform.makeTap(platform.makeBinaryScheme(testFields), tmpInDir, SinkMode.REPLACE);
         
-        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
+        TupleEntryCollector writer = in.openForWrite(platform.makeFlowProcess());
         writer.add(new Tuple("a", 2));
         writer.add(new Tuple("a", 1));
         writer.add(new Tuple("a", 1));
@@ -81,14 +77,14 @@ public class BaseBufferTest {
         pipe = new GroupBy(pipe, new Fields("key"), new Fields("value"));
         pipe = new Every(pipe, new MyBuffer(false), Fields.RESULTS);
         
-        File tmpOutDir = new File("build/test/BaseBufferTest/testSimple/out");
-        Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
+        BasePath tmpOutDir = platform.makePath("build/test/BaseBufferTest/testSimple/out");
+        Tap out = platform.makeTap(platform.makeBinaryScheme(testFields), tmpOutDir, SinkMode.REPLACE);
 
-        FlowConnector flowConnector = new HadoopFlowConnector();
+        FlowConnector flowConnector = platform.makeFlowConnector();
         Flow flow = flowConnector.connect(in, out, pipe);
         flow.complete();
         
-        TupleEntryIterator iter = out.openForRead(new HadoopFlowProcess());
+        TupleEntryIterator iter = out.openForRead(platform.makeFlowProcess());
         assertTrue(iter.hasNext());
         TupleEntry te = iter.next();
         assertEquals("a", te.getString("key"));
@@ -106,10 +102,11 @@ public class BaseBufferTest {
     public void testExceptionInPrepare() throws Exception {
         Fields testFields = new Fields("key", "value");
         
-        File tmpInDir = new File("build/test/BaseBufferTest/testExceptionInPrepare/in");
-        Lfs in = new Lfs(new SequenceFile(testFields), tmpInDir.getAbsolutePath(), true);
-        
-        TupleEntryCollector writer = in.openForWrite(new HadoopFlowProcess());
+        BasePlatform platform = new LocalPlatform(BaseBufferTest.class);
+        BasePath tmpInDir = platform.makePath("build/test/BaseBufferTest/testExceptionInPrepare/in");
+        Tap in = platform.makeTap(platform.makeBinaryScheme(testFields), tmpInDir, SinkMode.REPLACE);
+
+        TupleEntryCollector writer = in.openForWrite(platform.makeFlowProcess());
         writer.add(new Tuple("a", 1));
         writer.close();
         
@@ -118,10 +115,10 @@ public class BaseBufferTest {
         pipe = new GroupBy(pipe, new Fields("key"), new Fields("value"));
         pipe = new Every(pipe, new MyBuffer(true), Fields.RESULTS);
         
-        File tmpOutDir = new File("build/test/BaseBufferTest/testExceptionInPrepare/out");
-        Lfs out = new Lfs(new SequenceFile(testFields), tmpOutDir.getAbsolutePath(), true);
+        BasePath tmpOutDir = platform.makePath("build/test/BaseBufferTest/testExceptionInPrepare/out");
+        Tap out = platform.makeTap(platform.makeBinaryScheme(testFields), tmpOutDir, SinkMode.REPLACE);
 
-        FlowConnector flowConnector = new HadoopFlowConnector();
+        FlowConnector flowConnector = platform.makeFlowConnector();
         Flow flow = flowConnector.connect(in, out, pipe);
         
         try {

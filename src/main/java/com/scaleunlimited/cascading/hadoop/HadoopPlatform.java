@@ -27,7 +27,6 @@ import cascading.tuple.Fields;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
-import com.scaleunlimited.cascading.local.LocalPath;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class HadoopPlatform extends BasePlatform {
@@ -88,7 +87,11 @@ public class HadoopPlatform extends BasePlatform {
 
     @Override
     public BasePath getTempDir() throws Exception {
-        return new HadoopPath(Hfs.getTempPath(getJobConf()).getName(), _conf);
+        if (isLocal()) {
+            return new HadoopPath("file://" + FileUtils.getTempDirectoryPath());
+        } else {
+            return new HadoopPath(Hfs.getTempPath(getJobConf()).getName(), _conf);
+        }
     }
 
     @Override
@@ -176,7 +179,7 @@ public class HadoopPlatform extends BasePlatform {
         if (isEnableCompression) {
             return new TextLine(Compress.ENABLE);
         } else {
-            return makeTextScheme();
+            return new TextLine(Compress.DISABLE);
         }
     }
 

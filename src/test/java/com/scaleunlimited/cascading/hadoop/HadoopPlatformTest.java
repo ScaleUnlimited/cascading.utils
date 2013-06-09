@@ -31,7 +31,7 @@ public class HadoopPlatformTest {
         
         // Verify we can write and then read
         BasePath testDir = platform.makePath(tempDir, UUID.randomUUID().toString());
-        
+
         Scheme scheme = platform.makeBinaryScheme(new Fields("name", "age"));
         Tap tap = platform.makeTap(scheme, testDir);
         TupleEntryCollector writer = tap.openForWrite(platform.makeFlowProcess());
