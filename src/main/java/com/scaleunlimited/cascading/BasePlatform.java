@@ -136,6 +136,8 @@ public abstract class BasePlatform {
 
     public abstract Tap makeTap(Scheme scheme, BasePath path, SinkMode mode) throws Exception;
 
+    public abstract Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception;
+
     public abstract Scheme makeBinaryScheme(Fields fields) throws Exception;
 
     public abstract Scheme makeTextScheme(boolean isEnableCompression) throws Exception;
@@ -143,4 +145,26 @@ public abstract class BasePlatform {
     public abstract Scheme makeTextScheme() throws Exception;
     
     public abstract boolean rename(BasePath src, BasePath dst) throws Exception;
+    
+    /**
+     * Ensure that {@link #copySharedDirToLocal(FlowProcess, String)}
+     * will have access to the data in <code>localDirName</code> by copying it
+     * to a shared location (e.g., HDFS) if necessary.
+     * @param localDirName of path to local copy of directory
+     * @return shared directory name to pass to
+     * {@link #copySharedDirToLocal(FlowProcess, String)}
+     */
+    public abstract String shareLocalDir(String localDirName);
+    
+    /**
+     * Get a local copy of <code>sharedDirName</code>, which was shared by
+     * {@link #shareLocalDir(String)}
+     * @param flowProcess for the currently running Operation
+     * @param sharedDirName where {@link #shareLocalDir(String)}
+     * shared it
+     * @return canonical name of path to local copy of directory
+     */
+    public abstract String copySharedDirToLocal(FlowProcess flowProcess, String sharedDirName);
+    
+    
 }

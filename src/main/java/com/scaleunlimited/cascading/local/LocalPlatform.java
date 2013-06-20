@@ -13,6 +13,8 @@ import cascading.flow.local.LocalFlowProcess;
 import cascading.scheme.Scheme;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.local.FileTap;
+import cascading.tap.local.TemplateTap;
 import cascading.tuple.Fields;
 
 import com.scaleunlimited.cascading.BasePath;
@@ -96,6 +98,11 @@ public class LocalPlatform extends BasePlatform {
     }
 
     @Override
+    public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
+        return new TemplateTap((FileTap) tap, pattern, fields);
+    }
+    
+    @Override
     public Scheme makeBinaryScheme(Fields fields) {
         return new KryoScheme(fields);
     }
@@ -120,6 +127,19 @@ public class LocalPlatform extends BasePlatform {
         File dstFile = new File (dst.getAbsolutePath());
         
         return srcFile.renameTo(dstFile);
+    }
+
+    @Override
+    public String shareLocalDir(String localDirName) {
+        
+        // Local builds just leave directory in localDirName (which is shared)
+        return localDirName;
+    }
+
+    @Override
+    public String copySharedDirToLocal(  FlowProcess flowProcess, 
+                                                String sharedDirName) {
+        return sharedDirName;
     }
 
 }

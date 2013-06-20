@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobPriority;
+import org.apache.log4j.Logger;
 
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
@@ -23,6 +25,7 @@ import cascading.scheme.hadoop.TextLine.Compress;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.hadoop.Hfs;
+import cascading.tap.hadoop.TemplateTap;
 import cascading.tuple.Fields;
 
 import com.scaleunlimited.cascading.BasePath;
@@ -30,6 +33,7 @@ import com.scaleunlimited.cascading.BasePlatform;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class HadoopPlatform extends BasePlatform {
+    private static final Logger LOGGER = Logger.getLogger(HadoopPlatform.class);
 
     protected JobConf _conf;
     
@@ -170,6 +174,11 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
+    public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
+        return new TemplateTap((Hfs) tap, pattern, fields);
+    }
+    
+    @Override
     public Scheme makeBinaryScheme(Fields fields) {
         return new SequenceFile(fields);
     }
@@ -196,4 +205,72 @@ public class HadoopPlatform extends BasePlatform {
 
         return fs.rename(srcPath, dstPath);
     }
+    
+    @Override
+    public String shareLocalDir(String localDirName) {
+
+        String sharedDirName = null;
+
+        try {
+            Path localPath = new Path(localDirName);
+            JobConf conf = (JobConf) (makeFlowProcess().getConfigCopy());
+            String hadoopTmpDirName = conf.getJobLocalDir();
+            if (hadoopTmpDirName == null) {
+                hadoopTmpDirName = conf.get("hadoop.tmp.dir");
+            }
+            if (hadoopTmpDirName == null) {
+                hadoopTmpDirName = conf.getWorkingDirectory().toString();
+            }
+            if (hadoopTmpDirName == null) {
+                throw new IOException("Can't get Hadoop temporary directory");
+            }
+            HadoopPath hadoopHdfsTmpPath = (HadoopPath) (makePath(hadoopTmpDirName));
+            Path hdfsTmpPath = hadoopHdfsTmpPath.getHadoopPath();
+            String uniqueFolderName = String.format("%s-%s", localPath.getName(), UUID.randomUUID());
+            Path sharedPath = new Path(hdfsTmpPath, uniqueFolderName);
+            sharedDirName = sharedPath.toString();
+            FileSystem targetFs = sharedPath.getFileSystem(conf);
+
+            // Copy directory to (shared) HDFS location.
+            targetFs.copyFromLocalFile(localPath, sharedPath);
+            String message = String.format("Successfully copied shared directory from %s to %s", localDirName, sharedDirName);
+            LOGGER.info(message);
+        } catch (Exception e) {
+            String message = String.format("Exception sharing directory from %s to %s: %s", localDirName, sharedDirName, e);
+            LOGGER.error(message, e);
+            throw new RuntimeException(message);
+        }
+
+        return sharedDirName;
+    }
+    
+    @Override
+    public String copySharedDirToLocal(FlowProcess flowProcess, String sharedDirName) {
+        String localDirName = null;
+
+        try {
+            // Main program on Hadoop master has written the directory to HDFS,
+            // so copy it to the slave's local hard drive.
+            Path sourcePath = new Path(sharedDirName);
+            JobConf conf = (JobConf) (flowProcess.getConfigCopy());
+            FileSystem sourceFs = sourcePath.getFileSystem(conf);
+            String tmpDirName = System.getProperty("java.io.tmpdir");
+            String uniqueFolderName = String.format("%s-%s", sourcePath.getName(), UUID.randomUUID());
+            File localDir = new File(tmpDirName, uniqueFolderName);
+            localDirName = localDir.getAbsolutePath();
+            Path localPath = new Path(localDirName);
+
+            // Copy directory from (shared) HDFS location.
+            sourceFs.copyToLocalFile(sourcePath, localPath);
+            String message = String.format("Successfully copied shared directory from %s to %s", sharedDirName, localDirName);
+            LOGGER.info(message);
+
+        } catch (IOException e) {
+            String message = String.format("Exception copying shared directory from %s to %s: %s", sharedDirName, localDirName, e);
+            LOGGER.error(message, e);
+            throw new RuntimeException(message);
+        }
+        return localDirName;
+    }
+
 }
