@@ -16,4 +16,5 @@ public class MyDatumTemplate {
     private Date _date;
     private Tuple _aliases;
 
+    private String[] _phoneNumbers;
 }

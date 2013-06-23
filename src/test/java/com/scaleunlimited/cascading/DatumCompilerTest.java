@@ -49,7 +49,7 @@ public class DatumCompilerTest extends Assert {
     public void testSimpleSchema() throws Exception {
         CompiledDatum result = DatumCompiler.generate(MyDatumTemplate.class);
         
-        File baseDir = FileUtils.getTempDirectory();
+        File baseDir = new File("build/test/DatumCompilerTest/testSimpleSchema/");
         FileUtils.deleteDirectory(baseDir);
         File srcDir = new File(baseDir, result.getPackageName().replaceAll("\\.", "/"));
         assertTrue(srcDir.mkdirs());
@@ -81,8 +81,9 @@ public class DatumCompilerTest extends Assert {
 //        private int ageAndRisk;
 //        private Date _date;
 //        private Tuple _aliases;
-
-        Constructor c = clazz.getConstructor(String.class, int.class, Date.class, Tuple.class);
-        Object datum = c.newInstance("robert", 25, new Date(), new Tuple("bob", "rob"));
+//        private String[] _phoneNumbers
+        
+        Constructor c = clazz.getConstructor(String.class, int.class, Date.class, Tuple.class, String[].class);
+        Object datum = c.newInstance("robert", 25, new Date(), new Tuple("bob", "rob"), new String[]{"555-1212", "555-4848"});
     }
 }
