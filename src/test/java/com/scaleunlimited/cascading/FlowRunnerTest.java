@@ -179,12 +179,17 @@ public class FlowRunnerTest extends Assert {
     public void testStatsLocal() throws Exception {
         final String logDirName = "build/test/FlowRunnerTest/testStatsLocal/log";
         BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
+        platform.setLogDir(new File(logDirName));
         FlowRunner fr = new FlowRunner("testStatsLocal", 1, new File(logDirName), 10);
         FlowFuture result0 = fr.addFlow(makeFlow("testStatsLocal", 10, 0, false, platform));
         result0.get();
+        fr.terminate();
         
         // We should some number of entries in the stats file
         checkStatsFile(logDirName, "testStatsLocal", "group on total", 1, 1);
+
+        // And also in the summary file
+        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsLocal", "group on total");
     }
     
     @Test
@@ -197,7 +202,8 @@ public class FlowRunnerTest extends Assert {
         FlowRunner fr = new FlowRunner("testStatsHadoop", 1, new File(logDirName), 1000L);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoop", 10, 0, false, platform));
         result.get();
-        
+        fr.terminate();
+
         // We should some number of entries in the stats file
         // Unfortunately you get no stats for Hadoop when running in Hadoop local mode, as there
         // is no JobTracker
@@ -233,13 +239,17 @@ public class FlowRunnerTest extends Assert {
         FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
         result.get();
-        
+        fr.terminate();
+
         // We should some number of entries in the stats file
         checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
         
         // And check for something similar in the details file
         checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
     
+        // And also in the summary file
+        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total");
+        
         platform.shutdown();
     }
     
@@ -254,6 +264,14 @@ public class FlowRunnerTest extends Assert {
     private BufferedReader openDetailsFile(String logDirName, String testName) throws FileNotFoundException {
         File statsDir = new File(logDirName);
         File statsFile = new File(statsDir, testName + "-details.tsv");
+        assertTrue(statsFile.exists());
+        
+        return new BufferedReader(new FileReader(statsFile));
+    }
+    
+    private BufferedReader openSummaryFile(String logDirName, String testName) throws FileNotFoundException {
+        File statsDir = new File(logDirName);
+        File statsFile = new File(statsDir, testName + "-summary.tsv");
         assertTrue(statsFile.exists());
         
         return new BufferedReader(new FileReader(statsFile));
@@ -285,7 +303,21 @@ public class FlowRunnerTest extends Assert {
             }
         }
         
-        fail("Couldn't find target line in stats file");
+        fail("Couldn't find target line in details file");
+    }
+    
+    private void checkSummaryFile(String logDirName, String testName, String stepName) throws IOException {
+        String targetText = String.format("%s|%s", testName, stepName);
+        BufferedReader br = openSummaryFile(logDirName, testName);
+        
+        String curLine;
+        while ((curLine = br.readLine()) != null) {
+            if (curLine.contains(targetText)) {
+                return;
+            }
+        }
+        
+        fail(String.format("Couldn't find target line \"%s\" in summary file", targetText));
     }
     
     @SuppressWarnings("rawtypes")

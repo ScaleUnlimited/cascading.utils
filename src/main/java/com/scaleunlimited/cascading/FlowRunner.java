@@ -128,12 +128,13 @@ public class FlowRunner {
             return;
         }
 
-        // If the caller wants stats, we need to fire up a thread that will check
+        // Since the caller wants stats, we need to fire up a thread that will check
         // the flows on a regular basis.
         statsDir.mkdirs();
         
         final PrintStream statsStream = makeStatsStream(statsDir, runnerName, "stats.tsv");
         final PrintStream detailsStream = makeStatsStream(statsDir, runnerName, "details.tsv");
+        final PrintStream summaryStream = makeStatsStream(statsDir, runnerName, "summary.tsv");
         
         _statsThread = new Thread(new Runnable() {
 
@@ -149,6 +150,11 @@ public class FlowRunner {
 
                 SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyyMMdd hh:mm:ss");
                 timeFormatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+                
+                // Set up for per-step summaries. For each unique step (Hadoop Job), we'll
+                // keep track of total map-minutes, total reduce-minutes.
+                Map<String, Long> mapMilliseconds = new HashMap<String, Long>();
+                Map<String, Long> reduceMilliseconds = new HashMap<String, Long>();
                 
                 try {
                     while (true) {
@@ -166,7 +172,7 @@ public class FlowRunner {
                         // <timestamp><tab><map tasks><tab><reduce tasks><tab><task details>
                         String stats = makeStats(taskCounts, true);
                         statsStream.println(String.format("%s\t%s", timestamp, stats));
-                        // System.out.println("" + timeInMinutes + "\t" + stats);
+                        // System.out.println("" + timestamp + "\t" + stats);
 
                         // Generate a summary line
                         // <timestamp>    <map tasks>    <reduce tasks>    
@@ -176,12 +182,18 @@ public class FlowRunner {
                         // For each of the tasks with map/reduce counts, output a separate line after the summary line.
                         //     <map tasks>    <reduce tasks>    <task name>    <timestamp>
                         for (TaskStats taskStat : taskCounts.values()) {
+                            String flowAndStepName = String.format("%s|%s", taskStat.getFlowName(), taskStat.getStepName());
+                            
                             int mapCount = taskStat.getMapCount();
+                            addSlotTime(mapMilliseconds, flowAndStepName, mapCount, checkInterval);
+                            
                             int reduceCount = taskStat.getReduceCount();
+                            addSlotTime(reduceMilliseconds, flowAndStepName, reduceCount, checkInterval);
+                            
                             if (mapCount + reduceCount > 0) {
-                                detailsStream.println(String.format("\t%d\t%d\t%s|%s\t%s",
+                                detailsStream.println(String.format("\t%d\t%d\t%s\t%s",
                                                 mapCount, reduceCount,
-                                                taskStat.getFlowName(), taskStat.getStepName(),
+                                                flowAndStepName,
                                                 timestamp));
                             }
                         }
@@ -194,12 +206,32 @@ public class FlowRunner {
                             break;
                         }
                     }
+                    
+                    // All done with Flow, write out summary results.
+                    for (String flowAndStepName : mapMilliseconds.keySet()) {
+                        long mapDuration = mapMilliseconds.get(flowAndStepName) / 60 * 1000L;
+                        long reduceDuration = reduceMilliseconds.get(flowAndStepName) / 60 * 1000L;
+                        summaryStream.println(String.format("%d\t%d\t%s", mapDuration, reduceDuration, flowAndStepName));
+                    }
+                    
                 } catch (Throwable t) {
                     LOGGER.error("Exception while collecting stats for " + runnerName, t);
                 } finally {
                     IOUtils.closeQuietly(statsStream);
+                    IOUtils.closeQuietly(detailsStream);
+                    IOUtils.closeQuietly(summaryStream);
                 }
             }
+
+            private void addSlotTime(Map<String, Long> slotTime, String flowAndStepName, int slotCount, long checkInterval) {
+                Long curSlotTime = slotTime.get(flowAndStepName);
+                if (curSlotTime == null) {
+                    curSlotTime = new Long(0);
+                }
+                
+                slotTime.put(flowAndStepName, curSlotTime + (slotCount * checkInterval));
+            }
+            
         }, "FlowRunner stats");
 
         // We don't want to hold up the JVM for this one thread.
@@ -215,7 +247,6 @@ public class FlowRunner {
         }, "FlowRunner stats shutdown hook"));
 
         _statsThread.start();
-
     }
 
     private PrintStream makeStatsStream(File statsDir, String runnerName, String suffix) {
