@@ -331,7 +331,7 @@ public class HadoopPlatform extends BasePlatform {
                 return false;
         } else {
             // TODO - implement real equals for JobConf
-            return _conf.equals(other._conf);
+            return true;
         }
         
         return true;
