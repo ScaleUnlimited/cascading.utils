@@ -1,9 +1,5 @@
 package com.scaleunlimited.cascading.local;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.UUID;
 
@@ -20,8 +16,9 @@ import cascading.tuple.TupleEntryIterator;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.BasePlatformTest;
 
-public class LocalPlatformTest {
+public class LocalPlatformTest extends BasePlatformTest {
 
     @Test
     public void testTempPath() throws Exception {
@@ -85,15 +82,10 @@ public class LocalPlatformTest {
         assertTrue(subDirFile.isDirectory());
     }
     
-    private static BasePlatform makePlatform(boolean testing) {
-        return new LocalPlatform(LocalPlatformTest.class);
-    }
-    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testBinaryScheme() throws Exception {
-        boolean testing = true;
-        BasePlatform platform = makePlatform(testing);
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         final String targetDirname = "build/test/LocalPlatformTest/testPathCreation";
         BasePath path = platform.makePath(targetDirname);
 
@@ -106,8 +98,7 @@ public class LocalPlatformTest {
 
     @Test
     public void testRename() throws Exception {
-        boolean testing = true;
-        BasePlatform platform = makePlatform(testing);
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         final String targetDirname = "build/test/LocalPlatformTest/testRename";
         BasePath path = platform.makePath(targetDirname);
         if (path.exists()) {
@@ -126,6 +117,12 @@ public class LocalPlatformTest {
         
         assertTrue(dst.exists());
         assertFalse(src.exists());
+    }
+    
+    @Test
+    public void testSerialization() throws Exception {
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         
+        testSerialization(platform);
     }
 }

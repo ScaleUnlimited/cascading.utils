@@ -1,6 +1,7 @@
 package com.scaleunlimited.cascading;
 
 import java.io.File;
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Properties;
@@ -16,8 +17,8 @@ import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tuple.Fields;
 
-@SuppressWarnings("rawtypes")
-public abstract class BasePlatform {
+@SuppressWarnings({ "rawtypes", "serial" })
+public abstract class BasePlatform implements Serializable {
 
     public static final int CLUSTER_REDUCER_COUNT = -1;
     
@@ -29,6 +30,10 @@ public abstract class BasePlatform {
     protected Map<Object, Object> _props;
     
     protected File _logDir;
+    
+    protected BasePlatform() {
+        // For serialization
+    }
     
     public BasePlatform(Class applicationJarClass) {
         _props = new Properties();
@@ -165,6 +170,43 @@ public abstract class BasePlatform {
      * @return canonical name of path to local copy of directory
      */
     public abstract String copySharedDirToLocal(FlowProcess flowProcess, String sharedDirName);
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((_logDir == null) ? 0 : _logDir.hashCode());
+        result = prime * result + ((_props == null) ? 0 : _props.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        BasePlatform other = (BasePlatform) obj;
+        if (_logDir == null) {
+            if (other._logDir != null)
+                return false;
+        } else if (!_logDir.equals(other._logDir))
+            return false;
+        if (_props == null) {
+            if (other._props != null)
+                return false;
+        } else if (!_props.equals(other._props))
+            return false;
+        return true;
+    }
     
     
 }

@@ -1,7 +1,15 @@
 package com.scaleunlimited.cascading.hadoop;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,7 +39,7 @@ import cascading.tuple.Fields;
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class HadoopPlatform extends BasePlatform {
     private static final Logger LOGGER = Logger.getLogger(HadoopPlatform.class);
 
@@ -273,4 +281,50 @@ public class HadoopPlatform extends BasePlatform {
         return localDirName;
     }
 
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        DataOutput writeableOut = new DataOutputStream(byteStream);
+        _conf.write(writeableOut);
+        
+        // Now write out the byte array
+        byte[] confBytes = byteStream.toByteArray();
+        out.writeInt(confBytes.length);
+        out.write(confBytes, 0, confBytes.length);
+    }
+    
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        int numBytes = in.readInt();
+        byte[] confBytes = new byte[numBytes];
+        in.readFully(confBytes);
+        DataInput writeableIn = new DataInputStream(new ByteArrayInputStream(confBytes));
+
+        _conf = new JobConf();
+        _conf.readFields(writeableIn);
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        
+        HadoopPlatform other = (HadoopPlatform) obj;
+        if (_conf == null) {
+            if (other._conf != null)
+                return false;
+        } else {
+            // TODO - implement real equals for JobConf
+            return _conf.equals(other._conf);
+        }
+        
+        return true;
+    }
+
+    
 }

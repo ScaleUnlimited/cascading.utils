@@ -20,7 +20,7 @@ import cascading.tuple.Fields;
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
 
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class LocalPlatform extends BasePlatform {
 
     public LocalPlatform(Class applicationJarClass) {
@@ -141,5 +141,10 @@ public class LocalPlatform extends BasePlatform {
                                                 String sharedDirName) {
         return sharedDirName;
     }
-
+    
+    
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
 }

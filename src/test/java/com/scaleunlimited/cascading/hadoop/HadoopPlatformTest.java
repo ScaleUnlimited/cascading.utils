@@ -1,9 +1,5 @@
 package com.scaleunlimited.cascading.hadoop;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.UUID;
 
@@ -20,8 +16,9 @@ import cascading.tuple.TupleEntryIterator;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.BasePlatformTest;
 
-public class HadoopPlatformTest {
+public class HadoopPlatformTest extends BasePlatformTest {
 
     @Test
     public void testTempPath() throws Exception {
@@ -107,6 +104,15 @@ public class HadoopPlatformTest {
         assertTrue(dst.exists());
         assertFalse(src.exists());
         
+    }
+
+    @Test
+    public void testSerialization() throws Exception {
+        HadoopPlatform platform = new HadoopPlatform(HadoopPlatformTest.class);
+        platform.setMapSpeculativeExecution(true);
+        platform.setProperty("my.bogus.property", 999);
+        
+        testSerialization(platform);
     }
 
 }
