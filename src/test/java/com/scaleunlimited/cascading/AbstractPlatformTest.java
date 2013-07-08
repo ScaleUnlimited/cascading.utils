@@ -7,7 +7,7 @@ import java.io.ObjectOutputStream;
 
 import junit.framework.Assert;
 
-public abstract class BasePlatformTest extends Assert {
+public abstract class AbstractPlatformTest extends Assert {
 
     public void testSerialization(BasePlatform platform) throws Exception {
         platform.setJobPollingInterval(666);
@@ -24,5 +24,4 @@ public abstract class BasePlatformTest extends Assert {
         
         assertEquals(platform.getDefaultLogDir(), newPlatform.getDefaultLogDir());
     }
-    
 }

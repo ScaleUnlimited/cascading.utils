@@ -16,9 +16,9 @@ import cascading.tuple.TupleEntryIterator;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
-import com.scaleunlimited.cascading.BasePlatformTest;
+import com.scaleunlimited.cascading.AbstractPlatformTest;
 
-public class HadoopPlatformTest extends BasePlatformTest {
+public class HadoopPlatformTest extends AbstractPlatformTest {
 
     @Test
     public void testTempPath() throws Exception {

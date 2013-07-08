@@ -286,6 +286,12 @@ public class HadoopPlatform extends BasePlatform {
         return localDirName;
     }
 
+    /**
+     * JobConf isn't serializable, so we handle that ourselves.
+     * 
+     * @param out
+     * @throws IOException
+     */
     private void writeObject(ObjectOutputStream out) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         DataOutput writeableOut = new DataOutputStream(byteStream);
