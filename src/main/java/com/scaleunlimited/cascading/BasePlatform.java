@@ -122,6 +122,8 @@ public abstract class BasePlatform implements Serializable {
 
     public abstract void setNumReduceTasks(int numReduceTasks) throws Exception;
 
+    public abstract int getNumReduceTasks() throws Exception;
+
     /**
      * Reset the number of reduce tasks to the default for the platform
      * 

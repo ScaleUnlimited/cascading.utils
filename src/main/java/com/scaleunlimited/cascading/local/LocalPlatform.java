@@ -55,6 +55,11 @@ public class LocalPlatform extends BasePlatform {
     }
 
     @Override
+    public int getNumReduceTasks() throws Exception {
+        return CLUSTER_REDUCER_COUNT;
+    }
+
+    @Override
     public void resetNumReduceTasks() throws Exception {
         // As per above, nothing to do here.
     }

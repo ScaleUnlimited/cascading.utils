@@ -122,6 +122,11 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
+    public int getNumReduceTasks() throws Exception {
+        return HadoopUtils.getNumReducers(getJobConf());
+    }
+
+    @Override
     public void resetNumReduceTasks() throws Exception {
         setNumReduceTasks(CLUSTER_REDUCER_COUNT);
     }
