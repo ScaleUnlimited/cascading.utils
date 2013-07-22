@@ -268,6 +268,18 @@ public class TopTermsByLLR extends SubAssembly {
         }, new Fields("docId"), new Fields("text"), AggregateBy.CompositeFunction.DEFAULT_THRESHOLD);
     }
 
+    /**
+     * Given a pipe containing tuples with <docIdFields> and a <textField>, first parse
+     * the text using <parser>, then filter using <filter>. Score the resulting terms
+     * using LLR, and only emit terms that pass <filter>.
+     * 
+     * @param docsPipe
+     * @param parser
+     * @param filter
+     * @param docIdFields
+     * @param textField
+     * @param threshold - size of LRU cache for map-side pre-aggregation.
+     */
     public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, ITermsFilter filter, Fields docIdFields, Fields textField, int threshold) {
         
         // We assume each document has one or more fields that identify each "document", and a text field
