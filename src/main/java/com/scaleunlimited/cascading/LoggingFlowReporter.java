@@ -16,15 +16,21 @@
 
 package com.scaleunlimited.cascading;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LoggingFlowReporter implements IFlowReporter {
-    private static Logger LOGGER = Logger.getLogger(LoggingFlowReporter.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(LoggingFlowReporter.class);
 
     @Override
     public void setStatus(Level level, String msg) {
-        LOGGER.log(level, msg);
+        switch(level) {
+            case SLF4J_DEBUG : LOGGER.debug(msg); break;
+            case SLF4J_ERROR : LOGGER.error(msg); break;
+            case SLF4J_INFO : LOGGER.info(msg); break;
+            case SLF4J_TRACE : LOGGER.trace(msg); break;
+            case SLF4J_WARN : LOGGER.warn(msg); break;
+        }
     }
 
     @Override

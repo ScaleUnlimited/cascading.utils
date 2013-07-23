@@ -7,14 +7,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.apache.mahout.math.stats.LogLikelihood;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Buffer;
 import cascading.operation.BufferCall;
-import cascading.operation.Debug;
 import cascading.operation.Function;
 import cascading.operation.FunctionCall;
 import cascading.operation.Identity;
@@ -35,7 +35,7 @@ import com.scaleunlimited.cascading.NullContext;
 
 @SuppressWarnings("serial")
 public class TopTermsByLLR extends SubAssembly {
-    private static final Logger LOGGER = Logger.getLogger(TopTermsByLLR.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TopTermsByLLR.class);
     
     private static class ExtractTerms extends BaseOperation<NullContext> implements Function<NullContext> {
         
@@ -46,6 +46,7 @@ public class TopTermsByLLR extends SubAssembly {
             _parser = parser;
         }
 
+        @SuppressWarnings("rawtypes")
         @Override
         public void operate(FlowProcess flowProcess, FunctionCall<NullContext> functionCall) {
             _parser.reset(functionCall.getArguments().getString(0));
@@ -125,6 +126,7 @@ public class TopTermsByLLR extends SubAssembly {
             _filter = filter;
         }
 
+        @SuppressWarnings("rawtypes")
         @Override
         public void operate(FlowProcess flowProcess, BufferCall<NullContext> bufferCall) {
             TupleEntry docid = bufferCall.getGroup();

@@ -17,8 +17,8 @@
 package com.scaleunlimited.cascading;
 
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
@@ -43,7 +43,7 @@ import cascading.tuple.TupleEntry;
  */
 @SuppressWarnings("serial")
 public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
-    private static final Logger LOGGER = Logger.getLogger(TupleLogger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TupleLogger.class);
     
     public static final int DEFAULT_MAX_ELEMENT_LENGTH = 100;
     
@@ -194,7 +194,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
             message.insert(0, _prefix);
         }
         
-        LOGGER.debug(message);
+        LOGGER.debug(message.toString());
     }
     
     @SuppressWarnings("unchecked")
@@ -257,6 +257,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @param level new logging level
      */
     public static void setLevel(Level level) {
+        // TODO VMa: fix for slf4j
         LOGGER.setLevel(level);
     }
 

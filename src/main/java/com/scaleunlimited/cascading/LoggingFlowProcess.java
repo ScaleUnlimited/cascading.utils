@@ -16,27 +16,27 @@
 
 package com.scaleunlimited.cascading;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Counters;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowProcessWrapper;
 import cascading.flow.hadoop.HadoopFlowProcess;
 
 public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
-    private static final Logger LOGGER = Logger.getLogger(LoggingFlowProcess.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingFlowProcess.class);
 
+    // TODO VMa: fix for slf4j
+    // Why do we need this enum ?
     public static enum LoggingLevels {
         TRACE,
         DEBUG,
@@ -66,6 +66,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
             _reporter = reporter;
         }
 
+        // TODO VMa: fix for slf4j
         @Override
         public void setStatus(Level level, String msg) {
             if ((_reporter != null) && level.isGreaterOrEqual(Level.INFO)) {
@@ -77,7 +78,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
         public void setStatus(String msg, Throwable t) {
             // TODO KKr - add stringified <t> (maybe from Nutch?) to msg.
             if (_reporter != null) {
-                _reporter.setStatus("Cascading " + Level.ERROR + ": " + msg);
+                _reporter.setStatus("Cascading " + Level.SLF4J_ERROR + ": " + msg);
             }
         }
     }
@@ -142,7 +143,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
 //    }
 //
     public void setStatus(String msg) {
-        setStatus(Level.INFO, msg);
+        setStatus(Level.SLF4J_INFO, msg);
     }
 
     public void setStatus(String msg, Throwable t) {
@@ -152,6 +153,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
             reporter.setStatus(msg, t);
         }
         
+        // TODO VMa: fix for slf4j
         increment(LoggingLevels.EXCEPTION, 1);
     }
 
@@ -162,6 +164,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
             reporter.setStatus(level, msg);
         }
         
+        // TODO VMa: fix for slf4j
         increment(LoggingLevels.fromLevel(level), 1);
     }
 

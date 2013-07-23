@@ -19,7 +19,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobPriority;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
@@ -41,7 +42,7 @@ import com.scaleunlimited.cascading.BasePlatform;
 
 @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class HadoopPlatform extends BasePlatform {
-    private static final Logger LOGGER = Logger.getLogger(HadoopPlatform.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HadoopPlatform.class);
 
     protected JobConf _conf;
     

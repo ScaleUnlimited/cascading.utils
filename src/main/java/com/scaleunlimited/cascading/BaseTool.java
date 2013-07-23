@@ -20,9 +20,10 @@ import java.util.List;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowStep;
@@ -73,16 +74,17 @@ public class BaseTool {
             System.err.println(e.getMessage());
             printUsageAndExit(parser);
         }
-
+        //TODO VMa: fix for slf4j
+        Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         if (options.isTraceLogging()) {
-            Logger.getRootLogger().setLevel(Level.TRACE);
+            logger.setLevel(Level.TRACE);
             System.setProperty("my.root.level", "TRACE");
             System.setProperty("my.cascading.level", "TRACE");
         } else if (options.isDebugLogging()) {
-            Logger.getRootLogger().setLevel(Level.DEBUG);
+            logger.setLevel(Level.DEBUG);
             System.setProperty("my.root.level", "DEBUG");
         } else {
-            Logger.getRootLogger().setLevel(Level.INFO);
+            logger.setLevel(Level.INFO);
             System.setProperty("my.root.level", "INFO");
         }
         

@@ -27,7 +27,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowListener;
@@ -39,7 +40,7 @@ import cascading.stats.FlowStepStats;
 
 public class FlowMonitor<Config> {
 
-    private static final Logger LOGGER = Logger.getLogger(FlowMonitor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlowMonitor.class);
 
     public static final String FILENAME = "flow-monitor.html";
     public static final int DEFAULT_UPDATE_INTERVAL = 10000;

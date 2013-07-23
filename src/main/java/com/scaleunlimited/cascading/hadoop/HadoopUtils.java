@@ -26,15 +26,17 @@ import org.apache.hadoop.mapred.ClusterStatus;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobTracker.State;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.scaleunlimited.cascading.Level;
 
 import cascading.flow.FlowConnector;
 import cascading.flow.hadoop.util.HadoopUtil;
 import cascading.property.AppProps;
 
 public class HadoopUtils {
-    private static final Logger LOGGER = Logger.getLogger(HadoopUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HadoopUtils.class);
     
     private static final long STATUS_CHECK_INTERVAL = 10000;
 	
@@ -94,7 +96,6 @@ public class HadoopUtils {
     	props.put("log4j.logger", String.format("cascading=%s,bixo=%s", cascadingLevel, bixoLevel));
     }
     
-    @SuppressWarnings({ "deprecation" })
 	public static Map<Object, Object> getDefaultProperties(Class appJarClass, boolean debugging, JobConf conf) {
         Map<Object, Object> properties = HadoopUtil.createProperties(conf);
 

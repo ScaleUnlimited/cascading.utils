@@ -6,7 +6,6 @@ import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.log4j.Level;
 
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;

@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.scaleunlimited.cascading.BasePath;
 
 public class LocalPath extends BasePath {
-    private static final Logger LOGGER = Logger.getLogger(LocalPath.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalPath.class);
 
     private File _pathFile;
     

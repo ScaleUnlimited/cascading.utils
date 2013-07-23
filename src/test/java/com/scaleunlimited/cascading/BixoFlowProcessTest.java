@@ -48,7 +48,8 @@ public class BixoFlowProcessTest {
         // TODO KKr - how to test "real" Hadoop counters? Need to be running in non-local
         // mode, with a real Cascading flow.
     }
-    
+   
+    // TODO VMa: fix for slf4j - see related comment where LoggingLevels is defined
     @Test
     public void testLoggingCounter() {
         assertEquals(LoggingLevels.INFO, LoggingLevels.fromLevel(Level.INFO));
