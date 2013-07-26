@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ package com.scaleunlimited.cascading;
 
 import static org.junit.Assert.*;
 
-import org.apache.log4j.Level;
 import org.junit.Test;
 
 import com.scaleunlimited.cascading.LoggingFlowProcess;
 import com.scaleunlimited.cascading.LoggingFlowProcess.LoggingLevels;
 
-public class BixoFlowProcessTest {
+public class LoggingFlowProcessTest {
     
     private enum TestCounter {
         COUNTER_A,
@@ -49,10 +48,11 @@ public class BixoFlowProcessTest {
         // mode, with a real Cascading flow.
     }
    
-    // TODO VMa: fix for slf4j - see related comment where LoggingLevels is defined
     @Test
     public void testLoggingCounter() {
-        assertEquals(LoggingLevels.INFO, LoggingLevels.fromLevel(Level.INFO));
-        assertEquals("INFO", LoggingLevels.INFO.toString());
+        LoggingFlowProcess process = new LoggingFlowProcess();        
+        process.setStatus(Level.SLF4J_INFO, "some msg");
+        
+        assertEquals(1, process.getCounter(LoggingFlowProcess.LoggingLevels.INFO));
     }
 }

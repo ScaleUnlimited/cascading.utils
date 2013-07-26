@@ -50,10 +50,10 @@ public class LoggingUtils {
                                                 myLevel);
         props.put("log4j.logger", newLogSettings);
         
-        // HACK - set the TupleLogger's logging level explicitly, so that subsequent
+        // HACK - set the TupleLogger's logging explicitly, so that subsequent
         // calls to TupleLogger.makePipe() will do the right thing when defining the
         // workflow.
-        TupleLogger.setLevel(myLevel);
+        TupleLogger.enableLogging(myLevel.isLesssOrEqual(Level.SLF4J_DEBUG));
     }
 
     /**

@@ -354,7 +354,6 @@ public class KryoSchemeTest {
         
         Pipe p = new Pipe("pipe");
         p = new Rename(p, new Fields("key"), new Fields("kee"));
-        p = TupleLogger.makePipe(p, true);
         
         // Create a sink where we're writing out the fields in a different order. We also
         // test that we handle getting passed a single field when we're being used as a

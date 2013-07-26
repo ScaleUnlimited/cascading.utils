@@ -7,11 +7,11 @@ package com.scaleunlimited.cascading;
  */
 public enum Level {
 
-    SLF4J_DEBUG ("DEBUG"),
-    SLF4J_ERROR ("ERROR"),
-    SLF4J_INFO ("INFO"),
     SLF4J_TRACE ("TRACE"),
-    SLF4J_WARN ("WARN");
+    SLF4J_DEBUG ("DEBUG"),
+    SLF4J_INFO ("INFO"),
+    SLF4J_WARN ("WARN"),
+    SLF4J_ERROR ("ERROR");
     
     private final String _level;
 
@@ -26,5 +26,25 @@ public enum Level {
      */
     public String toString() {
         return _level;
+    }
+    
+    /**
+     * Return true if our level is at least as high (serious) as otherLevel
+     * 
+     * @param otherLevel
+     * @return
+     */
+    public boolean isGreaterOrEqual(Level otherLevel) {
+        return this.ordinal() >= otherLevel.ordinal();
+    }
+
+    /**
+     * Return true if our level is lower than or equal to otherLevel
+     * 
+     * @param otherLevel
+     * @return
+     */
+    public boolean isLesssOrEqual(Level otherLevel) {
+        return this.ordinal() <= otherLevel.ordinal();
     }
 }

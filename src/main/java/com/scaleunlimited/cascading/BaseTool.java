@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2012 TransPac Software, Inc.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,12 @@
 
 package com.scaleunlimited.cascading;
 
-import java.util.List;
-
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.log4j.Level;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cascading.flow.Flow;
-import cascading.flow.FlowStep;
-import cascading.flow.planner.BaseFlowStep;
 
 public class BaseTool {
 
@@ -74,17 +68,17 @@ public class BaseTool {
             System.err.println(e.getMessage());
             printUsageAndExit(parser);
         }
-        //TODO VMa: fix for slf4j
+        
+        // We can't dynamically change the slf4j log level, so we'll just have
+        // to set system properties that will impact Log4J levels (in case the
+        // user of cascading.utils is using log4j).
         Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         if (options.isTraceLogging()) {
-            logger.setLevel(Level.TRACE);
             System.setProperty("my.root.level", "TRACE");
             System.setProperty("my.cascading.level", "TRACE");
         } else if (options.isDebugLogging()) {
-            logger.setLevel(Level.DEBUG);
             System.setProperty("my.root.level", "DEBUG");
         } else {
-            logger.setLevel(Level.INFO);
             System.setProperty("my.root.level", "INFO");
         }
         
