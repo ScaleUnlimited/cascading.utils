@@ -5,7 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
@@ -25,7 +26,7 @@ import com.esotericsoftware.kryo.io.Output;
  */
 @SuppressWarnings("serial")
 public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, KryoContext, KryoContext> {
-    private static final Logger LOGGER = Logger.getLogger(KryoScheme.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KryoScheme.class);
     
     public KryoScheme(Fields sourceFields) {
         super(sourceFields, sourceFields);

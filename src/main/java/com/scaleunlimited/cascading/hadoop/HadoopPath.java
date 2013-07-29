@@ -8,12 +8,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.scaleunlimited.cascading.BasePath;
 
 public class HadoopPath extends BasePath {
-    private static final Logger LOGGER = Logger.getLogger(HadoopPath.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HadoopPath.class);
 
     private static final String DISTCP_S3_FOLDER_MARKER_FILENAME_SUFFIX = "_$folder$";
 

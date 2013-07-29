@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.scaleunlimited.cascading;
 
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
@@ -33,7 +33,7 @@ import cascading.tuple.TupleEntry;
 /**
  * A version of Cascading's Debug() operator with two key changes:
  * 
- * 1. Use Log4J to log (and only if log level is <= debug)
+ * 1. Use slf4j to log (and only if log level is <= debug)
  * 2. Limit output length (and remove \r\n) for cleaner output.
  * 
  * It also has a static makePipe method, that does nothing if the log
@@ -43,9 +43,12 @@ import cascading.tuple.TupleEntry;
  */
 @SuppressWarnings("serial")
 public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
-    private static final Logger LOGGER = Logger.getLogger(TupleLogger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TupleLogger.class);
     
     public static final int DEFAULT_MAX_ELEMENT_LENGTH = 100;
+    
+    // Support (via setLevel) to explicitly enable/disable tuple logging
+    private static Boolean _enableTupleLogging = null;
     
     private String _prefix = null;
     private boolean _printFields = false;
@@ -54,19 +57,19 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     private int _printTupleEvery = 1;
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
     
-    public static Pipe makePipe(Pipe inPipe) {
-        return makePipe(inPipe, inPipe.getName(), true, DEFAULT_MAX_ELEMENT_LENGTH, LOGGER.isDebugEnabled());
+    protected static Pipe makePipe(Pipe inPipe) {
+        return makePipe(inPipe, inPipe.getName(), true, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
-    public static Pipe makePipe(Pipe inPipe, boolean printFields) {
+    protected static Pipe makePipe(Pipe inPipe, boolean printFields) {
         return makePipe(inPipe, printFields, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
-    public static Pipe makePipe(Pipe inPipe, boolean printFields, boolean makePipe) {
+    protected static Pipe makePipe(Pipe inPipe, boolean printFields, boolean makePipe) {
         return makePipe(inPipe, inPipe.getName(), printFields, DEFAULT_MAX_ELEMENT_LENGTH, makePipe);
     }
     
-    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields) {
+    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields) {
         return makePipe(inPipe, prefix, printFields, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
@@ -79,7 +82,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @param maxLength max length of any element string.
      * @return pipe to use
      */
-    public static Pipe makePipe(Pipe inPipe, boolean printFields, int maxLength) {
+    protected static Pipe makePipe(Pipe inPipe, boolean printFields, int maxLength) {
         return makePipe(inPipe, inPipe.getName(), printFields, maxLength);
     }
     
@@ -96,11 +99,11 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @param maxLength max length of any element string.
      * @return pipe to use
      */
-    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
-        return makePipe(inPipe, prefix, printFields, maxLength, LOGGER.isDebugEnabled());
+    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
+        return makePipe(inPipe, prefix, printFields, maxLength, doTupleLogging());
     }
     
-    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
+    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
         if (addPipe) {
             TupleLogger tl = new TupleLogger(prefix, printFields);
             tl.setMaxPrintLength(maxLength);
@@ -152,15 +155,15 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     }
     
     @Override
-    public void prepare( FlowProcess flowProcess, OperationCall<Long> operationCall ) {
+    public void prepare(FlowProcess flowProcess, OperationCall<Long> operationCall) {
         super.prepare(flowProcess, operationCall);
 
         operationCall.setContext(0L);
     }
 
     /** @see Filter#isRemove(cascading.flow.FlowProcess, FilterCall) */
-    public boolean isRemove( FlowProcess flowProcess, FilterCall<Long> filterCall ) {
-        if (LOGGER.isDebugEnabled()) {
+    public boolean isRemove(FlowProcess flowProcess, FilterCall<Long> filterCall) {
+        if (doTupleLogging()) {
             long count = filterCall.getContext();
             TupleEntry entry = filterCall.getArguments();
             
@@ -180,6 +183,19 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         return false;
     }
 
+    /**
+     * Decide if we want to log tuples.
+     * 
+     * @return true if we should log tuples.
+     */
+    private static boolean doTupleLogging() {
+        if (_enableTupleLogging != null) {
+            return _enableTupleLogging;
+        } else {
+            return LOGGER.isDebugEnabled();
+        }
+    }
+
     private void log(String message) {
         if (_prefix != null) {
             log(new StringBuilder(message));
@@ -194,7 +210,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
             message.insert(0, _prefix);
         }
         
-        LOGGER.debug(message);
+        LOGGER.debug(message.toString());
     }
     
     @SuppressWarnings("unchecked")
@@ -251,13 +267,13 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     }
     
     /**
-     * Explicitly set the logging level for our internal logger, which then will
+     * Explicitly set whether to enable/disable logging, which then will
      * impact what makePipe() will do.
      * 
-     * @param level new logging level
+     * @param enabled true to force logging, false to force no logging.
      */
-    public static void setLevel(Level level) {
-        LOGGER.setLevel(level);
+    public static void enableLogging(boolean enabled) {
+        _enableTupleLogging = enabled;
     }
 
 }

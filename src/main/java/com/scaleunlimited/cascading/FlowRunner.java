@@ -16,7 +16,8 @@ import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobInProgress;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowStep;
@@ -31,7 +32,7 @@ import cascading.stats.local.LocalStepStats;
 import com.scaleunlimited.cascading.hadoop.HadoopUtils;
 
 public class FlowRunner {
-    static final Logger LOGGER = Logger.getLogger(FlowRunner.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(FlowRunner.class);
 
     private static final long FLOW_CHECK_INTERVAL = 5 * 1000L;
     

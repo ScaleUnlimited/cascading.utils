@@ -26,11 +26,11 @@ import java.net.UnknownHostException;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.metrics.ContextFactory;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GangliaFlowReporter implements IFlowReporter {
-    private static final Logger LOGGER = Logger.getLogger(GangliaFlowReporter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GangliaFlowReporter.class);
 
     private static final int GANGLIA_DEFAULT_PORT = 8649;
     private final static int GANGLIA_SLOPE_UNSPECIFIED = 4;
@@ -79,7 +79,6 @@ public class GangliaFlowReporter implements IFlowReporter {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private boolean isLocalJob() {
         JobConf jobConf = new JobConf();
         return jobConf.get( "mapred.job.tracker" ).equalsIgnoreCase( "local" );

@@ -18,7 +18,6 @@ package com.scaleunlimited.cascading;
 
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
-import org.apache.log4j.Level;
 import org.kohsuke.args4j.Option;
 
 public class BaseOptions {
@@ -56,11 +55,11 @@ public class BaseOptions {
     
     public Level getLogLevel() {
         if (isTraceLogging()) {
-            return Level.TRACE;
+            return Level.SLF4J_TRACE;
         } else if (isDebugLogging()) {
-            return Level.DEBUG;
+            return Level.SLF4J_DEBUG;
         } else {
-            return Level.INFO;
+            return Level.SLF4J_INFO;
         }
     }
     

@@ -1,9 +1,5 @@
 package com.scaleunlimited.cascading;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -12,7 +8,6 @@ import java.util.concurrent.TimeoutException;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowListener;
-import cascading.stats.FlowStats;
 
 public class FlowFuture implements Future<FlowResult> {
 

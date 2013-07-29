@@ -1,5 +1,5 @@
 /**
- * Copyright 2010 TransPac Software, Inc.
+ * Copyright 2010-2013 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,40 @@
 
 package com.scaleunlimited.cascading;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Counters;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowProcessWrapper;
 import cascading.flow.hadoop.HadoopFlowProcess;
 
 public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
-    private static final Logger LOGGER = Logger.getLogger(LoggingFlowProcess.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingFlowProcess.class);
 
+    // enum used for counting number of occurrences of each type of msg.
     public static enum LoggingLevels {
         TRACE,
         DEBUG,
         INFO,
         WARN,
-        ERROR,
-        FATAL,
-        EXCEPTION;
+        ERROR;
         
         public static LoggingLevels fromLevel(Level level) {
-            switch (level.toInt()) {
-                case Level.TRACE_INT: return TRACE;
-                case Level.DEBUG_INT: return DEBUG;
-                case Level.ERROR_INT: return ERROR;
-                case Level.FATAL_INT: return FATAL;
-                case Level.INFO_INT: return INFO;
-                case Level.WARN_INT: return WARN;
+            switch (level) {
+                case SLF4J_TRACE: return TRACE;
+                case SLF4J_DEBUG: return DEBUG;
+                case SLF4J_ERROR: return ERROR;
+                case SLF4J_INFO: return INFO;
+                case SLF4J_WARN: return WARN;
                 default: throw new RuntimeException("Unknown level: " + level);
             }
         }
@@ -66,9 +62,10 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
             _reporter = reporter;
         }
 
+        // TODO VMa: fix for slf4j
         @Override
         public void setStatus(Level level, String msg) {
-            if ((_reporter != null) && level.isGreaterOrEqual(Level.INFO)) {
+            if ((_reporter != null) && level.isGreaterOrEqual(Level.SLF4J_INFO)) {
                 _reporter.setStatus("Cascading " + level + ": " + msg);
             }
         }
@@ -77,7 +74,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
         public void setStatus(String msg, Throwable t) {
             // TODO KKr - add stringified <t> (maybe from Nutch?) to msg.
             if (_reporter != null) {
-                _reporter.setStatus("Cascading " + Level.ERROR + ": " + msg);
+                _reporter.setStatus("Cascading " + Level.SLF4J_ERROR + ": " + msg);
             }
         }
     }
@@ -142,7 +139,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
 //    }
 //
     public void setStatus(String msg) {
-        setStatus(Level.INFO, msg);
+        setStatus(Level.SLF4J_INFO, msg);
     }
 
     public void setStatus(String msg, Throwable t) {
@@ -152,7 +149,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
             reporter.setStatus(msg, t);
         }
         
-        increment(LoggingLevels.EXCEPTION, 1);
+        increment(LoggingLevels.ERROR, 1);
     }
 
     public void setStatus(Level level, String msg) {

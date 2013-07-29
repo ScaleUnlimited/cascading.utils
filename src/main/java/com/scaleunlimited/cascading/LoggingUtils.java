@@ -18,7 +18,6 @@ package com.scaleunlimited.cascading;
 
 import java.util.Map;
 
-import org.apache.log4j.Level;
 
 /**
  * Leverage Cascading's support for setting Log4J properties during map/reduce jobs,
@@ -34,7 +33,7 @@ public class LoggingUtils {
      * @param myLevel Logging level for our code (not Hadoop/Cascading)
      */
     public static void setLoggingProperties(Map<Object, Object> props, Level myLevel) {
-        Level cascadingLevel = Level.INFO;
+        Level cascadingLevel = Level.SLF4J_INFO;
         Level bixoLevel = myLevel;
         
         String curLogSettings = (String)props.get("log4j.logger");
@@ -51,10 +50,10 @@ public class LoggingUtils {
                                                 myLevel);
         props.put("log4j.logger", newLogSettings);
         
-        // HACK - set the TupleLogger's logging level explicitly, so that subsequent
+        // HACK - set the TupleLogger's logging explicitly, so that subsequent
         // calls to TupleLogger.makePipe() will do the right thing when defining the
         // workflow.
-        TupleLogger.setLevel(myLevel);
+        TupleLogger.enableLogging(myLevel.isLesssOrEqual(Level.SLF4J_DEBUG));
     }
 
     /**
@@ -67,11 +66,11 @@ public class LoggingUtils {
     	Level ourLevel;
     	
         if (options.isTraceLogging()) {
-        	ourLevel = Level.TRACE;
+        	ourLevel = Level.SLF4J_TRACE;
         } else if (options.isDebugLogging()) {
-        	ourLevel = Level.DEBUG;
+        	ourLevel = Level.SLF4J_DEBUG;
         } else {
-        	ourLevel = Level.INFO;
+        	ourLevel = Level.SLF4J_INFO;
         }
         
         setLoggingProperties(props, ourLevel);

@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import cascading.flow.Flow;
 import cascading.stats.FlowStats;
@@ -29,7 +31,7 @@ import cascading.stats.FlowStepStats;
 
 @SuppressWarnings("rawtypes")
 public class FlowCounters {
-    static final Logger LOGGER = Logger.getLogger(FlowCounters.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(FlowCounters.class);
 
     /**
      * Run the flow, and return back a Map that has entries for every requested

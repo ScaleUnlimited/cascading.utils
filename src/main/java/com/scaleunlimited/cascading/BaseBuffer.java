@@ -1,9 +1,10 @@
 package com.scaleunlimited.cascading;
 
-import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
-import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.operation.BaseOperation;
 import cascading.operation.Buffer;
 import cascading.operation.BufferCall;
@@ -15,8 +16,9 @@ import cascading.tuple.TupleEntryCollector;
 
 @SuppressWarnings("serial")
 public abstract class BaseBuffer extends BaseOperation<NullContext> implements Buffer<NullContext> {
-    private static final Logger LOGGER = Logger.getLogger(BaseBuffer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseBuffer.class);
     
+    @SuppressWarnings("rawtypes")
     protected transient LoggingFlowProcess _flowProcess;
     protected transient TupleEntryCollector _collector;
 
@@ -35,6 +37,7 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
     public boolean handleCleanupException(Throwable t) { return false; }
     
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void prepare(FlowProcess flowProcess, OperationCall<NullContext> operationCall) {
         super.prepare(flowProcess, operationCall);
@@ -60,6 +63,7 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
         }
     }
     
+    @SuppressWarnings("rawtypes")
     @Override
     public void cleanup(FlowProcess flowProcess, OperationCall<NullContext> operationCall) {
         String bufferClassName = this.getClass().getSimpleName();
@@ -84,6 +88,7 @@ public abstract class BaseBuffer extends BaseOperation<NullContext> implements B
         super.cleanup(flowProcess, operationCall);
     }
     
+    @SuppressWarnings("rawtypes")
     @Override
     public void operate(FlowProcess flowProcess, BufferCall<NullContext> bufferCall) {
         if (_collector == null) {

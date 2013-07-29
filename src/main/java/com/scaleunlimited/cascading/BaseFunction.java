@@ -16,7 +16,9 @@
 
 package com.scaleunlimited.cascading;
 
-import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.operation.BaseOperation;
@@ -25,9 +27,9 @@ import cascading.operation.FunctionCall;
 import cascading.operation.OperationCall;
 import cascading.tuple.TupleEntryCollector;
 
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "rawtypes"})
 public abstract class BaseFunction<INDATUM extends BaseDatum, OUTDATUM extends BaseDatum> extends BaseOperation<NullContext> implements Function<NullContext> {
-    private static final Logger LOGGER = Logger.getLogger(BaseFunction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseFunction.class);
     
     private INDATUM _inDatum;
     private OUTDATUM _outDatum;

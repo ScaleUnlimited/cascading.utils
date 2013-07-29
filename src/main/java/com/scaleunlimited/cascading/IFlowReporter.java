@@ -16,7 +16,6 @@
 
 package com.scaleunlimited.cascading;
 
-import org.apache.log4j.Level;
 
 public interface IFlowReporter {
     void setStatus(Level level, String msg);
