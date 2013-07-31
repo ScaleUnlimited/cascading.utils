@@ -57,19 +57,19 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     private int _printTupleEvery = 1;
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
     
-    protected static Pipe makePipe(Pipe inPipe) {
+    public static Pipe makePipe(Pipe inPipe) {
         return makePipe(inPipe, inPipe.getName(), true, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
-    protected static Pipe makePipe(Pipe inPipe, boolean printFields) {
+    public static Pipe makePipe(Pipe inPipe, boolean printFields) {
         return makePipe(inPipe, printFields, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
-    protected static Pipe makePipe(Pipe inPipe, boolean printFields, boolean makePipe) {
+    public static Pipe makePipe(Pipe inPipe, boolean printFields, boolean makePipe) {
         return makePipe(inPipe, inPipe.getName(), printFields, DEFAULT_MAX_ELEMENT_LENGTH, makePipe);
     }
     
-    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields) {
+    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields) {
         return makePipe(inPipe, prefix, printFields, DEFAULT_MAX_ELEMENT_LENGTH);
     }
     
@@ -82,7 +82,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @param maxLength max length of any element string.
      * @return pipe to use
      */
-    protected static Pipe makePipe(Pipe inPipe, boolean printFields, int maxLength) {
+    public static Pipe makePipe(Pipe inPipe, boolean printFields, int maxLength) {
         return makePipe(inPipe, inPipe.getName(), printFields, maxLength);
     }
     
@@ -99,11 +99,11 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
      * @param maxLength max length of any element string.
      * @return pipe to use
      */
-    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
+    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
         return makePipe(inPipe, prefix, printFields, maxLength, doTupleLogging());
     }
     
-    protected static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
+    public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
         if (addPipe) {
             TupleLogger tl = new TupleLogger(prefix, printFields);
             tl.setMaxPrintLength(maxLength);
@@ -154,6 +154,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         _maxPrintLength = maxPrintLength;
     }
     
+    @SuppressWarnings("rawtypes")
     @Override
     public void prepare(FlowProcess flowProcess, OperationCall<Long> operationCall) {
         super.prepare(flowProcess, operationCall);
@@ -162,6 +163,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     }
 
     /** @see Filter#isRemove(cascading.flow.FlowProcess, FilterCall) */
+    @SuppressWarnings("rawtypes")
     public boolean isRemove(FlowProcess flowProcess, FilterCall<Long> filterCall) {
         if (doTupleLogging()) {
             long count = filterCall.getContext();
@@ -213,7 +215,6 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         LOGGER.debug(message.toString());
     }
     
-    @SuppressWarnings("unchecked")
     public StringBuilder printTuple(StringBuilder buffer, Tuple tuple) {
         buffer.append( "[" );
         for (int i = 0; i < tuple.size(); i++) {
@@ -236,7 +237,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         return buffer;
     }
     
-    @SuppressWarnings({ "unchecked", "deprecation" })
+    @SuppressWarnings({ "deprecation" })
     public static String printObject(Object element, int maxLength) {
         StringBuilder result = new StringBuilder();
         

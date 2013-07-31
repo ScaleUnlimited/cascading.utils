@@ -64,6 +64,7 @@ public abstract class BasePlatform implements Serializable {
     
     public void setLogLevel(Level level, String... packageNames) {
         // TODO check for existing level set for package name, and just update
+        // TODO VMa - we still have a log4j dependency here...
         String curLogSettings = (String)_props.get("log4j.logger");
         if  ((curLogSettings == null) || (curLogSettings.trim().isEmpty())) {
             curLogSettings = "";
