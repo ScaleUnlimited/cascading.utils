@@ -6,7 +6,6 @@ import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Properties;
 
-
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowProps;
@@ -18,13 +17,17 @@ import cascading.tuple.Fields;
 
 @SuppressWarnings({ "rawtypes", "serial" })
 public abstract class BasePlatform implements Serializable {
-
+    
     public static final int CLUSTER_REDUCER_COUNT = -1;
     
     public enum FlowPriority {
         LOW, MEDIUM, HIGH
     }
+    
+    public abstract String getPlatformType();
 
+    public abstract boolean isLocal();
+    
     // Cascading properties, used when constructing the FlowConnector
     protected Map<Object, Object> _props;
     
@@ -95,8 +98,6 @@ public abstract class BasePlatform implements Serializable {
         return makeTap(scheme, path, SinkMode.KEEP);
     }
 
-    public abstract boolean isLocal();
-    
     public File getLogDir() {
         File result = _logDir;
         if (result == null) {

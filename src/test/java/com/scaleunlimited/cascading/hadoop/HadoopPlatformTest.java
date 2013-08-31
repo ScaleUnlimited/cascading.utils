@@ -115,4 +115,9 @@ public class HadoopPlatformTest extends AbstractPlatformTest {
         testSerialization(platform);
     }
 
+    @Test
+    public void testPlatformType() throws Exception {
+        BasePlatform platform = new HadoopPlatform(HadoopPlatformTest.class);
+        assertEquals(HadoopPlatform.PLATFORM_TYPE, platform.getPlatformType());
+    }
 }

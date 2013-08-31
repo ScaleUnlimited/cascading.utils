@@ -44,10 +44,17 @@ import com.scaleunlimited.cascading.BasePlatform;
 public class HadoopPlatform extends BasePlatform {
     private static final Logger LOGGER = LoggerFactory.getLogger(HadoopPlatform.class);
 
+    public static final String PLATFORM_TYPE = "hadoop";
+
     protected JobConf _conf;
     
     public HadoopPlatform(Class applicationJarClass) {
         this(applicationJarClass, new JobConf());
+    }
+    
+    @Override
+    public String getPlatformType() {
+        return PLATFORM_TYPE;
     }
     
     public HadoopPlatform(Class applicationJarClass, JobConf jobConf) {

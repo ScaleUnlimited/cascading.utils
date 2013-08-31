@@ -14,9 +14,9 @@ import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 
+import com.scaleunlimited.cascading.AbstractPlatformTest;
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
-import com.scaleunlimited.cascading.AbstractPlatformTest;
 
 public class LocalPlatformTest extends AbstractPlatformTest {
 
@@ -124,5 +124,11 @@ public class LocalPlatformTest extends AbstractPlatformTest {
         BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         
         testSerialization(platform);
+    }
+
+    @Test
+    public void testPlatformType() throws Exception {
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
+        assertEquals(LocalPlatform.PLATFORM_TYPE, platform.getPlatformType());
     }
 }

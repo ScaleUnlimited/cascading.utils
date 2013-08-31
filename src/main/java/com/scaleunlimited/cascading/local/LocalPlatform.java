@@ -22,16 +22,23 @@ import com.scaleunlimited.cascading.BasePlatform;
 
 @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class LocalPlatform extends BasePlatform {
+    
+    public static final String PLATFORM_TYPE = "local";
 
     public LocalPlatform(Class applicationJarClass) {
         super(applicationJarClass);
+    }
+
+    @Override
+    public String getPlatformType() {
+        return PLATFORM_TYPE;
     }
     
     @Override
     public boolean isLocal() {
         return true;
     }
-
+    
     @Override
     public File getDefaultLogDir() {
         return new File("./");
@@ -142,11 +149,10 @@ public class LocalPlatform extends BasePlatform {
     }
 
     @Override
-    public String copySharedDirToLocal(  FlowProcess flowProcess, 
-                                                String sharedDirName) {
+    public String copySharedDirToLocal( FlowProcess flowProcess, 
+                                        String sharedDirName) {
         return sharedDirName;
     }
-    
     
     @Override
     public boolean equals(Object obj) {
