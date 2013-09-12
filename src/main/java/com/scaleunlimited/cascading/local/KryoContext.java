@@ -17,7 +17,6 @@ import com.esotericsoftware.kryo.io.Output;
 public class KryoContext implements Serializable {
 
     private Kryo _kryo;
-    private int _tupleSize;
     private Input _input;
     private Output _output;
     private boolean _emptyFile;
@@ -26,9 +25,10 @@ public class KryoContext implements Serializable {
 
         @Override
         public Tuple read(Kryo kryo, Input input, Class<Tuple> type) {
-            Tuple result = Tuple.size(_tupleSize);
+            int tupleSize = kryo.readObject(input, Integer.class);
+            Tuple result = Tuple.size(tupleSize);
             
-            for (int i = 0; i < _tupleSize; i++) {
+            for (int i = 0; i < tupleSize; i++) {
                 result.set(i, kryo.readClassAndObject(input));
             }
             
@@ -37,10 +37,8 @@ public class KryoContext implements Serializable {
 
         @Override
         public void write(Kryo kryo, Output output, Tuple tuple) {
-            if (tuple.size() != _tupleSize) {
-                throw new TapException("Incorrect number of fields in incoming tuple", tuple);
-            }
-
+            kryo.writeObject(output, new Integer(tuple.size()));
+            
             // Serialize each tuple element.
             for (int i = 0; i < tuple.size(); i++) {
                 kryo.writeClassAndObject(output, tuple.getObject(i));
@@ -50,7 +48,6 @@ public class KryoContext implements Serializable {
     
     public KryoContext(Input input, Fields fields) {
         _input = input;
-        _tupleSize = fields.size();
         
         init();
 
@@ -67,7 +64,7 @@ public class KryoContext implements Serializable {
     
     public KryoContext(Output output, Fields fields) {
         _output = output;
-        
+
         init();
         
         // So we can validate on input.
@@ -78,10 +75,8 @@ public class KryoContext implements Serializable {
         _kryo = new Kryo();
         
         // Register tuple class so storage is more efficient (no full class names).
-        _kryo.register(Tuple.class);
-        
-        // Set up serializer that knows how to serialize Tuples
-        _kryo.addDefaultSerializer(Tuple.class, TupleSerializer.class);
+        // And set up serializer that knows how to serialize Tuples
+        _kryo.register(Tuple.class, new TupleSerializer());
         
         // Support for custom classes w/o empty constructor
         _kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
