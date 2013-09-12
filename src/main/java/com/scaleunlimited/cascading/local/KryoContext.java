@@ -80,6 +80,11 @@ public class KryoContext implements Serializable {
         
         // Support for custom classes w/o empty constructor
         _kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        
+        // For some reason Kryo winds up having references that are invalid (id isn't right),
+        // so we get null objects.
+        // TODO figure out why this is the case.
+        _kryo.setReferences(false);
     }
     
     public void serialize(Tuple t) {

@@ -275,6 +275,33 @@ public class KryoSchemeTest {
         iter.close();
     }
     
+    @Test
+    public void testDuplicateString() throws Exception {
+        final String targetDir = "build/test/KryoSchemeTest/testDuplicateString";
+        
+        // Create a local tap that uses the KryoScheme
+        Fields fields = new Fields("str1", "str2");
+        
+        Tap out = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryCollector writer = out.openForWrite(new LocalFlowProcess());
+        
+        String test = "this is a test";        
+        writer.add(new Tuple(test, test));
+        writer.close();
+        
+        Tap in = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryIterator iter = in.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals(test, te.getString("str1"));
+        assertEquals(test, te.getString("str2"));
+        
+        assertFalse(iter.hasNext());
+        
+        iter.close();
+    }
+    
     
     @Test
     public void testInWorkflow() throws Exception {
