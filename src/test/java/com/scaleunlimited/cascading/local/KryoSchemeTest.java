@@ -231,6 +231,52 @@ public class KryoSchemeTest {
     }
     
     @Test
+    public void testTupleInTuple() throws Exception {
+        final String targetDir = "build/test/KryoSchemeTest/testTupleInTuple";
+        
+        // Create a local tap that uses the KryoScheme
+        Fields fields = new Fields("key", "value");
+        
+        Tap out = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryCollector writer = out.openForWrite(new LocalFlowProcess());
+        
+        writer.add(new Tuple("key1", null));
+        writer.add(new Tuple("key1", new Tuple(1)));
+        writer.add(new Tuple("key2", new Tuple(1, 2)));
+        writer.close();
+        
+        Tap in = new FileTap(new KryoScheme(fields), targetDir);
+        TupleEntryIterator iter = in.openForRead(new LocalFlowProcess());
+        
+        assertTrue(iter.hasNext());
+        TupleEntry te = iter.next();
+        assertEquals("key1", te.getString("key"));
+        assertNull(te.getObject("value"));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key1", te.getString("key"));
+        Tuple t = (Tuple)te.getObject("value");
+        assertNotNull(t);
+        assertEquals(1, t.size());
+        assertEquals(1, t.getInteger(0));
+        
+        assertTrue(iter.hasNext());
+        te = iter.next();
+        assertEquals("key2", te.getString("key"));
+        t = (Tuple)te.getObject("value");
+        assertNotNull(t);
+        assertEquals(2, t.size());
+        assertEquals(1, t.getInteger(0));
+        assertEquals(2, t.getInteger(1));
+        
+        assertFalse(iter.hasNext());
+        
+        iter.close();
+    }
+    
+    
+    @Test
     public void testInWorkflow() throws Exception {
         final String srcDir = "build/test/KryoSchemeTest/testInWorkflow/src";
         final String dstFile = "build/test/KryoSchemeTest/testInWorkflow/dstFile";
