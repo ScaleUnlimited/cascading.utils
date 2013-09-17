@@ -36,6 +36,7 @@ import cascading.tap.Tap;
 import cascading.tap.hadoop.Hfs;
 import cascading.tap.hadoop.TemplateTap;
 import cascading.tuple.Fields;
+import cascading.tuple.hadoop.TupleSerializationProps;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
@@ -168,7 +169,27 @@ public class HadoopPlatform extends BasePlatform {
         Map<Object, Object> cascadingProps = new HashMap<Object, Object>(_props);
         
         for (Map.Entry<Object, Object> entry : hadoopProps.entrySet()) {
-            cascadingProps.put(entry.getKey(), entry.getValue());
+            Object key = entry.getKey();
+            Object propertyValue = entry.getValue();
+            Object cascadingValue = cascadingProps.get(key);
+            if (cascadingValue == null) {
+                cascadingProps.put(key, propertyValue);
+            } else {
+                if (TupleSerializationProps.HADOOP_IO_SERIALIZATIONS.equals(key)) {
+                    String message = 
+                        String.format(  "Hadoop I/O serializations '%s' overridden to Cascading '%s'",
+                                        propertyValue,
+                                        cascadingValue);
+                    LOGGER.info(message);
+                } else {
+                    String message = 
+                        String.format(  "Cascading '%s' property '%s' was ignored",
+                                        key,
+                                        cascadingValue);
+                    LOGGER.info(message);
+                    cascadingProps.put(key, propertyValue);
+                }
+            }
         }
         
         return new HadoopFlowConnector(cascadingProps);
