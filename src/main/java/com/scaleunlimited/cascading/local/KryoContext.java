@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import cascading.tap.TapException;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 
@@ -21,7 +20,7 @@ public class KryoContext implements Serializable {
     private Output _output;
     private boolean _emptyFile;
     
-    private class TupleSerializer extends Serializer<Tuple> {
+    private static class TupleSerializer extends Serializer<Tuple> {
 
         @Override
         public Tuple read(Kryo kryo, Input input, Class<Tuple> type) {
