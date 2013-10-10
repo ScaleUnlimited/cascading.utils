@@ -124,7 +124,7 @@
 	<!-- ================================================================== -->
 
 	<target name="compile-test-artifacts" depends="compile">
-		<echo>*** Building Unit Tests Sources ***</echo>
+		<echo>*** Building Test Artifacts ***</echo>
 		<mkdir dir="${build.dir.test-classes}" />
 		<path id="test.path">
 			<pathelement location="${build.dir.main-classes}" />
@@ -181,7 +181,7 @@
 		       printsummary="yes"
 		       haltonfailure="no"
 		       fork="yes"
-		       maxmemory="384m"
+		       maxmemory="512m"
 		       dir="${basedir}"
 		       errorProperty="tests.failed"
 		       failureProperty="tests.failed">
