@@ -324,11 +324,15 @@ public class FlowRunner {
                    if (sliceStats.getStatus() == Status.SUCCESSFUL) {
                        // Set the total time
                        // TODO this doesn't seem to be working, I get 0.
+                       // Plus it needs JobInProgress.Counter as a class, which means anyone using
+                       // cascading.utils winds up needing to include Hadoop.
+                       /*
                        incrementCounts(taskCounts, countsKey, flowName, stepName, 
                                        0,
                                        0, 
                                        sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_MAPS), 
                                        sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_REDUCES));
+                       */
                    } else if (sliceStats.getStatus() == Status.RUNNING) {
                        if (sliceStats.getKind() == Kind.MAPPER) {
                            incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
