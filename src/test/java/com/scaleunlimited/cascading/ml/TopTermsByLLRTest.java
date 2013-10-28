@@ -1,12 +1,10 @@
 package com.scaleunlimited.cascading.ml;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 
 import junit.framework.Assert;
 
-import org.apache.mahout.math.stats.LogLikelihood;
 import org.junit.Test;
 
 import cascading.flow.Flow;
