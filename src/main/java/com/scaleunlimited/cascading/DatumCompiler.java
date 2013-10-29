@@ -18,9 +18,12 @@ package com.scaleunlimited.cascading;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 public class DatumCompiler {
 
@@ -163,11 +166,20 @@ public class DatumCompiler {
             String fieldName = stripLeadingUnderscores(field.getName());
             String fieldNameConstant = makeFieldNameConstant(fieldName);
             String typeName = cleanTypeName(field);
-
+            boolean isEnum = isEnumType(field);
+            boolean isDate = field.getType() == Date.class;
+            boolean isUUID = field.getType() == UUID.class;
+            
             line(result, 1, "public void " + makeGetSetFunctionName(fieldName, "set") + "(" + typeName + " " + fieldName + ") {");
             // TODO use set<type> setters where appropriate.
             if (isArrayType(field)) {
                 line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", makeTupleFromList(" + fieldName + ");");
+            } else if (isEnum) {
+                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ".ordinal());");
+            } else if (isDate) {
+                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ".getTime());");
+            } else if (isUUID) {
+                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", new UUIDWritable(" + fieldName + "));");
             } else {
                 line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ");");
             }
@@ -176,11 +188,22 @@ public class DatumCompiler {
             line(result, 1, "");
 
             line(result, 1, "public " + typeName + " " + makeGetSetFunctionName(fieldName, "get") + "() {");
-
             
-            String cascadingGetter = mapFieldTypeToGetter(typeName);
-            String resultCast = (cascadingGetter.equals("Object") ? "(" + typeName + ")" : "");
-            line(result, 2, "return " + resultCast + "_tupleEntry.get" + cascadingGetter + "(" + fieldNameConstant + ");");
+            if (isEnum) {
+                // We saved the ordinal value, so covert back to enum
+                line(result, 2, "return " + typeName + ".values()[_tupleEntry.getInteger(" + fieldNameConstant + ")];");
+            } else if (isDate) {
+                // We saved the time as a long, so covert back to Date
+                line(result, 2, "return new java.util.Date(_tupleEntry.getLong(" + fieldNameConstant + "));");
+            } else if (isUUID) {
+                // We saved the UUID as a UUIDWritable, so covert back to UUID
+                line(result, 2, "return ((com.scaleunlimited.cascading.UUIDWritable)_tupleEntry.getObject(" + fieldNameConstant + ")).getUUID();");
+            } else {
+                String cascadingGetter = mapFieldTypeToGetter(typeName);
+                String resultCast = (cascadingGetter.equals("Object") ? "(" + typeName + ")" : "");
+                line(result, 2, "return " + resultCast + "_tupleEntry.get" + cascadingGetter + "(" + fieldNameConstant + ");");
+            }
+            
             line(result, 1, "}");
             line(result, 1, "");
         }
@@ -196,6 +219,12 @@ public class DatumCompiler {
         return false;
     }
     
+    private static boolean isEnumType(Field field) {
+        Class clazz = field.getType();
+        Object[] enums = clazz.getEnumConstants();
+        return enums != null;
+    }
+    
     private static String mapFieldTypeToGetter(String typeName) {
         if (typeName.equals("boolean") || typeName.equals("Boolean")) {
             return "Boolean";
@@ -204,11 +233,11 @@ public class DatumCompiler {
         } else if (typeName.equals("int") || typeName.equals("Integer")) {
             return "Integer";
         } else if (typeName.equals("long") || typeName.equals("Long")) {
-            return "Integer";
+            return "Long";
         } else if (typeName.equals("float") || typeName.equals("Float")) {
             return "Float";
         } else if (typeName.equals("double") || typeName.equals("Double")) {
-            return "Float";
+            return "Double";
         } else if (typeName.equals("String")) {
             return "String";
         } else {
@@ -424,145 +453,7 @@ public class DatumCompiler {
         // TODO support flag for compilation that says whether to include annotations.
         // line(out, 0, "@SuppressWarnings(\"serial\")");
     }
-    //
-    //    private OutputFile compile(String superDatum, Schema schema) {
-    //        OutputFile outputFile = new OutputFile();
-    //        String name = mangle(schema.getName());
-    //        outputFile.path = makePath(name, schema.getNamespace());
-    //        StringBuilder out = new StringBuilder();
-    //        header(out, schema.getNamespace());
-    //        
-    //        switch (schema.getType()) {
-    //            case RECORD:
-    //                doc(out, 0, schema.getDoc());
-    //                line(out, 0, String.format("public class %s extends %s {", name, superDatum));
-    //                
-    //                // field declarations
-    //                StringBuilder fieldNames = new StringBuilder();
-    //                for (Schema.Field field : schema.getFields()) {
-    //                    doc(out, 1, field.doc());
-    //                    String fieldName = makeFieldNameConstant(field.name());
-    //                    line(out, 1, String.format("public static final String %s = fieldName(%s.class, \"%s\");",
-    //                                    fieldName,
-    //                                    name,
-    //                                    field.name()));
-    //                    if (fieldNames.length() > 0) {
-    //                        fieldNames.append(", ");
-    //                    }
-    //                    fieldNames.append(fieldName);
-    //                }
-    //                
-    //                line(out, 0, "");
-    //
-    //                String fieldDeclaration;
-    //                if (isBaseDatum(superDatum)) {
-    //                    fieldDeclaration = String.format("new Fields(%s)", fieldNames.toString());
-    //                } else {
-    //                    fieldDeclaration = String.format("%s.FIELDS.append(new Fields(%s))", superDatum, fieldNames.toString());
-    //                }
-    //                line(out, 1, String.format("public static final Fields FIELDS = %s;", fieldDeclaration));
-    //                line(out, 0, "");
-    //
-    //                // Create constructors. If we have a non-BaseDatum superclass, we need to add special constructors.
-    //                if (isBaseDatum(superDatum)) {
-    //                    line(out, 1, String.format("public %s(Fields fields) {", name));
-    //                    line(out, 2, "super(fields);");
-    //                    line(out, 1, "}");
-    //                    line(out, 0, "");
-    //                    
-    //                    line(out, 1, String.format("public %s(Fields fields, Tuple tuple) {", name));
-    //                    line(out, 2, "super(fields, tuple);");
-    //                    line(out, 1, "}");
-    //                    line(out, 0, "");
-    //                }
-    //                
-    //                // Now do regular constructors
-    //                line(out, 1, String.format("public %s(Tuple tuple) {", name));
-    //                line(out, 2, "super(tuple);");
-    //                line(out, 1, "}");
-    //                line(out, 0, "");
-    //                
-    //                line(out, 1, String.format("public %s(TupleEntry te) {", name));
-    //                line(out, 2, "super(FIELDS);");
-    //                line(out, 2, "setTupleEntry(te);");
-    //                line(out, 1, "}");
-    //                line(out, 0, "");
-    //                
-    //                // TODO KKr - create constructor that takes all of the individual fields,
-    //                // and calls the set<fieldname> methods to set their values.
-    //                StringBuilder paramList = new StringBuilder();
-    //                for (Schema.Field field : schema.getFields()) {
-    //                    if (paramList.length() > 0) {
-    //                        paramList.append(", ");
-    //                    }
-    //                    
-    //                    paramList.append(unbox(field.schema()));
-    //                    paramList.append(' ');
-    //                    paramList.append(field.name());
-    //                }
-    //                
-    //                line(out, 1, String.format("public %s(%s) {", name, paramList.toString()));
-    //                line(out, 2, "super(FIELDS);");
-    //                line(out, 2, "setParam(param);");
-    //                line(out, 1, "}");
-    //                line(out, 0, "");
-    //                
-    //                // TODO KKr - create getters and setters for each of the individual fields.
-    //                // For maps and arrays, do special processing.
-    //                
-    ////                public void setPhrase(String phrase) {
-    ////                    _tupleEntry.set(PHRASE_FN, phrase);
-    ////                }
-    ////                
-    ////                public String getPhrase() {
-    ////                    return _tupleEntry.getString(PHRASE_FN);
-    ////                }
-    //                
-    //                line(out, 0, "}");
-    //                break;
-    //                
-    //            case ENUM:
-    //                doc(out, 0, schema.getDoc());
-    //                line(out, 0, "public enum " + name + " { ");
-    //                StringBuilder b = new StringBuilder();
-    //                int count = 0;
-    //                for (String symbol : schema.getEnumSymbols()) {
-    //                    b.append(mangle(symbol));
-    //                    if (++count < schema.getEnumSymbols().size())
-    //                        b.append(", ");
-    //                }
-    //                line(out, 1, b.toString());
-    //                line(out, 0, "}");
-    //                break;
-    //                
-    //            case MAP:
-    //            case ARRAY:
-    //            case STRING:
-    //            case BYTES:
-    //            case INT:
-    //            case LONG:
-    //            case FLOAT:
-    //            case DOUBLE:
-    //            case BOOLEAN:
-    //                break;
-    //                
-    //            case NULL:      // TODO KKr - do we support the null type?
-    //            case UNION:
-    //            case FIXED:
-    //                throw new RuntimeException("Unsupported type: " + schema);
-    //                
-    //            default:
-    //                throw new RuntimeException("Unknown type: " + schema);
-    //        }
-    //
-    //    outputFile.contents = out.toString();
-    //    return outputFile;
-    //}
-    //
-    //    private boolean isBaseDatum(String superDatum) {
-    //        return superDatum.equals(BASE_DATUM_CLASSNAME);
-    //    }
-    //
+
     private static void doc(StringBuilder out, int indent, String doc) {
         if (doc != null) {
             line(out, indent, "/** " + escapeForJavaDoc(doc) + " */");
@@ -641,40 +532,4 @@ public class DatumCompiler {
     private static String esc(Object o) {
         return o.toString().replace("\"", "\\\"");
     }
-    //
-    //    /**
-    //     * Implementation of Tool for inclusion by the "avro-tools" runner.
-    //     */
-    //    public static class SpecificCompilerTool implements Tool {
-    //        @Override
-    //        public int run(InputStream in, PrintStream out, PrintStream err, List<String> args) throws Exception {
-    //            String superDatum;
-    //            int argIndex = 0;
-    //            
-    //            if (args.size() == 2) {
-    //                superDatum = BASE_DATUM_CLASSNAME;
-    //            } else if (args.size() == 3) {
-    //                superDatum = args.get(argIndex++);
-    //            } else {
-    //                System.err.println("Expected 2 or 3 arguments: [superDatum] inputfile outputdir");
-    //                return 1;
-    //            }
-    //            
-    //            File input = new File(args.get(argIndex++));
-    //            File output = new File(args.get(argIndex++));
-    //            compileSchema(superDatum, input, output);
-    //            return 0;
-    //        }
-    //
-    //        @Override
-    //        public String getName() {
-    //            return "compile";
-    //        }
-    //
-    //        @Override
-    //        public String getShortDescription() {
-    //            return "Generates Java code for Cascading Datums, based on the given schema.";
-    //        }
-    //    }
-
 }

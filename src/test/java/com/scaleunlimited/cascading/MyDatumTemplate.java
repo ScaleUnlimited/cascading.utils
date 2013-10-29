@@ -17,4 +17,6 @@ public class MyDatumTemplate {
     private Tuple _aliases;
 
     private String[] _phoneNumbers;
+    
+    private MyDatumEnum _enum;
 }
