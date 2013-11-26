@@ -38,7 +38,7 @@ public class FlowRunner {
     private static final long FLOW_CHECK_INTERVAL = 1 * 1000L;
 
     // Default number of flows to run in parallel
-    private static final int DEFAULT_MAX_FLOWS = 10;
+    private static final int DEFAULT_MAX_FLOWS = 100;
     
     private static class TaskStats {
         
