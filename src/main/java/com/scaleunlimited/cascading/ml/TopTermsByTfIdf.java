@@ -25,6 +25,7 @@ import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
 import cascading.pipe.assembly.SumBy;
 import cascading.pipe.joiner.LeftJoin;
+import cascading.pipe.joiner.OuterJoin;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -214,8 +215,11 @@ public class TopTermsByTfIdf extends SubAssembly {
         // we want to do a filter & HashJoin against itself
         Pipe totalDocCountPipe = new Pipe("total doc count", docCountPipe);
         totalDocCountPipe = new Each(totalDocCountPipe, new Fields("term"), new ExpressionFilter("term.isEmpty()", String.class));
+        totalDocCountPipe = new Each(totalDocCountPipe, new Fields("doc_count"), new Identity());
         
-        docCountPipe = new HashJoin(docCountPipe, new Fields("flag"), totalDocCountPipe, new Fields("term"));
+        // Now we can do a cross join, so that the total doc count is joined to every one of our
+        // incoming tuples.
+        docCountPipe = new HashJoin(docCountPipe, Fields.NONE, totalDocCountPipe, Fields.NONE, new OuterJoin());
         
         // Generate term, total count. This will
         // include the empty term "" which will be the total count of all terms.
