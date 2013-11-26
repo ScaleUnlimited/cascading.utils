@@ -15,12 +15,13 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobInProgress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cascading.flow.Flow;
+import cascading.flow.FlowProcess;
 import cascading.flow.FlowStep;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.stats.CascadingStats.Status;
 import cascading.stats.FlowStats;
 import cascading.stats.FlowStepStats;
@@ -34,7 +35,10 @@ import com.scaleunlimited.cascading.hadoop.HadoopUtils;
 public class FlowRunner {
     static final Logger LOGGER = LoggerFactory.getLogger(FlowRunner.class);
 
-    private static final long FLOW_CHECK_INTERVAL = 5 * 1000L;
+    private static final long FLOW_CHECK_INTERVAL = 1 * 1000L;
+
+    // Default number of flows to run in parallel
+    private static final int DEFAULT_MAX_FLOWS = 10;
     
     private static class TaskStats {
         
@@ -105,13 +109,23 @@ public class FlowRunner {
     private Thread _statsThread;
     
     public FlowRunner() {
-        this(Integer.MAX_VALUE);
+        this(DEFAULT_MAX_FLOWS);
     }
     
     public FlowRunner(int maxFlows) {
         this("FlowRunner", maxFlows, null, 0);
     }
     
+    /**
+     * Create a FlowRunner suitable for running up to maxFlows flows in parallel.
+     * Note that maxFlows is ignored (treated as 1) when adding a flow, if we're
+     * not in a real (non-local) Hadoop environment.
+     * 
+     * @param runnerName Name of the FlowRunner, for stats & job naming purposes.
+     * @param maxFlows Maximum number of flows to run in parallel
+     * @param statsDir Where to put continuous job statistics (or null for no stats)
+     * @param checkInterval How often to write out statistics, in milliseconds.
+     */
     public FlowRunner(String runnerName, int maxFlows, File statsDir, final long checkInterval) {
         if ((maxFlows > 1) && (HadoopUtils.isJobLocal(new JobConf()))) {
             LOGGER.warn("Running locally, so flows must be run serially for thread safety.");
@@ -410,6 +424,14 @@ public class FlowRunner {
      */
     public FlowFuture addFlow(Flow flow) throws InterruptedException {
         
+        // Assume single-threaded unless we're a non-local Hadoop flow.
+        boolean singleThreaded = true;
+        FlowProcess<?> fp = flow.getFlowProcess();
+        if (fp instanceof HadoopFlowProcess) {
+            HadoopFlowProcess hfp = (HadoopFlowProcess)fp;
+            singleThreaded = !HadoopUtils.isJobLocal(hfp.getJobConf());
+        }
+        
         // Find an open spot, or loop until we get one.
         while (true) {
             synchronized (_flowFutures) {
@@ -423,8 +445,9 @@ public class FlowRunner {
                 }
 
                 // Now that we've removed any flows that are done, see if we
-                // can add the new flow.
-                if (_flowFutures.size() < _maxFlows) {
+                // can add the new flow. If we're single threaded then the
+                // max number of flows at one time is just one.
+                if (_flowFutures.size() < (singleThreaded ? 1 : _maxFlows)) {
                     FlowFuture ff = new FlowFuture(flow);
                     _flowFutures.add(ff);
                     return ff;
