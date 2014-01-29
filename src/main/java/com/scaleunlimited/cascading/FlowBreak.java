@@ -26,6 +26,7 @@ public class FlowBreak extends SubAssembly {
     }
     
     public FlowBreak(Pipe p) {
+        super(p);
         p = new Each(p, new FlowBreaker());
         setTails(p);
     }

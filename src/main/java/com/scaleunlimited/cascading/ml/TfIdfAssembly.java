@@ -38,6 +38,7 @@ public class TfIdfAssembly extends SubAssembly {
     }
     
     public TfIdfAssembly(Pipe termsPipe) {
+        super(termsPipe);
         
         // For each term, we need to get a per-document count.
         Pipe termPerDocCountPipe = new Pipe("term count per doc pipe", termsPipe);

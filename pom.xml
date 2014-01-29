@@ -33,7 +33,7 @@
 	</repositories>
 	
     <properties>
-        <cascading.version>2.1.6</cascading.version>
+        <cascading.version>2.2.0</cascading.version>
         <hadoop.version>1.0.4</hadoop.version>
     </properties>
     

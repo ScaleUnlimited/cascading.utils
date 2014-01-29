@@ -282,6 +282,7 @@ public class TopTermsByLLR extends SubAssembly {
      * @param threshold - size of LRU cache for map-side pre-aggregation.
      */
     public TopTermsByLLR(Pipe docsPipe, ITermsParser parser, ITermsFilter filter, Fields docIdFields, Fields textField, int threshold) {
+        super(docsPipe);
         
         // We assume each document has one or more fields that identify each "document", and a text field
         Pipe termsPipe = new Pipe("terms", docsPipe);

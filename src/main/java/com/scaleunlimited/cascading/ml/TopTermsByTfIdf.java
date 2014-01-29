@@ -198,6 +198,7 @@ public class TopTermsByTfIdf extends SubAssembly {
     
     // TODO take in Fields param which has field for text.
     public TopTermsByTfIdf(Pipe docsPipe, ITermsParser parser, int numTerms) {
+        super(docsPipe);
         
         // We assume each document has a docid field, and a text field
         Pipe termsPipe = new Pipe("terms", docsPipe);

@@ -284,6 +284,7 @@ public class UniqueCount extends SubAssembly {
      */
     @ConstructorProperties({ "name", "pipes", "uniqueFields", "threshold" })
     public UniqueCount(String name, Pipe[] pipes, Fields groupFields, Fields uniqueFields, Fields countField, int threshold) {
+        super(pipes);
         Fields joinedFields = Fields.join(groupFields, uniqueFields);
         
         Pipe[] filters = new Pipe[pipes.length];
