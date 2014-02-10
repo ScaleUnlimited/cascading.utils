@@ -86,6 +86,7 @@ public class SplitterAssembly extends SubAssembly {
                             BaseSplitter splitter,
                             Enum lhsCounter,
                             Enum rhsCounter) {
+        super(inputPipe);
 		_baseName = inputPipe.getName();
         Pipe lhsPipe = new Pipe(_baseName + LHS_SUFFIX, inputPipe);
         lhsPipe = new Each(lhsPipe, new SplitterFilter(splitter, true, lhsCounter));

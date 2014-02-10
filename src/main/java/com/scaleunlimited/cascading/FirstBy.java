@@ -87,6 +87,7 @@ public class FirstBy extends SubAssembly {
     }
     
     public FirstBy(String name, Pipe[] pipes, Fields groupingFields, Fields sortingFields, boolean reverseSort, Fields declaredFields, int threshold) {
+        super(pipes);
         
         FirstByFilter filter = new FirstByFilter(groupingFields, sortingFields, reverseSort, threshold);
         Fields argumentSelector = Fields.merge(groupingFields, sortingFields);
