@@ -187,6 +187,15 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
 
     @Override
     public boolean resourceExists(Properties conf) throws IOException {
+        // First see if the actual path exists, and is a directory.
+        File pathDir = new File(getPath());
+        if (!pathDir.exists()) {
+            return false;
+        } else if (pathDir.isFile()) {
+            return true;
+        }
+        
+        // Now we have to check for what's inside of the pathDir.
         for (FileTap tap : getTaps()) {
             if (!tap.resourceExists(conf)) {
                 return false;
