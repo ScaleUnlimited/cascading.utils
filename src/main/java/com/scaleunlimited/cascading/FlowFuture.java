@@ -6,10 +6,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cascading.flow.Flow;
 import cascading.flow.FlowListener;
 
 public class FlowFuture implements Future<FlowResult> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlowFuture.class);
 
     private static final long FLOW_SLEEP_TIME = 1 * 1000L;
     
@@ -46,6 +50,7 @@ public class FlowFuture implements Future<FlowResult> {
         };
         
         _flow.addListener(catchExceptions);
+        LOGGER.info("Starting flow " + flow.getName());
         _flow.start();
     }
     
@@ -154,6 +159,7 @@ public class FlowFuture implements Future<FlowResult> {
 //            }
 //        }
 //
+        LOGGER.info("Flow " + _flow.getName() + "has completed");
         return new FlowResult(FlowCounters.getCounters(_flow));
     }
     

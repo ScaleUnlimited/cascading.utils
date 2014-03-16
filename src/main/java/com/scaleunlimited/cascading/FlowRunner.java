@@ -426,11 +426,23 @@ public class FlowRunner {
         
         // Assume single-threaded unless we're a non-local Hadoop flow.
         boolean singleThreaded = true;
-        FlowProcess<?> fp = flow.getFlowProcess();
+        FlowProcess<?> fp = HadoopUtils.undelegate(flow.getFlowProcess());
         if (fp instanceof HadoopFlowProcess) {
             HadoopFlowProcess hfp = (HadoopFlowProcess)fp;
-            singleThreaded = !HadoopUtils.isJobLocal(hfp.getJobConf());
+            singleThreaded = HadoopUtils.isJobLocal(hfp.getJobConf());
         }
+        String message;
+        if (singleThreaded) {
+            message = 
+                String.format(  "Adding flow %s to single-threaded FlowRunner",
+                                flow.getName());
+        } else {
+            message = 
+                String.format(  "Adding flow %s to FlowRunner (which supports %d simultaneous flows)",
+                                flow.getName(),
+                                _maxFlows);
+        }
+        LOGGER.info(message);
         
         // Find an open spot, or loop until we get one.
         while (true) {

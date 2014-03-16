@@ -29,11 +29,14 @@ import org.apache.hadoop.mapred.JobTracker.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.scaleunlimited.cascading.Level;
-
-import cascading.flow.FlowConnector;
+import cascading.flow.FlowProcess;
+import cascading.flow.FlowProcessWrapper;
+import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.flow.hadoop.util.HadoopUtil;
 import cascading.property.AppProps;
+
+import com.scaleunlimited.cascading.Level;
+import com.scaleunlimited.cascading.LoggingFlowProcess;
 
 public class HadoopUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(HadoopUtils.class);
@@ -114,6 +117,27 @@ public class HadoopUtils {
     @SuppressWarnings("deprecation")
     public static boolean isJobLocal(JobConf conf) {
         return conf.get( "mapred.job.tracker" ).equalsIgnoreCase( "local" );
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public static boolean isHadoopFlowProcess(FlowProcess fp) {
+        return (undelegate(fp) instanceof HadoopFlowProcess);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public static FlowProcess undelegate(FlowProcess fp) {
+        FlowProcess delegate = fp;
+        if (delegate instanceof LoggingFlowProcess) {
+            delegate = ((LoggingFlowProcess)delegate).getDelegate();
+        }
+        int delegateNestingLevel = 0;
+        while (delegate instanceof FlowProcessWrapper) {
+            if (++delegateNestingLevel > 100) {
+                throw new RuntimeException("FlowProcessWrapper seems to have circular nesting references");
+            }
+            delegate = FlowProcessWrapper.undelegate(delegate);
+        }
+        return delegate;
     }
     
     /**

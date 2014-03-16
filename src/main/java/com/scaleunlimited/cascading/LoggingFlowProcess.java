@@ -28,6 +28,8 @@ import org.apache.hadoop.mapreduce.Counters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.scaleunlimited.cascading.hadoop.HadoopUtils;
+
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowProcessWrapper;
 import cascading.flow.hadoop.HadoopFlowProcess;
@@ -85,16 +87,17 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
 
     public LoggingFlowProcess(FlowProcess<Config> baseProcess, IFlowReporter reporter) {
         super(baseProcess);
-        init(baseProcess, reporter);
+        init(HadoopUtils.undelegate(baseProcess), reporter);
     }
 
     public LoggingFlowProcess(FlowProcess<Config> baseProcess) {
         super(baseProcess);
         
-        if (baseProcess instanceof HadoopFlowProcess) {
-            init(baseProcess, new HadoopFlowReporter(((HadoopFlowProcess)baseProcess).getReporter()));
+        FlowProcess dfp = HadoopUtils.undelegate(baseProcess);
+        if (dfp instanceof HadoopFlowProcess) {
+            init(dfp, new HadoopFlowReporter(((HadoopFlowProcess)dfp).getReporter()));
         } else {
-            init(baseProcess, new LoggingFlowReporter());
+            init(dfp, new LoggingFlowReporter());
         }
     }
     
@@ -102,7 +105,7 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
         super(baseProcess);
         
         IFlowReporter reporter = new HadoopFlowReporter(baseProcess.getReporter());
-        init(baseProcess, reporter);
+        init(HadoopUtils.undelegate(baseProcess), reporter);
     }
 
     /**
@@ -112,13 +115,20 @@ public class LoggingFlowProcess<Config> extends FlowProcessWrapper<Config> {
     public LoggingFlowProcess() {
         super(FlowProcess.NULL);
         
-        init(FlowProcess.NULL, new LoggingFlowReporter());
+        init(HadoopUtils.undelegate(FlowProcess.NULL), new LoggingFlowReporter());
     }
 
-    private void init(FlowProcess baseProcess, IFlowReporter reporter) {
-        _isLocal = !(baseProcess instanceof HadoopFlowProcess)
-                        || ((HadoopFlowProcess) baseProcess).getJobConf().get("mapred.job.tracker")
-                                        .equalsIgnoreCase("local");
+    /**
+     * @param delegateProcess that might have been hidden inside a
+     * FlowProcessWrapper, where the latter was passed as baseProcess to the
+     * constructor (i.e., you should pass the result of
+     * {@link HadoopUtils#undelegate(FlowProcess)}) to this method.
+     * @param reporter where logging will be directed.
+     */
+    private void init(FlowProcess delegateProcess, IFlowReporter reporter) {
+        _isLocal =
+            (   (!(delegateProcess instanceof HadoopFlowProcess))
+            ||  HadoopUtils.isJobLocal(((HadoopFlowProcess) delegateProcess).getJobConf()));
 
         _localCounters = new HashMap<Enum, AtomicLong>();
         _reporters = new ArrayList<IFlowReporter>();
