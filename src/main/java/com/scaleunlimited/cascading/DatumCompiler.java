@@ -173,13 +173,17 @@ public class DatumCompiler {
             line(result, 1, "public void " + makeGetSetFunctionName(fieldName, "set") + "(" + typeName + " " + fieldName + ") {");
             // TODO use set<type> setters where appropriate.
             if (isArrayType(field)) {
-                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", makeTupleFromList(" + fieldName + ");");
+                line(result, 2, "_tupleEntry.setObject(" + fieldNameConstant + ", makeTupleFromList(" + fieldName + ");");
             } else if (isEnum) {
-                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ".ordinal());");
+                line(result, 2, "_tupleEntry.setInteger(" + fieldNameConstant + ", " + fieldName + ".ordinal());");
             } else if (isDate) {
-                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ".getTime());");
+                line(result, 2, "_tupleEntry.setLong(" + fieldNameConstant + ", " + fieldName + ".getTime());");
             } else if (isUUID) {
-                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", new UUIDWritable(" + fieldName + "));");
+                line(result, 2, "_tupleEntry.setString(" + fieldNameConstant + ", new UUIDWritable(" + fieldName + "));");
+            } else if ((field.getType() == int.class) || (field.getType() == Integer.class)) {
+                line(result, 2, "_tupleEntry.setInteger(" + fieldNameConstant + ", " + fieldName + ");");
+            } else if ((field.getType() == long.class) || (field.getType() == Long.class)) {
+                line(result, 2, "_tupleEntry.setLong(" + fieldNameConstant + ", " + fieldName + ");");
             } else {
                 line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ");");
             }
@@ -303,7 +307,7 @@ public class DatumCompiler {
     //
 
     public static String makeClassName(String className) {
-        return className.replaceAll("DatumTemplate$", "Datum");
+        return className.replaceFirst("DatumTemplate$", "Datum");
     }
 
     public static String makeFieldNameConstant(String fieldName) {
