@@ -16,6 +16,7 @@ import org.apache.hadoop.io.Writable;
 
 public class StringSet implements Set<String>, Writable {
 
+    // Value returned by fastutil when we request an int that doesn't exist.
     private static final int MISSING_HASH_VALUE = -1;
 
     private static final int DEFAULT_ENTRY_COUNT = 1000;
