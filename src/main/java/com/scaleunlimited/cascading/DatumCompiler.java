@@ -179,13 +179,15 @@ public class DatumCompiler {
             } else if (isDate) {
                 line(result, 2, "_tupleEntry.setLong(" + fieldNameConstant + ", " + fieldName + ".getTime());");
             } else if (isUUID) {
-                line(result, 2, "_tupleEntry.setString(" + fieldNameConstant + ", new UUIDWritable(" + fieldName + "));");
+                line(result, 2, "_tupleEntry.setObject(" + fieldNameConstant + ", new UUIDWritable(" + fieldName + "));");
             } else if ((field.getType() == int.class) || (field.getType() == Integer.class)) {
                 line(result, 2, "_tupleEntry.setInteger(" + fieldNameConstant + ", " + fieldName + ");");
             } else if ((field.getType() == long.class) || (field.getType() == Long.class)) {
                 line(result, 2, "_tupleEntry.setLong(" + fieldNameConstant + ", " + fieldName + ");");
+            } else if (field.getType() == String.class) {
+                line(result, 2, "_tupleEntry.setString(" + fieldNameConstant + ", " + fieldName + ");");
             } else {
-                line(result, 2, "_tupleEntry.set(" + fieldNameConstant + ", " + fieldName + ");");
+                line(result, 2, "_tupleEntry.setObject(" + fieldNameConstant + ", " + fieldName + ");");
             }
             
             line(result, 1, "}");
