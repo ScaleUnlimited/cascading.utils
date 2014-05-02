@@ -1,7 +1,11 @@
 package com.scaleunlimited.cascading.local;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -92,6 +96,26 @@ public class LocalPath extends BasePath {
     @Override
     public String toString() {
         return getAbsolutePath();
+    }
+
+    @Override
+    public boolean isLocal() {
+        return true;
+    }
+
+    @Override
+    public boolean createNewFile() throws IOException {
+        return _pathFile.createNewFile();
+    }
+    
+    @Override
+    public InputStream openInputStream() throws IOException {
+        return new FileInputStream(_pathFile);
+    }
+
+    @Override
+    public OutputStream openOutputStream() throws IOException {
+        return new FileOutputStream(_pathFile);
     }
 
 
