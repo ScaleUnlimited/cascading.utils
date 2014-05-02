@@ -14,6 +14,12 @@ import java.util.Set;
 
 import org.apache.hadoop.io.Writable;
 
+/**
+ * A Map<String, String> that uses fastutil for native type->native type mapping, and a byte array for
+ * storing the UTF-8 bytes for key/value pairs. This makes it much more efficient for storing lots of
+ * small strings, and it's very fast to serialize/deserialize.
+ *
+ */
 public class StringMap implements Map<String, String>, Writable {
 
     // Value returned by fastutil when we request an int that doesn't exist.
@@ -22,7 +28,14 @@ public class StringMap implements Map<String, String>, Writable {
     private static final int DEFAULT_ENTRY_COUNT = 1000;
     private static final int STRING_DATA_BLOCKSIZE = 64 * 1024;
     
-    // TODO use a Long2LongOpenHashMap
+    // FUTURE use an Int2IntOpenHashMap, with key/value in same stringData array.
+    // FUTURE have multiple stringData arrays, each up to a max size, and determine which one via offset % block size.
+    //        That would avoid having one gigantic block of memory that we're expanding (and copying to).
+    // FUTURE track empty space in data array due to removal/put that has to move. If it gets too big relative to
+    //        total file size, do a compaction. Walk data, generate up to say 10K offset/shift values (where shift
+    //        keeps increasing) - move the data as we do this. Then walk the map, and do binary search into offsets,
+    //        adjusting value by shift amount.
+    
     private Long2LongOpenHashMap _hashToOffsets;
     private Map<String, String> _collisionMap;
     private byte[] _keyData;
@@ -76,13 +89,21 @@ public class StringMap implements Map<String, String>, Writable {
                 if (oldOffset != MISSING_HASH_VALUE) {
                     throw new IOException("Data corruption - hash already exists!");
                 }
+                
+                _curKeyOffset += (keyLen + 1);
+
+                int valueLen = calcValueLength(_curValueOffset);
+                _curValueOffset += (valueLen + 1);
+            } else {
+                // Skip removed key and removed value
+                while ((_curKeyOffset < keyDataSize) && (_keyData[_curKeyOffset] == (byte)0x00)) {
+                    _curKeyOffset += 1;
+                }
+                
+                while ((_curValueOffset < valueDataSize) && (_valueData[_curValueOffset] == (byte)0x00)) {
+                    _curValueOffset += 1;
+                }
             }
-            
-            int valueLen = calcValueLength(_curValueOffset);
-            _curValueOffset += (valueLen + 1);
-                            
-            // Skip over the null value.
-            _curKeyOffset += (keyLen + 1);
         }
         
         // Now read in the collision values. For each, make sure we already have a
@@ -413,6 +434,8 @@ public class StringMap implements Map<String, String>, Writable {
             return null;
         } else if (keyInHash(key)) {
             // We're updating something that's in our hash. For now, just remove it and re-add it.
+            // FUTURE if new value length <= old value length, insert in-place and zero out the
+            // remaining data.
             String result = remove(key);
             put(key, value);
             return result;

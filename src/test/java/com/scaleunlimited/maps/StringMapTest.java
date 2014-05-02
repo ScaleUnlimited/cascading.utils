@@ -97,9 +97,9 @@ public class StringMapTest {
         assertTrue(sm2.get("key").equals("value"));
     }
     
- // TODO KKr - enable once verified   @Test
+    @Test
     public void testBigSerialization() throws Exception {
-        StringMap sm = new StringMap(true);
+        StringMap sm = new StringMap();
         
         final int numKeys = 100000;
         for (int i = 0; i < numKeys; i++) {
@@ -109,7 +109,7 @@ public class StringMapTest {
             assertNull(sm.put(s, v));
             assertTrue(sm.containsKey(s));
             assertEquals(v, sm.put(s, v));
-
+            assertTrue(sm.containsKey(s));
         }
 
         File dir = new File("build/test/StringMapTest/testBigSerialization/");
@@ -132,8 +132,8 @@ public class StringMapTest {
         for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
             String v = "value-" + i;
-            assertTrue(sm2.containsKey(s));
-//  TODO KKr - verify that this works          assertTrue(sm2.get(s).equals(v));
+            assertTrue("Must contain " + s, sm2.containsKey(s));
+            assertEquals(v, sm2.get(s));
         }
     }
     
@@ -170,7 +170,9 @@ public class StringMapTest {
 
         for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
+            String v = "value-" + i;
             assertTrue(sm2.containsKey(s));
+            assertEquals(v, sm2.get(s));
         }
     }
     
