@@ -1,6 +1,6 @@
 package com.scaleunlimited.maps;
 
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -22,7 +22,7 @@ public class StringSet implements Set<String>, Writable {
     private static final int DEFAULT_ENTRY_COUNT = 1000;
     private static final int STRING_DATA_BLOCKSIZE = 64 * 1024;
     
-    private Long2IntOpenHashMap _hashToOffset;
+    private Int2IntOpenHashMap _hashToOffset;
     private Set<String> _collisionSet;
     private byte[] _stringData;
     private int _curOffset;
@@ -38,7 +38,7 @@ public class StringSet implements Set<String>, Writable {
     
     private void reset(boolean smallHash, int numHashEntries, int numCollisionEntries, int stringDataSize) {
         _smallHash = smallHash;
-        _hashToOffset = new Long2IntOpenHashMap(numHashEntries);
+        _hashToOffset = new Int2IntOpenHashMap(numHashEntries);
         _hashToOffset.defaultReturnValue(MISSING_HASH_VALUE);
         _collisionSet = new HashSet<String>(numCollisionEntries);
         _stringData = new byte[stringDataSize];
@@ -61,7 +61,7 @@ public class StringSet implements Set<String>, Writable {
             int len = calcStringLength(_curOffset);
             if (len > 0) {
                 // only process strings we haven't deleted
-                long hash = getLongHash(_stringData, _curOffset, len);
+                int hash = hash(_stringData, _curOffset, len);
                 int oldOffset = _hashToOffset.put(hash, _curOffset);
                 if (oldOffset != MISSING_HASH_VALUE) {
                     throw new IOException("Data corruption - hash already exists!");
@@ -77,7 +77,7 @@ public class StringSet implements Set<String>, Writable {
         for (int i = 0; i < numCollisionEntries; i++) {
             String s = in.readUTF();
             
-            long hash = getLongHash(s);
+            int hash = hash(s);
             if (!_hashToOffset.containsKey(hash)) {
                 throw new IOException("Data corruption - collision entry doesn't exist in hash!");
             }
@@ -116,57 +116,33 @@ public class StringSet implements Set<String>, Writable {
     }
     
     /**
-     * Generate a 64-bit JOAAT hash from the bytes of <s>
+     * Generate a 32-bit JOAAT hash from the bytes of <phrase>
      * 
-     * @param s String to hash
-     * @return 64-bit hash
+     * @param phrase String to hash
+     * @return 32-bit hash
      */
-    public long getLongHash(String s) {
-        byte[] bytes = getUTF8Bytes(s);
-        return getLongHash(bytes, 0, bytes.length);
-    }
-
-    /**
-     * Generate a 64-bit JOAAT hash from the bytes of <s>
-     * 
-     * @param s String to hash
-     * @return 64-bit hash
-     */
-    public long getLongHash(byte[] b, int offset, int length) {
-        long result = 0;
-
-        for (int i = 0; i < length; i++) {
-            byte curByte = b[offset + i];
-            int h = (int)curByte;
-            
-            result += h & 0x0FFL;
-            result += (result << 20);
-            result ^= (result >> 12);
-        }
+    public int hash(String phrase) {
+        int result = HashUtils.getIntHash(phrase);
         
-        result += (result << 6);
-        result ^= (result >> 22);
-        result += (result << 30);
-
         if (_smallHash) {
             // only generate 256 unique hash values.
-            result = result & 0x0FFL;
+            result = result & 0x0FF;
         }
         
         return result;
     }
-
-    /**
-     * Generate a 64-bit JOAAT hash from the bytes of <phrase>
-     * 
-     * @param phrase String to hash
-     * @return 64-bit hash
-     */
-    public long hash(String phrase) {
-        return getLongHash(phrase);
+    
+    private int hash(byte[] b, int offset, int length) {
+        int result = HashUtils.getIntHash(b, offset, length);
+        
+        if (_smallHash) {
+            // only generate 256 unique hash values.
+            result = result & 0x0FF;
+        }
+        
+        return result;
     }
     
-
     @Override
     public int size() {
         return _hashToOffset.size() + _collisionSet.size();
@@ -180,7 +156,7 @@ public class StringSet implements Set<String>, Writable {
     @Override
     public boolean contains(Object o) {
         if (o instanceof String) {
-            long hash = hash((String)o);
+            int hash = hash((String)o);
             int offset = _hashToOffset.get(hash);
             if (offset == MISSING_HASH_VALUE) {
                 return false;
@@ -240,7 +216,7 @@ public class StringSet implements Set<String>, Writable {
             return false;
         }
         
-        long hash = hash(e);
+        int hash = hash(e);
         int offset = _hashToOffset.get(hash);
         if (offset == MISSING_HASH_VALUE) {
             // We need to add it to the array and the hash set
@@ -276,7 +252,7 @@ public class StringSet implements Set<String>, Writable {
             } else {
                 // FUTURE set up to reclaim space in string data block.
                 // We'd want to save the offset somewhere
-                long hash = hash((String)o);
+                int hash = hash((String)o);
                 int stringDataOffset = _hashToOffset.remove(hash);
                 if (stringDataOffset != MISSING_HASH_VALUE) {
                     // We need to clear out the entry so we don't re-add it as a string

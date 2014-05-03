@@ -35,7 +35,8 @@ public class StringMapTest {
     public void testBigData() {
         StringMap sm = new StringMap();
         
-        for (int i = 0; i < 1000000; i++) {
+        final int numKeys = 500000;
+        for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
             assertFalse(sm.containsKey(s));
             assertNull(sm.put(s, s));
@@ -43,11 +44,11 @@ public class StringMapTest {
             assertEquals(s, sm.put(s, s));
         }
         
-        System.out.println("Map size is: " + sm.size());
+        assertEquals(numKeys, sm.size());
         
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
-            assertTrue(sm.containsKey(s));
+            assertTrue("Contains key " + s, sm.containsKey(s));
         }
     }
     
@@ -64,7 +65,7 @@ public class StringMapTest {
             assertEquals(s, sm.put(s, s));
         }
         
-        System.out.println("Map size is: " + sm.size());
+        assertEquals(numKeys, sm.size());
         
         for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
@@ -75,7 +76,8 @@ public class StringMapTest {
     @Test
     public void testSmallSerialization() throws Exception {
         StringMap sm = new StringMap(true);
-        sm.put("key", "value");
+        assertNull(sm.put("key", "value"));
+        assertEquals("value", sm.put("key", "value-1000"));
         
         File dir = new File("build/test/StringMapTest/testSmallSerialization/");
         dir.mkdirs();
@@ -94,7 +96,7 @@ public class StringMapTest {
         
         assertEquals(1, sm2.size());
         assertTrue(sm2.containsKey("key"));
-        assertTrue(sm2.get("key").equals("value"));
+        assertEquals("value-1000", sm2.get("key"));
     }
     
     @Test
@@ -107,8 +109,6 @@ public class StringMapTest {
             String v = "value-" + i;
             assertFalse(sm.containsKey(s));
             assertNull(sm.put(s, v));
-            assertTrue(sm.containsKey(s));
-            assertEquals(v, sm.put(s, v));
             assertTrue(sm.containsKey(s));
         }
 

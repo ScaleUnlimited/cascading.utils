@@ -1,6 +1,6 @@
 package com.scaleunlimited.maps;
 
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -23,25 +23,25 @@ import org.apache.hadoop.io.Writable;
 public class StringMap implements Map<String, String>, Writable {
 
     // Value returned by fastutil when we request an int that doesn't exist.
-    private static final long MISSING_HASH_VALUE = -1;
+    private static final int MISSING_HASH_VALUE = -1;
 
     private static final int DEFAULT_ENTRY_COUNT = 1000;
     private static final int STRING_DATA_BLOCKSIZE = 64 * 1024;
     
-    // FUTURE use an Int2IntOpenHashMap, with key/value in same stringData array.
     // FUTURE have multiple stringData arrays, each up to a max size, and determine which one via offset % block size.
     //        That would avoid having one gigantic block of memory that we're expanding (and copying to).
+    // FUTURE do in-place put if new key/value fit where old key/value was located.
+    // FUTURE make it more efficient by skipping conversion of string to byte array, unless the key contains a
+    //        character > 0x7F (which means it's not something that fits in one byte in UTF-8)
     // FUTURE track empty space in data array due to removal/put that has to move. If it gets too big relative to
     //        total file size, do a compaction. Walk data, generate up to say 10K offset/shift values (where shift
     //        keeps increasing) - move the data as we do this. Then walk the map, and do binary search into offsets,
     //        adjusting value by shift amount.
     
-    private Long2LongOpenHashMap _hashToOffsets;
+    private Int2IntOpenHashMap _hashToOffsets;
     private Map<String, String> _collisionMap;
-    private byte[] _keyData;
-    private int _curKeyOffset;
-    private byte[] _valueData;
-    private int _curValueOffset;
+    private byte[] _stringData;
+    private int _curStringOffset;
     private boolean _smallHash; // for testing
     
     public StringMap() {
@@ -49,21 +49,19 @@ public class StringMap implements Map<String, String>, Writable {
     }
 
     public StringMap(boolean smallHash) {
-        reset(smallHash, DEFAULT_ENTRY_COUNT, 0, STRING_DATA_BLOCKSIZE, STRING_DATA_BLOCKSIZE);
+        reset(smallHash, DEFAULT_ENTRY_COUNT, 0, STRING_DATA_BLOCKSIZE);
     }
     
-    private void reset(boolean smallHash, int numHashEntries, int numCollisionEntries, int keyDataSize, int valueDataSize) {
+    private void reset(boolean smallHash, int numHashEntries, int numCollisionEntries, int stringDataSize) {
         _smallHash = smallHash;
         
-        _hashToOffsets = new Long2LongOpenHashMap(numHashEntries);
+        _hashToOffsets = new Int2IntOpenHashMap(numHashEntries);
         _hashToOffsets.defaultReturnValue(MISSING_HASH_VALUE);
         _collisionMap = new HashMap<String, String>(numCollisionEntries);
         
-        // We have separate arrays for the actual key and value string data, stored as UTF-8 bytes.
-        _keyData = new byte[keyDataSize];
-        _curKeyOffset = 0;
-        _valueData = new byte[valueDataSize];
-        _curValueOffset = 0;
+        // The key and value strings are stored as null-termianted UTF-8 bytes
+        _stringData = new byte[stringDataSize];
+        _curStringOffset = 0;
     }
     
     @Override
@@ -71,38 +69,30 @@ public class StringMap implements Map<String, String>, Writable {
         boolean smallHash = in.readBoolean();
         int numHashEntries = in.readInt();
         int numCollisionEntries = in.readInt();
-        int keyDataSize = in.readInt();
-        int valueDataSize = in.readInt();
+        int stringDataSize = in.readInt();
         
-        reset(smallHash, numHashEntries, numCollisionEntries, keyDataSize, valueDataSize);
+        reset(smallHash, numHashEntries, numCollisionEntries, stringDataSize);
         
-        in.readFully(_keyData, 0, keyDataSize);
-        in.readFully(_valueData, 0, valueDataSize);
+        in.readFully(_stringData, 0, stringDataSize);
         
-        // Now we have to rebuild the hash table from the data in _keyData & _valueData.
-        for (; _curKeyOffset < keyDataSize; ) {
-            int keyLen = calcKeyLength(_curKeyOffset);
+        // Now we have to rebuild the hash table from the data in _stringData.
+        for (; _curStringOffset < stringDataSize; ) {
+            int keyLen = calcStringLength(_curStringOffset);
             if (keyLen > 0) {
                 // only process strings we haven't deleted
-                long hash = getLongHash(_keyData, _curKeyOffset, keyLen);
-                long oldOffset = _hashToOffsets.put(hash, getOffsets(_curKeyOffset, _curValueOffset));
+                int hash = hash(_stringData, _curStringOffset, keyLen);
+                int oldOffset = _hashToOffsets.put(hash, _curStringOffset);
                 if (oldOffset != MISSING_HASH_VALUE) {
                     throw new IOException("Data corruption - hash already exists!");
                 }
                 
-                _curKeyOffset += (keyLen + 1);
+                _curStringOffset += (keyLen + 1);
 
-                int valueLen = calcValueLength(_curValueOffset);
-                _curValueOffset += (valueLen + 1);
+                // Skip over the value
+                int valueLen = calcStringLength(_curStringOffset);
+                _curStringOffset += (valueLen + 1);
             } else {
-                // Skip removed key and removed value
-                while ((_curKeyOffset < keyDataSize) && (_keyData[_curKeyOffset] == (byte)0x00)) {
-                    _curKeyOffset += 1;
-                }
-                
-                while ((_curValueOffset < valueDataSize) && (_valueData[_curValueOffset] == (byte)0x00)) {
-                    _curValueOffset += 1;
-                }
+                _curStringOffset += 1;
             }
         }
         
@@ -112,7 +102,7 @@ public class StringMap implements Map<String, String>, Writable {
             String key = in.readUTF();
             String value = in.readUTF();
             
-            long hash = getLongHash(key);
+            int hash = hash(key);
             if (!_hashToOffsets.containsKey(hash)) {
                 throw new IOException("Data corruption - collision entry doesn't exist in hash!");
             }
@@ -131,10 +121,8 @@ public class StringMap implements Map<String, String>, Writable {
         
         // Write out the key & value data info. We can e-build the hash table from
         // this array.
-        out.writeInt(_curKeyOffset);
-        out.writeInt(_curValueOffset);
-        out.write(_keyData, 0, _curKeyOffset);
-        out.write(_valueData, 0, _curValueOffset);
+        out.writeInt(_curStringOffset);
+        out.write(_stringData, 0, _curStringOffset);
 
         // Write out the entries we've saved in the collision set.
         for (Entry<String, String> entry : _collisionMap.entrySet()) {
@@ -143,29 +131,9 @@ public class StringMap implements Map<String, String>, Writable {
         }
     }
 
-    private int getKeyOffset(long offset) {
-        return (int)(offset >> 32);
-    }
-    
-    private int getValueOffset(long offset) {
-        return (int)(offset & 0x0ffffffff);
-    }
-    
-    private long getOffsets(int keyOffset, int valueOffset) {
-        return ((long)keyOffset << 32) | ((long)valueOffset & 0x0ffffffff);
-    }
-    
-    private int calcKeyLength(int startingOffset) {
-        return calcStringLength(_keyData, startingOffset);
-    }
-    
-    private int calcValueLength(int startingOffset) {
-        return calcStringLength(_valueData, startingOffset);
-    }
-    
-    private int calcStringLength(byte[] stringData, int startingOffset) {
+    private int calcStringLength(int startingOffset) {
         int curOffset = startingOffset;
-        while (stringData[curOffset] != 0) {
+        while (_stringData[curOffset] != 0) {
             curOffset += 1;
         }
         
@@ -174,64 +142,40 @@ public class StringMap implements Map<String, String>, Writable {
     
     private String getValueString(int valueOffset, int valueLen) {
         try {
-            return new String(_valueData, valueOffset, valueLen, "UTF-8");
+            return new String(_stringData, valueOffset, valueLen, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Impossible missing charset exception", e);
         }
     }
     
     /**
-     * Generate a 64-bit JOAAT hash from the bytes of <s>
+     * Generate a 32-bit JOAAT hash from the bytes of <phrase>
      * 
-     * @param s String to hash
-     * @return 64-bit hash
+     * @param phrase String to hash
+     * @return 32-bit hash
      */
-    public long getLongHash(String s) {
-        byte[] bytes = getUTF8Bytes(s);
-        return getLongHash(bytes, 0, bytes.length);
-    }
-
-    /**
-     * Generate a 64-bit JOAAT hash from the bytes of <s>
-     * 
-     * @param s String to hash
-     * @return 64-bit hash
-     */
-    public long getLongHash(byte[] b, int offset, int length) {
-        long result = 0;
-
-        for (int i = 0; i < length; i++) {
-            byte curByte = b[offset + i];
-            int h = (int)curByte;
-            
-            result += h & 0x0FFL;
-            result += (result << 20);
-            result ^= (result >> 12);
-        }
+    public int hash(String phrase) {
+        int result = HashUtils.getIntHash(phrase);
         
-        result += (result << 6);
-        result ^= (result >> 22);
-        result += (result << 30);
-
         if (_smallHash) {
-            // only generate 256 unique hash values.
-            result = result & 0x0FFL;
+            // only generate 256 unique hash values, for testing.
+            result = result & 0x0FF;
         }
         
         return result;
     }
-
-    /**
-     * Generate a 64-bit JOAAT hash from the bytes of <phrase>
-     * 
-     * @param phrase String to hash
-     * @return 64-bit hash
-     */
-    public long hash(String phrase) {
-        return getLongHash(phrase);
+    
+    private int hash(byte[] b, int offset, int length) {
+        int result = HashUtils.getIntHash(b, offset, length);
+        
+        if (_smallHash) {
+            // only generate 256 unique hash values, for testing.
+            result = result & 0x0FF;
+        }
+        
+        return result;
     }
     
-
     @Override
     public int size() {
         return _hashToOffsets.size() + _collisionMap.size();
@@ -242,15 +186,6 @@ public class StringMap implements Map<String, String>, Writable {
         return _hashToOffsets.isEmpty() && _collisionMap.isEmpty();
     }
 
-    private byte[] getUTF8Bytes(String str) {
-        try {
-            return str.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Impossible missing charset exception", e);
-        }
-    }
-    
-
     @Override
     public String remove(Object key) {
         if (key instanceof String) {
@@ -260,19 +195,17 @@ public class StringMap implements Map<String, String>, Writable {
             } else {
                 // FUTURE set up to reclaim space in string data block.
                 // We'd want to save the offset somewhere
-                long hash = hash((String)key);
-                long offsets = _hashToOffsets.remove(hash);
-                if (offsets != MISSING_HASH_VALUE) {
+                int hash = hash((String)key);
+                int keyOffset = _hashToOffsets.remove(hash);
+                if (keyOffset != MISSING_HASH_VALUE) {
                     // We need to clear out the entry so we don't re-add it as a string
                     // when we de-serialize things.
-                    int keyOffset = getKeyOffset(offsets);
-                    int keyLen = calcKeyLength(keyOffset);
-                    Arrays.fill(_keyData, keyOffset, keyOffset + keyLen, (byte)0);
+                    int keyLen = calcStringLength(keyOffset);
                     
-                    int valueOffset = getValueOffset(offsets);
-                    int valueLen = calcValueLength(valueOffset);
+                    int valueOffset = keyOffset + keyLen + 1;
+                    int valueLen = calcStringLength(valueOffset);
                     String result = getValueString(valueOffset, valueLen);
-                    Arrays.fill(_valueData, valueOffset, valueOffset + valueLen, (byte)0);
+                    Arrays.fill(_stringData, keyOffset, keyOffset + keyLen + 1 + valueLen + 1, (byte)0);
                     return result;
                 } else {
                     return null;
@@ -289,40 +222,34 @@ public class StringMap implements Map<String, String>, Writable {
         _collisionMap.clear();
         
         // Decrease size of byte arrays
-        if (_keyData.length > STRING_DATA_BLOCKSIZE) {
-            _keyData = new byte[STRING_DATA_BLOCKSIZE];
+        if (_stringData.length > STRING_DATA_BLOCKSIZE) {
+            _stringData = new byte[STRING_DATA_BLOCKSIZE];
         }
         
-        if (_valueData.length > STRING_DATA_BLOCKSIZE) {
-            _valueData = new byte[STRING_DATA_BLOCKSIZE];
-        }
-        
-        _curKeyOffset = 0;
-        _curValueOffset = 0;
+        _curStringOffset = 0;
     }
 
     @Override
     public boolean containsKey(Object key) {
         if (key instanceof String) {
-            long hash = hash((String)key);
-            long offsets = _hashToOffsets.get(hash);
-            if (offsets == MISSING_HASH_VALUE) {
+            int hash = hash((String)key);
+            int keyOffset = _hashToOffsets.get(hash);
+            if (keyOffset == MISSING_HASH_VALUE) {
                 return false;
             }
             
             // We might have a match...need to see if the actual string matches our stored bytes.
             // If not, then we check the collision set.
-            int keyOffset = getKeyOffset(offsets);
-            byte[] stringBytes = getUTF8Bytes((String)key);
+            byte[] stringBytes = HashUtils.getUTF8Bytes((String)key);
             boolean matches = true;
             for (int i = 0; (i < stringBytes.length) && matches; i++) {
-                if (stringBytes[i] != _keyData[keyOffset + i]) {
+                if (stringBytes[i] != _stringData[keyOffset + i]) {
                     matches = false;
                 }
             }
             
             // If it matched all of the string bytes, make sure we've got our terminating null byte.
-            matches = matches && _keyData[keyOffset + stringBytes.length] == 0;
+            matches = matches && _stringData[keyOffset + stringBytes.length] == 0;
             
             // If it didn't match, see if it's in the collision set.
             return(matches || _collisionMap.containsKey((String)key));
@@ -346,27 +273,27 @@ public class StringMap implements Map<String, String>, Writable {
         
         // TODO use common code to return either MISSING_HASH_VALUE,
         // or the long offsets value if we have the key.
-        long hash = hash((String)key);
-        long offsets = _hashToOffsets.get(hash);
-        if (offsets == MISSING_HASH_VALUE) {
+        int hash = hash((String)key);
+        int keyOffset = _hashToOffsets.get(hash);
+        if (keyOffset == MISSING_HASH_VALUE) {
             return null;
         }
 
-        int keyOffset = getKeyOffset(offsets);
-        byte[] stringBytes = getUTF8Bytes((String)key);
+        byte[] stringBytes = HashUtils.getUTF8Bytes((String)key);
         boolean matches = true;
         for (int i = 0; (i < stringBytes.length) && matches; i++) {
-            if (stringBytes[i] != _keyData[keyOffset + i]) {
+            if (stringBytes[i] != _stringData[keyOffset + i]) {
                 matches = false;
             }
         }
         
         // If it matched all of the string bytes, make sure we've got our terminating null byte.a
-        matches = matches && _keyData[keyOffset + stringBytes.length] == 0;
+        matches = matches && _stringData[keyOffset + stringBytes.length] == 0;
         
         if (matches) {
-            int valueOffset = getValueOffset(offsets);
-            int valueLen = calcValueLength(valueOffset);
+            int keyLen = stringBytes.length;
+            int valueOffset = keyOffset + keyLen + 1;
+            int valueLen = calcStringLength(valueOffset);
             return getValueString(valueOffset, valueLen);
         } else {
             return _collisionMap.get(key);
@@ -374,62 +301,52 @@ public class StringMap implements Map<String, String>, Writable {
     }
 
     private boolean keyInHash(String key) {
-        long hash = hash(key);
-        long offsets = _hashToOffsets.get(hash);
-        if (offsets == MISSING_HASH_VALUE) {
+        int hash = hash(key);
+        int keyOffset = _hashToOffsets.get(hash);
+        if (keyOffset == MISSING_HASH_VALUE) {
             return false;
         }
 
-        int keyOffset = getKeyOffset(offsets);
-        byte[] stringBytes = getUTF8Bytes(key);
+        byte[] stringBytes = HashUtils.getUTF8Bytes(key);
         boolean matches = true;
         for (int i = 0; (i < stringBytes.length) && matches; i++) {
-            if (stringBytes[i] != _keyData[keyOffset + i]) {
+            if (stringBytes[i] != _stringData[keyOffset + i]) {
                 matches = false;
             }
         }
         
         // If it matched all of the string bytes, make sure we've got our terminating null byte.a
-        matches = matches && _keyData[keyOffset + stringBytes.length] == 0;
+        matches = matches && _stringData[keyOffset + stringBytes.length] == 0;
         return matches;
     }
     
     @Override
     public String put(String key, String value) {
-        long hash = hash(key);
-        long offsets = _hashToOffsets.get(hash);
-        if (offsets == MISSING_HASH_VALUE) {
+        int hash = hash(key);
+        int keyOffset = _hashToOffsets.get(hash);
+        if (keyOffset == MISSING_HASH_VALUE) {
             // We need to add it to the array and the hash set
-            byte[] keyBytes = getUTF8Bytes(key);
+            byte[] keyBytes = HashUtils.getUTF8Bytes(key);
+            byte[] valueBytes = HashUtils.getUTF8Bytes(value);
             
             // Make sure we have enough space in the array.
-            int endOffset = _curKeyOffset + keyBytes.length + 1;
-            if (endOffset > _keyData.length) {
+            int endOffset = _curStringOffset + keyBytes.length + 1 + valueBytes.length + 1;
+            if (endOffset > _stringData.length) {
                 byte[] newData = new byte[endOffset + STRING_DATA_BLOCKSIZE];
-                System.arraycopy(_keyData, 0, newData, 0, _curKeyOffset);
-                _keyData = newData;
+                System.arraycopy(_stringData, 0, newData, 0, _curStringOffset);
+                _stringData = newData;
             }
             
-            System.arraycopy(keyBytes, 0, _keyData, _curKeyOffset, keyBytes.length);
-            
-            byte[] valueBytes = getUTF8Bytes(value);
-            endOffset = _curValueOffset + valueBytes.length + 1;
-            if (endOffset > _valueData.length) {
-                byte[] newData = new byte[endOffset + STRING_DATA_BLOCKSIZE];
-                System.arraycopy(_valueData, 0, newData, 0, _curValueOffset);
-                _valueData = newData;
-            }
-            
-            System.arraycopy(valueBytes, 0, _valueData, _curValueOffset, valueBytes.length);
+            _hashToOffsets.put(hash, _curStringOffset);
 
-            _hashToOffsets.put(hash, getOffsets(_curKeyOffset, _curValueOffset));
-            _curKeyOffset += keyBytes.length;
-            _curValueOffset += valueBytes.length;
+            System.arraycopy(keyBytes, 0, _stringData, _curStringOffset, keyBytes.length);
+            _curStringOffset += keyBytes.length;
+            _stringData[_curStringOffset++] = 0;
             
-            // And null-terminate it.
-            _keyData[_curKeyOffset++] = 0;
-            _valueData[_curValueOffset++] = 0;
-            
+            System.arraycopy(valueBytes, 0, _stringData, _curStringOffset, valueBytes.length);
+            _curStringOffset += valueBytes.length;
+            _stringData[_curStringOffset++] = 0;
+
             // There was no previous value.
             return null;
         } else if (keyInHash(key)) {
