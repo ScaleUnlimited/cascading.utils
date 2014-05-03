@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -27,7 +21,7 @@
 /* Primitive-type-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +51,7 @@ public class IntIterators {
 	 * a type-specific iterator.
 	 */
  public static class EmptyIterator extends AbstractIntListIterator implements java.io.Serializable, Cloneable {
-  public static final long serialVersionUID = -7046029254386353129L;
+  private static final long serialVersionUID = -7046029254386353129L;
   protected EmptyIterator() {}
   public boolean hasNext() { return false; }
   public boolean hasPrevious() { return false; }
@@ -112,31 +106,25 @@ public class IntIterators {
   return new SingletonIterator ( element );
  }
  /** A class to wrap arrays in iterators. */
-
  private static class ArrayIterator extends AbstractIntListIterator {
   private final int[] array;
   private final int offset, length;
   private int curr;
-
   public ArrayIterator( final int[] array, final int offset, final int length ) {
    this.array = array;
    this.offset = offset;
    this.length = length;
   }
-
   public boolean hasNext() { return curr < length; }
   public boolean hasPrevious() { return curr > 0; }
-
   public int nextInt() {
    if ( ! hasNext() ) throw new NoSuchElementException();
    return array[ offset + curr++ ];
   }
-
   public int previousInt() {
    if ( ! hasPrevious() ) throw new NoSuchElementException();
    return array[ offset + --curr ];
   }
-
   public int skip( int n ) {
    if ( n <= length - curr ) {
     curr += n;
@@ -146,7 +134,6 @@ public class IntIterators {
    curr = length;
    return n;
   }
-
   public int back( int n ) {
    if ( n <= curr ) {
     curr -= n;
@@ -156,17 +143,13 @@ public class IntIterators {
    curr = 0;
    return n;
   }
-
   public int nextIndex() {
    return curr;
   }
-
   public int previousIndex() {
    return curr - 1;
   }
  }
-
-
  /** Wraps the given part of an array into a type-specific list iterator.
 	 *
 	 * <P>The type-specific list iterator returned by this method will iterate
@@ -181,7 +164,6 @@ public class IntIterators {
   IntArrays.ensureOffsetLength( array, offset, length );
   return new ArrayIterator ( array, offset, length );
  }
-
  /** Wraps the given array into a type-specific list iterator.
 	 *
 	 * <P>The type-specific list iterator returned by this method will return
@@ -192,8 +174,6 @@ public class IntIterators {
  public static IntListIterator wrap( final int[] array ) {
   return new ArrayIterator ( array, 0, array.length );
  }
-
-
  /** Unwraps an iterator into an array starting at a given offset for a given number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the elements
@@ -214,7 +194,6 @@ public class IntIterators {
   while( j-- != 0 && i.hasNext() ) array[ offset++ ] = i.nextInt();
   return max - j - 1;
  }
-
  /** Unwraps an iterator into an array.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the
@@ -228,7 +207,6 @@ public class IntIterators {
  public static int unwrap( final IntIterator i, final int array[] ) {
   return unwrap( i, array, 0, array.length );
  }
-
  /** Unwraps an iterator, returning an array, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns an array
@@ -244,16 +222,12 @@ public class IntIterators {
   if ( max < 0 ) throw new IllegalArgumentException( "The maximum number of elements (" + max + ") is negative" );
   int array[] = new int[ 16 ];
   int j = 0;
-
   while( max-- != 0 && i.hasNext() ) {
    if ( j == array.length ) array = IntArrays.grow( array, j + 1 );
    array[ j++ ] = i.nextInt();
   }
-
   return IntArrays.trim( array, j );
  }
-
-
  /** Unwraps an iterator, returning an array.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns an array
@@ -262,12 +236,9 @@ public class IntIterators {
 	 * @param i a type-specific iterator.
 	 * @return an array containing the elements returned by the iterator.
 	 */
-
  public static int[] unwrap( final IntIterator i ) {
   return unwrap( i, Integer.MAX_VALUE );
  }
-
-
  /** Unwraps an iterator into a type-specific collection,  with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the elements
@@ -288,7 +259,6 @@ public class IntIterators {
   while( j-- != 0 && i.hasNext() ) c.add( i.nextInt() );
   return max - j - 1;
  }
-
  /** Unwraps an iterator into a type-specific collection.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the
@@ -309,8 +279,6 @@ public class IntIterators {
   }
   return n;
  }
-
-
  /** Pours an iterator into a type-specific collection, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and adds
@@ -323,14 +291,12 @@ public class IntIterators {
 	 * this is the number of elements returned by the iterator, which is not necessarily the number
 	 * of elements that have been added to the collection (because of duplicates).
 	 */
-
  public static int pour( final IntIterator i, final IntCollection s, final int max ) {
   if ( max < 0 ) throw new IllegalArgumentException( "The maximum number of elements (" + max + ") is negative" );
   int j = max;
   while( j-- != 0 && i.hasNext() ) s.add( i.nextInt() );
   return max - j - 1;
  }
-
  /** Pours an iterator into a type-specific collection.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and adds
@@ -342,11 +308,9 @@ public class IntIterators {
 	 * this is the number of elements returned by the iterator, which is not necessarily the number
 	 * of elements that have been added to the collection (because of duplicates).
 	 */
-
  public static int pour( final IntIterator i, final IntCollection s ) {
   return pour( i, s, Integer.MAX_VALUE );
  }
-
  /** Pours an iterator, returning a type-specific list, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns
@@ -359,14 +323,12 @@ public class IntIterators {
 	 * @param max the maximum number of elements to be poured.
 	 * @return a type-specific list containing the returned elements, up to <code>max</code>.
 	 */
-
  public static IntList pour( final IntIterator i, int max ) {
   final IntArrayList l = new IntArrayList ();
   pour( i, l, max );
   l.trim();
   return l;
  }
-
  /** Pours an iterator, returning a type-specific list.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns
@@ -377,24 +339,18 @@ public class IntIterators {
 	 * @param i a type-specific iterator.
 	 * @return a type-specific list containing the returned elements.
 	 */
-
  public static IntList pour( final IntIterator i ) {
   return pour( i, Integer.MAX_VALUE );
  }
-
  private static class IteratorWrapper extends AbstractIntIterator {
   final Iterator<Integer> i;
-
   public IteratorWrapper( final Iterator<Integer> i ) {
    this.i = i;
   }
-
   public boolean hasNext() { return i.hasNext(); }
   public void remove() { i.remove(); }
-
   public int nextInt() { return ((i.next()).intValue()); }
  }
-
  /** Wraps a standard iterator into a type-specific iterator.
 	 *
 	 * <P>This method wraps a standard iterator into a type-specific one which will handle the
@@ -414,15 +370,11 @@ public class IntIterators {
   if ( i instanceof IntIterator ) return (IntIterator )i;
   return new IteratorWrapper ( i );
  }
-
-
  private static class ListIteratorWrapper extends AbstractIntListIterator {
   final ListIterator<Integer> i;
-
   public ListIteratorWrapper( final ListIterator<Integer> i ) {
    this.i = i;
   }
-
   public boolean hasNext() { return i.hasNext(); }
   public boolean hasPrevious() { return i.hasPrevious(); }
   public int nextIndex() { return i.nextIndex(); }
@@ -432,11 +384,9 @@ public class IntIterators {
   @SuppressWarnings("unchecked")
   public void add( int k ) { i.add( (Integer.valueOf(k)) ); }
   public void remove() { i.remove(); }
-
   public int nextInt() { return ((i.next()).intValue()); }
   public int previousInt() { return ((i.previous()).intValue()); }
  }
-
  /** Wraps a standard list iterator into a type-specific list iterator.
 	 *
 	 * <P>This method wraps a standard list iterator into a type-specific one
@@ -457,26 +407,15 @@ public class IntIterators {
   if ( i instanceof IntListIterator ) return (IntListIterator )i;
   return new ListIteratorWrapper ( i );
  }
-
-
-
-
-
-
-
  private static class IntervalIterator extends AbstractIntListIterator {
-
   private final int from, to;
   int curr;
-
   public IntervalIterator( final int from, final int to ) {
    this.from = this.curr = from;
    this.to = to;
   }
-
   public boolean hasNext() { return curr < to; }
   public boolean hasPrevious() { return curr > from; }
-
   public int nextInt() {
    if ( ! hasNext() ) throw new NoSuchElementException();
    return curr++;
@@ -485,36 +424,23 @@ public class IntIterators {
    if ( ! hasPrevious() ) throw new NoSuchElementException();
    return --curr;
   }
-
-
   public int nextIndex() { return curr - from; }
   public int previousIndex() { return curr - from - 1; }
-
-
   public int skip( int n ) {
    if ( curr + n <= to ) {
     curr += n;
     return n;
    }
-
    n = to - curr;
-
-
-
    curr = to;
    return n;
   }
-
   public int back( int n ) {
    if ( curr - n >= from ) {
     curr -= n;
     return n;
    }
-
    n = curr - from ;
-
-
-
    curr = from;
    return n;
   }

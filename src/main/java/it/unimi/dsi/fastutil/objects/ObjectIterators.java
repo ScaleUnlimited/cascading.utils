@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +50,7 @@ public class ObjectIterators {
 	 * a type-specific iterator.
 	 */
  public static class EmptyIterator <K> extends AbstractObjectListIterator <K> implements java.io.Serializable, Cloneable {
-  public static final long serialVersionUID = -7046029254386353129L;
+  private static final long serialVersionUID = -7046029254386353129L;
   protected EmptyIterator() {}
   public boolean hasNext() { return false; }
   public boolean hasPrevious() { return false; }
@@ -110,33 +104,26 @@ public class ObjectIterators {
  public static <K> ObjectListIterator <K> singleton( final K element ) {
   return new SingletonIterator <K>( element );
  }
-
  /** A class to wrap arrays in iterators. */
-
  private static class ArrayIterator <K> extends AbstractObjectListIterator <K> {
   private final K[] array;
   private final int offset, length;
   private int curr;
-
   public ArrayIterator( final K[] array, final int offset, final int length ) {
    this.array = array;
    this.offset = offset;
    this.length = length;
   }
-
   public boolean hasNext() { return curr < length; }
   public boolean hasPrevious() { return curr > 0; }
-
   public K next() {
    if ( ! hasNext() ) throw new NoSuchElementException();
    return array[ offset + curr++ ];
   }
-
   public K previous() {
    if ( ! hasPrevious() ) throw new NoSuchElementException();
    return array[ offset + --curr ];
   }
-
   public int skip( int n ) {
    if ( n <= length - curr ) {
     curr += n;
@@ -146,7 +133,6 @@ public class ObjectIterators {
    curr = length;
    return n;
   }
-
   public int back( int n ) {
    if ( n <= curr ) {
     curr -= n;
@@ -156,17 +142,13 @@ public class ObjectIterators {
    curr = 0;
    return n;
   }
-
   public int nextIndex() {
    return curr;
   }
-
   public int previousIndex() {
    return curr - 1;
   }
  }
-
-
  /** Wraps the given part of an array into a type-specific list iterator.
 	 *
 	 * <P>The type-specific list iterator returned by this method will iterate
@@ -181,7 +163,6 @@ public class ObjectIterators {
   ObjectArrays.ensureOffsetLength( array, offset, length );
   return new ArrayIterator <K>( array, offset, length );
  }
-
  /** Wraps the given array into a type-specific list iterator.
 	 *
 	 * <P>The type-specific list iterator returned by this method will return
@@ -192,8 +173,6 @@ public class ObjectIterators {
  public static <K> ObjectListIterator <K> wrap( final K[] array ) {
   return new ArrayIterator <K>( array, 0, array.length );
  }
-
-
  /** Unwraps an iterator into an array starting at a given offset for a given number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the elements
@@ -214,7 +193,6 @@ public class ObjectIterators {
   while( j-- != 0 && i.hasNext() ) array[ offset++ ] = i.next();
   return max - j - 1;
  }
-
  /** Unwraps an iterator into an array.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the
@@ -228,7 +206,6 @@ public class ObjectIterators {
  public static <K> int unwrap( final Iterator <? extends K> i, final K array[] ) {
   return unwrap( i, array, 0, array.length );
  }
-
  /** Unwraps an iterator, returning an array, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns an array
@@ -244,16 +221,12 @@ public class ObjectIterators {
   if ( max < 0 ) throw new IllegalArgumentException( "The maximum number of elements (" + max + ") is negative" );
   K array[] = (K[]) new Object[ 16 ];
   int j = 0;
-
   while( max-- != 0 && i.hasNext() ) {
    if ( j == array.length ) array = ObjectArrays.grow( array, j + 1 );
    array[ j++ ] = i.next();
   }
-
   return ObjectArrays.trim( array, j );
  }
-
-
  /** Unwraps an iterator, returning an array.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns an array
@@ -262,12 +235,9 @@ public class ObjectIterators {
 	 * @param i a type-specific iterator.
 	 * @return an array containing the elements returned by the iterator.
 	 */
-
  public static <K> K[] unwrap( final Iterator <? extends K> i ) {
   return unwrap( i, Integer.MAX_VALUE );
  }
-
-
  /** Unwraps an iterator into a type-specific collection,  with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the elements
@@ -288,7 +258,6 @@ public class ObjectIterators {
   while( j-- != 0 && i.hasNext() ) c.add( i.next() );
   return max - j - 1;
  }
-
  /** Unwraps an iterator into a type-specific collection.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and stores the
@@ -309,8 +278,6 @@ public class ObjectIterators {
   }
   return n;
  }
-
-
  /** Pours an iterator into a type-specific collection, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and adds
@@ -323,14 +290,12 @@ public class ObjectIterators {
 	 * this is the number of elements returned by the iterator, which is not necessarily the number
 	 * of elements that have been added to the collection (because of duplicates).
 	 */
-
  public static <K> int pour( final Iterator <K> i, final ObjectCollection <? super K> s, final int max ) {
   if ( max < 0 ) throw new IllegalArgumentException( "The maximum number of elements (" + max + ") is negative" );
   int j = max;
   while( j-- != 0 && i.hasNext() ) s.add( i.next() );
   return max - j - 1;
  }
-
  /** Pours an iterator into a type-specific collection.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and adds
@@ -342,11 +307,9 @@ public class ObjectIterators {
 	 * this is the number of elements returned by the iterator, which is not necessarily the number
 	 * of elements that have been added to the collection (because of duplicates).
 	 */
-
  public static <K> int pour( final Iterator <K> i, final ObjectCollection <? super K> s ) {
   return pour( i, s, Integer.MAX_VALUE );
  }
-
  /** Pours an iterator, returning a type-specific list, with a limit on the number of elements.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns
@@ -359,14 +322,12 @@ public class ObjectIterators {
 	 * @param max the maximum number of elements to be poured.
 	 * @return a type-specific list containing the returned elements, up to <code>max</code>.
 	 */
-
  public static <K> ObjectList <K> pour( final Iterator <K> i, int max ) {
   final ObjectArrayList <K> l = new ObjectArrayList <K>();
   pour( i, l, max );
   l.trim();
   return l;
  }
-
  /** Pours an iterator, returning a type-specific list.
 	 *
 	 * <P>This method iterates over the given type-specific iterator and returns
@@ -377,24 +338,18 @@ public class ObjectIterators {
 	 * @param i a type-specific iterator.
 	 * @return a type-specific list containing the returned elements.
 	 */
-
  public static <K> ObjectList <K> pour( final Iterator <K> i ) {
   return pour( i, Integer.MAX_VALUE );
  }
-
  private static class IteratorWrapper <K> extends AbstractObjectIterator <K> {
   final Iterator<K> i;
-
   public IteratorWrapper( final Iterator<K> i ) {
    this.i = i;
   }
-
   public boolean hasNext() { return i.hasNext(); }
   public void remove() { i.remove(); }
-
   public K next() { return (i.next()); }
  }
-
  /** Wraps a standard iterator into a type-specific iterator.
 	 *
 	 * <P>This method wraps a standard iterator into a type-specific one which will handle the
@@ -414,15 +369,11 @@ public class ObjectIterators {
   if ( i instanceof ObjectIterator ) return (ObjectIterator <K>)i;
   return new IteratorWrapper <K>( i );
  }
-
-
  private static class ListIteratorWrapper <K> extends AbstractObjectListIterator <K> {
   final ListIterator<K> i;
-
   public ListIteratorWrapper( final ListIterator<K> i ) {
    this.i = i;
   }
-
   public boolean hasNext() { return i.hasNext(); }
   public boolean hasPrevious() { return i.hasPrevious(); }
   public int nextIndex() { return i.nextIndex(); }
@@ -432,11 +383,9 @@ public class ObjectIterators {
   @SuppressWarnings("unchecked")
   public void add( K k ) { i.add( (k) ); }
   public void remove() { i.remove(); }
-
   public K next() { return (i.next()); }
   public K previous() { return (i.previous()); }
  }
-
  /** Wraps a standard list iterator into a type-specific list iterator.
 	 *
 	 * <P>This method wraps a standard list iterator into a type-specific one

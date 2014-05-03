@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +59,7 @@ public abstract class AbstractObjectSet <K> extends AbstractObjectCollection <K>
   ObjectIterator <K> i = iterator();
   K k;
   while( n-- != 0 ) {
-   k = i.next(); // We need k because KEY2INT() is a macro with repeated evaluation.
+   k = i.next(); // We need k because KEY2JAVAHASH() is a macro with repeated evaluation.
    h += ( (k) == null ? 0 : (k).hashCode() );
   }
   return h;

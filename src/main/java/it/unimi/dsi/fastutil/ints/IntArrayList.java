@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -27,7 +21,7 @@
 /* Primitive-type-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +46,7 @@ import java.util.NoSuchElementException;
  * <P>This class implements a lightweight, fast, open, optimized,
  * reuse-oriented version of array-based lists. Instances of this class
  * represent a list with an array that is enlarged as needed when new entries
- * are created (by dividing the current length by the golden ratio), but is
+ * are created (by doubling its current length), but is
  * <em>never</em> made smaller (even on a {@link #clear()}). A family of
  * {@linkplain #trim() trimming methods} lets you control the size of the
  * backing array; this is particularly useful if you reuse instances of this class.
@@ -69,11 +63,9 @@ import java.util.NoSuchElementException;
  * @see java.util.ArrayList
  */
 public class IntArrayList extends AbstractIntList implements RandomAccess, Cloneable, java.io.Serializable {
- public static final long serialVersionUID = -7046029254386353130L;
+ private static final long serialVersionUID = -7046029254386353130L;
  /** The initial default capacity of an array list. */
  public final static int DEFAULT_INITIAL_CAPACITY = 16;
- /** The inverse of the golden ratio times 2<sup>16</sup>. */
- protected static final long ONEOVERPHI = 106039;
  /** The backing array. */
  protected transient int a[];
  /** The current actual size of the list (never greater than the backing-array length). */
@@ -198,7 +190,7 @@ public class IntArrayList extends AbstractIntList implements RandomAccess, Clone
   if ( ASSERTS ) assert size <= a.length;
  }
  /** Grows this array list, ensuring that it can contain the given number of entries without resizing,
-	 * and in case enlarging it at least by the golden ratio.
+	 * and in case enlarging it at least by a factor of two.
 	 *
 	 * @param capacity the new minimum capacity for this array list.
 	 */
@@ -230,8 +222,7 @@ public class IntArrayList extends AbstractIntList implements RandomAccess, Clone
   return -1;
  }
  public int lastIndexOf( final int k ) {
-  int i = size;
-  while( i-- != 0 ) if ( ( (k) == (a[ i ]) ) ) return i;
+  for( int i = size; i-- != 0; ) if ( ( (k) == (a[ i ]) ) ) return i;
   return -1;
  }
  public int removeInt( final int index ) {
@@ -264,7 +255,7 @@ public class IntArrayList extends AbstractIntList implements RandomAccess, Clone
  }
  public void size( final int size ) {
   if ( size > a.length ) ensureCapacity( size );
-  if ( size > this.size ) IntArrays.fill( a, this.size, size, (0) );
+  if ( size > this.size ) IntArrays.fill( a, this.size, size, ((int)0) );
   this.size = size;
  }
  public boolean isEmpty() {

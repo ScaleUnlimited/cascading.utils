@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +51,7 @@
 package it.unimi.dsi.fastutil.objects;
 import it.unimi.dsi.fastutil.Arrays;
 import it.unimi.dsi.fastutil.Hash;
+import java.util.Random;
 import java.util.Comparator;
 /** A class providing static methods and objects that do useful things with type-specific arrays.
  *
@@ -73,21 +68,10 @@ import java.util.Comparator;
  *
  * @see java.util.Arrays
  */
-
 public class ObjectArrays {
-
-
-
- /** The inverse of the golden ratio times 2<sup>16</sup>. */
- public static final long ONEOVERPHI = 106039;
-
  private ObjectArrays() {}
-
  /** A static, final, empty array. */
  public final static Object[] EMPTY_ARRAY = {};
-
-
-
  /** Creates a new array using a the given one as prototype. 
 	 *
 	 * <P>This method returns a new array of the given length whose element
@@ -98,15 +82,12 @@ public class ObjectArrays {
 	 * @param length the length of the new array.
 	 * @return a new array of given type and length.
 	 */
-
  @SuppressWarnings("unchecked")
  private static <K> K[] newArray( final K[] prototype, final int length ) {
   final Class<?> componentType = prototype.getClass().getComponentType();
   if ( length == 0 && componentType == Object.class ) return (K[])EMPTY_ARRAY;
   return (K[])java.lang.reflect.Array.newInstance( prototype.getClass().getComponentType(), length );
  }
-
-
  /** Ensures that an array can contain the given number of entries.
 	 *
 	 * <P>If you cannot foresee whether this array will need again to be
@@ -121,17 +102,12 @@ public class ObjectArrays {
  public static <K> K[] ensureCapacity( final K[] array, final int length ) {
   if ( length > array.length ) {
    final K t[] =
-
     newArray( array, length );
-
-
-
    System.arraycopy( array, 0, t, 0, array.length );
    return t;
   }
   return array;
  }
-
  /** Ensures that an array can contain the given number of entries, preserving just a part of the array.
 	 *
 	 * @param array an array.
@@ -144,23 +120,17 @@ public class ObjectArrays {
  public static <K> K[] ensureCapacity( final K[] array, final int length, final int preserve ) {
   if ( length > array.length ) {
    final K t[] =
-
     newArray( array, length );
-
-
-
    System.arraycopy( array, 0, t, 0, preserve );
    return t;
   }
   return array;
  }
-
  /** Grows the given array to the maximum between the given length and
-	 * the current length divided by the golden ratio, provided that the given
+	 * the current length multiplied by two, provided that the given
 	 * length is larger than the current length.
 	 *
-	 * <P> Dividing by the golden ratio (&phi;) approximately increases the array
-	 * length by 1.618. If you want complete control on the array growth, you
+	 * <P>If you want complete control on the array growth, you
 	 * should probably use <code>ensureCapacity()</code> instead.
 	 *
 	 * @param array an array.
@@ -170,28 +140,21 @@ public class ObjectArrays {
 	 * max(<code>length</code>,<code>array.length</code>/&phi;) entries whose first
 	 * <code>array.length</code> entries are the same as those of <code>array</code>.
 	 * */
-
  public static <K> K[] grow( final K[] array, final int length ) {
   if ( length > array.length ) {
-   final int newLength = (int)Math.min( Math.max( ( ONEOVERPHI * array.length ) >>> 16, length ), Integer.MAX_VALUE );
+   final int newLength = (int)Math.max( Math.min( 2L * array.length, Arrays.MAX_ARRAY_SIZE ), length );
    final K t[] =
-
     newArray( array, newLength );
-
-
-
    System.arraycopy( array, 0, t, 0, array.length );
    return t;
   }
   return array;
  }
-
  /** Grows the given array to the maximum between the given length and
-	 * the current length divided by the golden ratio, provided that the given
+	 * the current length multiplied by two, provided that the given
 	 * length is larger than the current length, preserving just a part of the array.
 	 *
-	 * <P> Dividing by the golden ratio (&phi;) approximately increases the array
-	 * length by 1.618. If you want complete control on the array growth, you
+	 * <P>If you want complete control on the array growth, you
 	 * should probably use <code>ensureCapacity()</code> instead.
 	 *
 	 * @param array an array.
@@ -202,26 +165,16 @@ public class ObjectArrays {
 	 * max(<code>length</code>,<code>array.length</code>/&phi;) entries whose first
 	 * <code>preserve</code> entries are the same as those of <code>array</code>.
 	 * */
-
  public static <K> K[] grow( final K[] array, final int length, final int preserve ) {
-
   if ( length > array.length ) {
-   final int newLength = (int)Math.min( Math.max( ( ONEOVERPHI * array.length ) >>> 16, length ), Integer.MAX_VALUE );
-
+   final int newLength = (int)Math.max( Math.min( 2L * array.length, Arrays.MAX_ARRAY_SIZE ), length );
    final K t[] =
-
     newArray( array, newLength );
-
-
-
    System.arraycopy( array, 0, t, 0, preserve );
-
    return t;
   }
   return array;
-
  }
-
  /** Trims the given array to the given length.
 	 *
 	 * @param array an array.
@@ -232,19 +185,13 @@ public class ObjectArrays {
 	 * the first <code>length</code> entries of <code>array</code>.
 	 * 
 	 */
-
  public static <K> K[] trim( final K[] array, final int length ) {
   if ( length >= array.length ) return array;
   final K t[] =
-
    newArray( array, length );
-
-
-
   System.arraycopy( array, 0, t, 0, length );
   return t;
  }
-
  /** Sets the length of the given array.
 	 *
 	 * @param array an array.
@@ -258,13 +205,11 @@ public class ObjectArrays {
 	 * <code>array</code>.
 	 * 
 	 */
-
  public static <K> K[] setLength( final K[] array, final int length ) {
   if ( length == array.length ) return array;
   if ( length < array.length ) return trim( array, length );
   return ensureCapacity( array, length );
  }
-
  /** Returns a copy of a portion of an array.
 	 *
 	 * @param array an array.
@@ -272,29 +217,21 @@ public class ObjectArrays {
 	 * @param length the number of elements to copy.
 	 * @return a new array containing <code>length</code> elements of <code>array</code> starting at <code>offset</code>.
 	 */
-
  public static <K> K[] copy( final K[] array, final int offset, final int length ) {
   ensureOffsetLength( array, offset, length );
   final K[] a =
-
    newArray( array, length );
-
-
-
   System.arraycopy( array, offset, a, 0, length );
   return a;
  }
-
  /** Returns a copy of an array.
 	 *
 	 * @param array an array.
 	 * @return a copy of <code>array</code>.
 	 */
-
  public static <K> K[] copy( final K[] array ) {
   return array.clone();
  }
-
  /** Fills the given array with the given value.
 	 *
 	 * <P>This method uses a backward loop. It is significantly faster than the corresponding
@@ -303,12 +240,10 @@ public class ObjectArrays {
 	 * @param array an array.
 	 * @param value the new value for all elements of the array.
 	 */
-
  public static <K> void fill( final K[] array, final K value ) {
   int i = array.length;
   while( i-- != 0 ) array[ i ] = value;
  }
-
  /** Fills a portion of the given array with the given value.
 	 *
 	 * <P>If possible (i.e., <code>from</code> is 0) this method uses a
@@ -316,53 +251,42 @@ public class ObjectArrays {
 	 * corresponding method in {@link java.util.Arrays}.
 	 *
 	 * @param array an array.
-	 * @param from the starting index of the portion to fill.
-	 * @param to the end index of the portion to fill.
+	 * @param from the starting index of the portion to fill (inclusive).
+	 * @param to the end index of the portion to fill (exclusive).
 	 * @param value the new value for all elements of the specified portion of the array.
 	 */
-
  public static <K> void fill( final K[] array, final int from, int to, final K value ) {
   ensureFromTo( array, from, to );
   if ( from == 0 ) while( to-- != 0 ) array[ to ] = value;
   else for( int i = from; i < to; i++ ) array[ i ] = value;
  }
-
-
-
  /** Returns true if the two arrays are elementwise equal.
-	 *
-	 * <P>This method uses a backward loop. It is significantly faster than the corresponding
-	 * method in {@link java.util.Arrays}.
 	 *
 	 * @param a1 an array.
 	 * @param a2 another array.
 	 * @return true if the two arrays are of the same length, and their elements are equal.
+	 * @deprecated Please use the corresponding {@link java.util.Arrays} method, which is intrinsified in recent JVMs.
 	 */
-
+ @Deprecated
  public static <K> boolean equals( final K[] a1, final K a2[] ) {
   int i = a1.length;
   if ( i != a2.length ) return false;
   while( i-- != 0 ) if (! ( (a1[ i ]) == null ? (a2[ i ]) == null : (a1[ i ]).equals(a2[ i ]) ) ) return false;
   return true;
  }
-
-
-
-
  /** Ensures that a range given by its first (inclusive) and last (exclusive) elements fits an array.
 	 *
 	 * <P>This method may be used whenever an array range check is needed.
 	 *
 	 * @param a an array.
 	 * @param from a start index (inclusive).
-	 * @param to an end index (inclusive).
+	 * @param to an end index (exclusive).
 	 * @throws IllegalArgumentException if <code>from</code> is greater than <code>to</code>.
 	 * @throws ArrayIndexOutOfBoundsException if <code>from</code> or <code>to</code> are greater than the array length or negative.
 	 */
  public static <K> void ensureFromTo( final K[] a, final int from, final int to ) {
   Arrays.ensureFromTo( a.length, from, to );
  }
-
  /** Ensures that a range given by an offset and a length fits an array.
 	 *
 	 * <P>This method may be used whenever an array range check is needed.
@@ -376,20 +300,16 @@ public class ObjectArrays {
  public static <K> void ensureOffsetLength( final K[] a, final int offset, final int length ) {
   Arrays.ensureOffsetLength( a.length, offset, length );
  }
-
  private static final int SMALL = 7;
- private static final int MEDIUM = 40;
-
+ private static final int MEDIUM = 50;
  private static <K> void swap( final K x[], final int a, final int b ) {
   final K t = x[ a ];
   x[ a ] = x[ b ];
   x[ b ] = t;
  }
-
  private static <K> void vecSwap( final K[] x, int a, int b, final int n ) {
   for( int i = 0; i < n; i++, a++, b++ ) swap( x, a, b );
  }
-
  private static <K> int med3( final K x[], final int a, final int b, final int c, Comparator <K> comp ) {
   int ab = comp.compare( x[ a ], x[ b ] );
   int ac = comp.compare( x[ a ], x[ c ] );
@@ -398,13 +318,67 @@ public class ObjectArrays {
    ( bc < 0 ? b : ac < 0 ? c : a ) :
    ( bc > 0 ? b : ac > 0 ? c : a ) );
  }
-
+ private static <K> void selectionSort( final K[] a, final int from, final int to, final Comparator <K> comp ) {
+  for( int i = from; i < to - 1; i++ ) {
+   int m = i;
+   for( int j = i + 1; j < to; j++ ) if ( comp.compare( a[ j ], a[ m ] ) < 0 ) m = j;
+   if ( m != i ) {
+    final K u = a[ i ];
+    a[ i ] = a[ m ];
+    a[ m ] = u;
+   }
+  }
+ }
+ private static <K> void insertionSort( final K[] a, final int from, final int to, final Comparator <K> comp ) {
+  for ( int i = from; ++i < to; ) {
+   K t = a[ i ];
+   int j = i;
+   for ( K u = a[ j - 1 ]; comp.compare( t, u ) < 0; u = a[ --j - 1 ] ) {
+    a[ j ] = u;
+    if ( from == j - 1 ) {
+     --j;
+     break;
+    }
+   }
+   a[ j ] = t;
+  }
+ }
+ @SuppressWarnings("unchecked")
+ private static <K> void selectionSort( final K[] a, final int from, final int to ) {
+  for( int i = from; i < to - 1; i++ ) {
+   int m = i;
+   for( int j = i + 1; j < to; j++ ) if ( ( ((Comparable<K>)(a[ j ])).compareTo(a[ m ]) < 0 ) ) m = j;
+   if ( m != i ) {
+    final K u = a[ i ];
+    a[ i ] = a[ m ];
+    a[ m ] = u;
+   }
+  }
+ }
+ @SuppressWarnings("unchecked")
+ private static <K> void insertionSort( final K[] a, final int from, final int to ) {
+  for ( int i = from; ++i < to; ) {
+   K t = a[ i ];
+   int j = i;
+   for ( K u = a[ j - 1 ]; ( ((Comparable<K>)(t)).compareTo(u) < 0 ); u = a[ --j - 1 ] ) {
+    a[ j ] = u;
+    if ( from == j - 1 ) {
+     --j;
+     break;
+    }
+   }
+   a[ j ] = t;
+  }
+ }
  /** Sorts the specified range of elements according to the order induced by the specified
 	 * comparator using quicksort. 
 	 * 
 	 * <p>The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M. Douglas
 	 * McIlroy, &ldquo;Engineering a Sort Function&rdquo;, <i>Software: Practice and Experience</i>, 23(11), pages
 	 * 1249&minus;1265, 1993.
+	 *
+	 * <p>Note that this implementation does not allocate any object, contrarily to the implementation
+	 * used to sort primitive types in {@link java.util.Arrays}, which switches to mergesort on large inputs.
 	 * 
 	 * @param x the array to be sorted.
 	 * @param from the index of the first element (inclusive) to be sorted.
@@ -414,13 +388,11 @@ public class ObjectArrays {
 	 */
  public static <K> void quickSort( final K[] x, final int from, final int to, final Comparator <K> comp ) {
   final int len = to - from;
-  // Insertion sort on smallest arrays
+  // Selection sort on smallest arrays
   if ( len < SMALL ) {
-   for ( int i = from; i < to; i++ )
-   for ( int j = i; j > from && comp.compare( x[ j - 1 ], x[ j ] ) > 0; j-- ) swap( x, j, j - 1 );
+   selectionSort( x, from, to, comp );
    return;
   }
-
   // Choose a partition element, v
   int m = from + len / 2; // Small arrays, middle element
   if ( len > SMALL ) {
@@ -434,9 +406,7 @@ public class ObjectArrays {
    }
    m = med3( x, l, m, n, comp ); // Mid-size, med of 3
   }
-
   final K v = x[ m ];
-
   // Establish Invariant: v* (<v)* (>v)* v*
   int a = from, b = a, c = to - 1, d = c;
   while(true) {
@@ -452,26 +422,25 @@ public class ObjectArrays {
    if ( b > c ) break;
    swap( x, b++, c-- );
   }
-
   // Swap partition elements back to middle
   int s, n = to;
   s = Math.min( a - from, b - a );
   vecSwap( x, from, b - s, s );
   s = Math.min( d - c, n - d - 1 );
   vecSwap( x, b, n - s, s );
-
   // Recursively sort non-partition-elements
   if ( ( s = b - a ) > 1 ) quickSort( x, from, from + s, comp );
   if ( ( s = d - c ) > 1 ) quickSort( x, n - s, n, comp );
-
  }
-
  /** Sorts an array according to the order induced by the specified
 	 * comparator using quicksort. 
 	 * 
 	 * <p>The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M. Douglas
 	 * McIlroy, &ldquo;Engineering a Sort Function&rdquo;, <i>Software: Practice and Experience</i>, 23(11), pages
 	 * 1249&minus;1265, 1993.
+	 * 
+	 * <p>Note that this implementation does not allocate any object, contrarily to the implementation
+	 * used to sort primitive types in {@link java.util.Arrays}, which switches to mergesort on large inputs.
 	 * 
 	 * @param x the array to be sorted.
 	 * @param comp the comparator to determine the sorting order.
@@ -480,8 +449,6 @@ public class ObjectArrays {
  public static <K> void quickSort( final K[] x, final Comparator <K> comp ) {
   quickSort( x, 0, x.length, comp );
  }
-
-
  @SuppressWarnings("unchecked")
  private static <K> int med3( final K x[], final int a, final int b, final int c ) {
   int ab = ( ((Comparable<K>)(x[ a ])).compareTo(x[ b ]) );
@@ -491,30 +458,27 @@ public class ObjectArrays {
    ( bc < 0 ? b : ac < 0 ? c : a ) :
    ( bc > 0 ? b : ac > 0 ? c : a ) );
  }
-
-
  /** Sorts the specified range of elements according to the natural ascending order using quicksort.
 	 * 
 	 * <p>The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M. Douglas
 	 * McIlroy, &ldquo;Engineering a Sort Function&rdquo;, <i>Software: Practice and Experience</i>, 23(11), pages
 	 * 1249&minus;1265, 1993.
 	 * 
+	 * <p>Note that this implementation does not allocate any object, contrarily to the implementation
+	 * used to sort primitive types in {@link java.util.Arrays}, which switches to mergesort on large inputs.
+	 * 
 	 * @param x the array to be sorted.
 	 * @param from the index of the first element (inclusive) to be sorted.
 	 * @param to the index of the last element (exclusive) to be sorted.
-	 * 
 	 */
-
  @SuppressWarnings("unchecked")
  public static <K> void quickSort( final K[] x, final int from, final int to ) {
   final int len = to - from;
-  // Insertion sort on smallest arrays
+  // Selection sort on smallest arrays
   if ( len < SMALL ) {
-   for ( int i = from; i < to; i++ )
-   for ( int j = i; j > from && ( ((Comparable<K>)(x[ j ])).compareTo(x[ j - 1 ]) < 0 ); j-- ) swap( x, j, j - 1 );
+   selectionSort( x, from, to );
    return;
   }
-
   // Choose a partition element, v
   int m = from + len / 2; // Small arrays, middle element
   if ( len > SMALL ) {
@@ -528,9 +492,7 @@ public class ObjectArrays {
    }
    m = med3( x, l, m, n ); // Mid-size, med of 3
   }
-
   final K v = x[ m ];
-
   // Establish Invariant: v* (<v)* (>v)* v*
   int a = from, b = a, c = to - 1, d = c;
   while(true) {
@@ -546,25 +508,24 @@ public class ObjectArrays {
    if ( b > c ) break;
    swap( x, b++, c-- );
   }
-
   // Swap partition elements back to middle
   int s, n = to;
   s = Math.min( a - from, b - a );
   vecSwap( x, from, b - s, s );
   s = Math.min( d - c, n - d - 1 );
   vecSwap( x, b, n - s, s );
-
   // Recursively sort non-partition-elements
   if ( ( s = b - a ) > 1 ) quickSort( x, from, from + s );
   if ( ( s = d - c ) > 1 ) quickSort( x, n - s, n );
-
  }
-
  /** Sorts an array according to the natural ascending order using quicksort.
 	 * 
 	 * <p>The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M. Douglas
 	 * McIlroy, &ldquo;Engineering a Sort Function&rdquo;, <i>Software: Practice and Experience</i>, 23(11), pages
 	 * 1249&minus;1265, 1993.
+	 * 
+	 * <p>Note that this implementation does not allocate any object, contrarily to the implementation
+	 * used to sort primitive types in {@link java.util.Arrays}, which switches to mergesort on large inputs.
 	 * 
 	 * @param x the array to be sorted.
 	 * 
@@ -572,8 +533,7 @@ public class ObjectArrays {
  public static <K> void quickSort( final K[] x ) {
   quickSort( x, 0, x.length );
  }
-
- /** Sorts the specified range of elements according to the natural ascending order using mergesort, using a given support array.
+ /** Sorts the specified range of elements according to the natural ascending order using mergesort, using a given pre-filled support array.
 	 * 
 	 * <p>This sort is guaranteed to be <i>stable</i>: equal elements will not be reordered as a result
 	 * of the sort. Moreover, no support arrays will be allocated. 
@@ -581,40 +541,33 @@ public class ObjectArrays {
 	 * @param a the array to be sorted.
 	 * @param from the index of the first element (inclusive) to be sorted.
 	 * @param to the index of the last element (exclusive) to be sorted.
-	 * @param supp a support array, at least as large as <code>a</code>.
+	 * @param supp a support array containing at least <code>to</code> elements, and whose entries are identical to those
+	 * of {@code a} in the specified range.
 	 */
-
  @SuppressWarnings("unchecked")
  public static <K> void mergeSort( final K a[], final int from, final int to, final K supp[] ) {
   int len = to - from;
-
   // Insertion sort on smallest arrays
   if ( len < SMALL ) {
-      for ( int i = from; i < to; i++ )
-       for ( int j = i; j > from && ( ((Comparable<K>)(a[ j ])).compareTo(a[ j - 1 ]) < 0 ); j-- )
-        swap( a, j, j - 1 );
-      return;
+   insertionSort( a, from, to );
+   return;
   }
-
   // Recursively sort halves of a into supp
   final int mid = ( from + to ) >>> 1;
   mergeSort( supp, from, mid, a );
   mergeSort( supp, mid, to, a );
-
   // If list is already sorted, just copy from supp to a.  This is an
   // optimization that results in faster sorts for nearly ordered lists.
   if ( ( ((Comparable<K>)(supp[ mid - 1 ])).compareTo(supp[ mid ]) <= 0 ) ) {
    System.arraycopy( supp, from, a, from, len );
    return;
   }
-
   // Merge sorted halves (now in supp) into a
   for( int i = from, p = from, q = mid; i < to; i++ ) {
    if ( q >= to || p < mid && ( ((Comparable<K>)(supp[ p ])).compareTo(supp[ q ]) <= 0 ) ) a[ i ] = supp[ p++ ];
    else a[ i ] = supp[ q++ ];
   }
  }
-
  /** Sorts the specified range of elements according to the natural ascending order using mergesort.
 	 * 
 	 * <p>This sort is guaranteed to be <i>stable</i>: equal elements will not be reordered as a result
@@ -627,7 +580,6 @@ public class ObjectArrays {
  public static <K> void mergeSort( final K a[], final int from, final int to ) {
   mergeSort( a, from, to, a.clone() );
  }
-
  /**	Sorts an array according to the natural ascending order using mergesort.
 	 * 
 	 * <p>This sort is guaranteed to be <i>stable</i>: equal elements will not be reordered as a result
@@ -638,9 +590,8 @@ public class ObjectArrays {
  public static <K> void mergeSort( final K a[] ) {
   mergeSort( a, 0, a.length );
  }
-
  /** Sorts the specified range of elements according to the order induced by the specified
-	 * comparator using mergesort, using a given support array.
+	 * comparator using mergesort, using a given pre-filled support array.
 	 * 
 	 * <p>This sort is guaranteed to be <i>stable</i>: equal elements will not be reordered as a result
 	 * of the sort. Moreover, no support arrays will be allocated.
@@ -649,39 +600,33 @@ public class ObjectArrays {
 	 * @param from the index of the first element (inclusive) to be sorted.
 	 * @param to the index of the last element (exclusive) to be sorted.
 	 * @param comp the comparator to determine the sorting order.
-	 * @param supp a support array, at least as large as <code>a</code>.
+	 * @param supp a support array containing at least <code>to</code> elements, and whose entries are identical to those
+	 * of {@code a} in the specified range.
 	 */
  @SuppressWarnings("unchecked")
  public static <K> void mergeSort( final K a[], final int from, final int to, Comparator <K> comp, final K supp[] ) {
   int len = to - from;
-
   // Insertion sort on smallest arrays
   if ( len < SMALL ) {
-      for ( int i = from; i < to; i++ )
-       for ( int j = i; j > from && comp.compare( a[ j - 1 ], a[ j ] ) > 0; j-- )
-        swap( a, j, j - 1 );
-      return;
-  }
-
+   insertionSort( a, from, to, comp );
+   return;
+     }
   // Recursively sort halves of a into supp
   final int mid = ( from + to ) >>> 1;
   mergeSort( supp, from, mid, comp, a );
   mergeSort( supp, mid, to, comp, a );
-
   // If list is already sorted, just copy from supp to a.  This is an
   // optimization that results in faster sorts for nearly ordered lists.
   if ( comp.compare( supp[ mid - 1 ], supp[ mid ] ) <= 0 ) {
    System.arraycopy( supp, from, a, from, len );
    return;
   }
-
   // Merge sorted halves (now in supp) into a
   for( int i = from, p = from, q = mid; i < to; i++ ) {
    if ( q >= to || p < mid && comp.compare( supp[ p ], supp[ q ] ) <= 0 ) a[ i ] = supp[ p++ ];
    else a[ i ] = supp[ q++ ];
   }
  }
-
  /** Sorts the specified range of elements according to the order induced by the specified
 	 * comparator using mergesort.
 	 * 
@@ -696,7 +641,6 @@ public class ObjectArrays {
  public static <K> void mergeSort( final K a[], final int from, final int to, Comparator <K> comp ) {
   mergeSort( a, from, to, comp, a.clone() );
  }
-
  /** Sorts an array according to the order induced by the specified
 	 * comparator using mergesort.
 	 * 
@@ -709,9 +653,6 @@ public class ObjectArrays {
  public static <K> void mergeSort( final K a[], Comparator <K> comp ) {
   mergeSort( a, 0, a.length, comp );
  }
-
-
-
  /**
 	 * Searches a range of the specified array for the specified value using 
 	 * the binary search algorithm. The range must be sorted prior to making this call. 
@@ -723,7 +664,7 @@ public class ObjectArrays {
 	 * @param to  the index of the last element (exclusive) to be searched.
 	 * @param key the value to be searched for.
 	 * @return index of the search key, if it is contained in the array;
-	 *             otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The <i>insertion
+	 *             otherwise, <samp>(-(<i>insertion point</i>) - 1)</samp>.  The <i>insertion
 	 *             point</i> is defined as the the point at which the value would
 	 *             be inserted into the array: the index of the first
 	 *             element greater than the key, or the length of the array, if all
@@ -735,23 +676,17 @@ public class ObjectArrays {
  @SuppressWarnings({"unchecked","rawtypes"})
  public static <K> int binarySearch( final K[] a, int from, int to, final K key ) {
   K midVal;
+  to--;
   while (from <= to) {
    final int mid = (from + to) >>> 1;
    midVal = a[ mid ];
-
-
-
-
-
    final int cmp = ((Comparable)midVal).compareTo( key );
    if ( cmp < 0 ) from = mid + 1;
    else if (cmp > 0) to = mid - 1;
    else return mid;
-
         }
   return -( from + 1 );
  }
-
  /**
 	 * Searches an array for the specified value using 
 	 * the binary search algorithm. The range must be sorted prior to making this call. 
@@ -761,7 +696,7 @@ public class ObjectArrays {
 	 * @param a the array to be searched.
 	 * @param key the value to be searched for.
 	 * @return index of the search key, if it is contained in the array;
-	 *             otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The <i>insertion
+	 *             otherwise, <samp>(-(<i>insertion point</i>) - 1)</samp>.  The <i>insertion
 	 *             point</i> is defined as the the point at which the value would
 	 *             be inserted into the array: the index of the first
 	 *             element greater than the key, or the length of the array, if all
@@ -773,7 +708,6 @@ public class ObjectArrays {
  public static <K> int binarySearch( final K[] a, final K key ) {
   return binarySearch( a, 0, a.length, key );
  }
-
  /**
 	 * Searches a range of the specified array for the specified value using 
 	 * the binary search algorithm and a specified comparator. The range must be sorted following the comparator prior to making this call. 
@@ -786,7 +720,7 @@ public class ObjectArrays {
 	 * @param key the value to be searched for.
 	 * @param c a comparator.
 	 * @return index of the search key, if it is contained in the array;
-	 *             otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The <i>insertion
+	 *             otherwise, <samp>(-(<i>insertion point</i>) - 1)</samp>.  The <i>insertion
 	 *             point</i> is defined as the the point at which the value would
 	 *             be inserted into the array: the index of the first
 	 *             element greater than the key, or the length of the array, if all
@@ -797,6 +731,7 @@ public class ObjectArrays {
 	 */
  public static <K> int binarySearch( final K[] a, int from, int to, final K key, final Comparator <K> c ) {
   K midVal;
+  to--;
   while (from <= to) {
    final int mid = (from + to) >>> 1;
    midVal = a[ mid ];
@@ -807,7 +742,6 @@ public class ObjectArrays {
   }
   return -( from + 1 );
  }
-
  /**
 	 * Searches an array for the specified value using 
 	 * the binary search algorithm and a specified comparator. The range must be sorted following the comparator prior to making this call. 
@@ -818,7 +752,7 @@ public class ObjectArrays {
 	 * @param key the value to be searched for.
 	 * @param c a comparator.
 	 * @return index of the search key, if it is contained in the array;
-	 *             otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The <i>insertion
+	 *             otherwise, <samp>(-(<i>insertion point</i>) - 1)</samp>.  The <i>insertion
 	 *             point</i> is defined as the the point at which the value would
 	 *             be inserted into the array: the index of the first
 	 *             element greater than the key, or the length of the array, if all
@@ -830,31 +764,84 @@ public class ObjectArrays {
  public static <K> int binarySearch( final K[] a, final K key, final Comparator <K> c ) {
   return binarySearch( a, 0, a.length, key, c );
  }
-
-
+ /** Shuffles the specified array fragment using the specified pseudorandom number generator.
+	 * 
+	 * @param a the array to be shuffled.
+	 * @param from the index of the first element (inclusive) to be shuffled.
+	 * @param to the index of the last element (exclusive) to be shuffled.
+	 * @param random a pseudorandom number generator (please use a <a href="http://dsiutils.dsi.unimi.it/docs/it/unimi/dsi/util/XorShiftStarRandom.html">XorShift*</a> generator).
+	 * @return <code>a</code>.
+	 */
+ public static <K> K[] shuffle( final K[] a, final int from, final int to, final Random random ) {
+  for( int i = to - from; i-- != 0; ) {
+   final int p = random.nextInt( i + 1 );
+   final K t = a[ from + i ];
+   a[ from + i ] = a[ from + p ];
+   a[ from + p ] = t;
+  }
+  return a;
+ }
+ /** Shuffles the specified array using the specified pseudorandom number generator.
+	 * 
+	 * @param a the array to be shuffled.
+	 * @param random a pseudorandom number generator (please use a <a href="http://dsiutils.dsi.unimi.it/docs/it/unimi/dsi/util/XorShiftStarRandom.html">XorShift*</a> generator).
+	 * @return <code>a</code>.
+	 */
+ public static <K> K[] shuffle( final K[] a, final Random random ) {
+  for( int i = a.length; i-- != 0; ) {
+   final int p = random.nextInt( i + 1 );
+   final K t = a[ i ];
+   a[ i ] = a[ p ];
+   a[ p ] = t;
+  }
+  return a;
+ }
+ /** Reverses the order of the elements in the specified array.
+	 * 
+	 * @param a the array to be reversed.
+	 * @return <code>a</code>.
+	 */
+ public static <K> K[] reverse( final K[] a ) {
+  final int length = a.length;
+  for( int i = length / 2; i-- != 0; ) {
+   final K t = a[ length - i - 1 ];
+   a[ length - i - 1 ] = a[ i ];
+   a[ i ] = t;
+  }
+  return a;
+ }
+ /** Reverses the order of the elements in the specified array fragment.
+	 * 
+	 * @param a the array to be reversed.
+	 * @param from the index of the first element (inclusive) to be reversed.
+	 * @param to the index of the last element (exclusive) to be reversed.
+	 * @return <code>a</code>.
+	 */
+ public static <K> K[] reverse( final K[] a, final int from, final int to ) {
+  final int length = to - from;
+  for( int i = length / 2; i-- != 0; ) {
+   final K t = a[ from + length - i - 1 ];
+   a[ from + length - i - 1 ] = a[ from + i ];
+   a[ from + i ] = t;
+  }
+  return a;
+ }
  /** A type-specific content-based hash strategy for arrays. */
-
  private static final class ArrayHashStrategy <K> implements Hash.Strategy<K[]>, java.io.Serializable {
-  public static final long serialVersionUID = -7046029254386353129L;
-
+  private static final long serialVersionUID = -7046029254386353129L;
   public int hashCode( final K[] o ) {
    return java.util.Arrays.hashCode( o );
   }
-
   public boolean equals( final K[] a, final K[] b ) {
-   return ObjectArrays.equals( a, b );
+   return java.util.Arrays.equals( a, b );
   }
  }
-
  /** A type-specific content-based hash strategy for arrays.
 	 *
 	 * <P>This hash strategy may be used in custom hash collections whenever keys are
 	 * arrays, and they must be considered equal by content. This strategy
 	 * will handle <code>null</code> correctly, and it is serializable.
 	 */
-
- @SuppressWarnings({"unchecked", "rawtypes"})
+ @SuppressWarnings({"rawtypes"})
  public final static Hash.Strategy HASH_STRATEGY = new ArrayHashStrategy();
-
-
 }

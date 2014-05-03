@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +61,6 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 * @return an iterator on the elements of this list (in proper sequence).
 	 */
  ObjectListIterator <K> iterator();
-
  /** Returns a type-specific list iterator on the list.
 	 *
 	 * @see #listIterator()
@@ -75,7 +68,6 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 */
  @Deprecated
  ObjectListIterator <K> objectListIterator();
-
  /** Returns a type-specific list iterator on the list starting at a given index.
 	 *
 	 * @see #listIterator(int)
@@ -83,26 +75,22 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 */
  @Deprecated
  ObjectListIterator <K> objectListIterator( int index );
-
  /** Returns a type-specific list iterator on the list.
 	 *
 	 * @see List#listIterator()
 	 */
  ObjectListIterator <K> listIterator();
-
  /** Returns a type-specific list iterator on the list starting at a given index.
 	 *
 	 * @see List#listIterator(int)
 	 */
  ObjectListIterator <K> listIterator( int index );
-
  /** Returns a type-specific view of the portion of this list from the index <code>from</code>, inclusive, to the index <code>to</code>, exclusive.
 	 * @see List#subList(int,int)
 	 * @deprecated As of <code>fastutil</code> 5, replaced by {@link #subList(int,int)}.
 	 */
  @Deprecated
  ObjectList <K> objectSubList( int from, int to );
-
  /** Returns a type-specific view of the portion of this list from the index <code>from</code>, inclusive, to the index <code>to</code>, exclusive.
 	 *
 	 * <P>Note that this specification strengthens the one given in {@link List#subList(int,int)}.
@@ -110,8 +98,6 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 * @see List#subList(int,int)
 	 */
  ObjectList <K> subList(int from, int to);
-
-
  /** Sets the size of this list.
 	 *
 	 * <P>If the specified size is smaller than the current size, the last elements are
@@ -119,9 +105,7 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 *
 	 * @param size the new size.
 	 */
-
  void size( int size );
-
  /** Copies (hopefully quickly) elements of this type-specific list into the given array.
 	 *
 	 * @param from the start index (inclusive).
@@ -130,21 +114,18 @@ public interface ObjectList <K> extends List<K>, Comparable<List<? extends K>>, 
 	 * @param length the number of elements to be copied.
 	 */
  void getElements( int from, Object a[], int offset, int length );
-
  /** Removes (hopefully quickly) elements of this type-specific list.
 	 *
 	 * @param from the start index (inclusive).
 	 * @param to the end index (exclusive).
 	 */
  void removeElements( int from, int to );
-
  /** Add (hopefully quickly) elements to this type-specific list.
 	 *
 	 * @param index the index at which to add elements.
 	 * @param a the array containing the elements.
 	 */
  void addElements( int index, K a[] );
-
  /** Add (hopefully quickly) elements to this type-specific list.
 	 *
 	 * @param index the index at which to add elements.

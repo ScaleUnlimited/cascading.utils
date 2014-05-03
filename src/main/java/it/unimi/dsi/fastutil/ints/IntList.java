@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -27,7 +21,7 @@
 /* Primitive-type-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +69,6 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 */
  @Deprecated
  IntListIterator intListIterator();
-
  /** Returns a type-specific list iterator on the list starting at a given index.
 	 *
 	 * @see #listIterator(int)
@@ -83,26 +76,22 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 */
  @Deprecated
  IntListIterator intListIterator( int index );
-
  /** Returns a type-specific list iterator on the list.
 	 *
 	 * @see List#listIterator()
 	 */
  IntListIterator listIterator();
-
  /** Returns a type-specific list iterator on the list starting at a given index.
 	 *
 	 * @see List#listIterator(int)
 	 */
  IntListIterator listIterator( int index );
-
  /** Returns a type-specific view of the portion of this list from the index <code>from</code>, inclusive, to the index <code>to</code>, exclusive.
 	 * @see List#subList(int,int)
 	 * @deprecated As of <code>fastutil</code> 5, replaced by {@link #subList(int,int)}.
 	 */
  @Deprecated
  IntList intSubList( int from, int to );
-
  /** Returns a type-specific view of the portion of this list from the index <code>from</code>, inclusive, to the index <code>to</code>, exclusive.
 	 *
 	 * <P>Note that this specification strengthens the one given in {@link List#subList(int,int)}.
@@ -110,8 +99,6 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 * @see List#subList(int,int)
 	 */
  IntList subList(int from, int to);
-
-
  /** Sets the size of this list.
 	 *
 	 * <P>If the specified size is smaller than the current size, the last elements are
@@ -119,9 +106,7 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 *
 	 * @param size the new size.
 	 */
-
  void size( int size );
-
  /** Copies (hopefully quickly) elements of this type-specific list into the given array.
 	 *
 	 * @param from the start index (inclusive).
@@ -130,21 +115,18 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 * @param length the number of elements to be copied.
 	 */
  void getElements( int from, int a[], int offset, int length );
-
  /** Removes (hopefully quickly) elements of this type-specific list.
 	 *
 	 * @param from the start index (inclusive).
 	 * @param to the end index (exclusive).
 	 */
  void removeElements( int from, int to );
-
  /** Add (hopefully quickly) elements to this type-specific list.
 	 *
 	 * @param index the index at which to add elements.
 	 * @param a the array containing the elements.
 	 */
  void addElements( int index, int a[] );
-
  /** Add (hopefully quickly) elements to this type-specific list.
 	 *
 	 * @param index the index at which to add elements.
@@ -153,60 +135,44 @@ public interface IntList extends List<Integer>, Comparable<List<? extends Intege
 	 * @param length the number of elements to add.
 	 */
  void addElements( int index, int a[], int offset, int length );
-
-
-
  /**
 	 * @see List#add(Object)
 	 */
  boolean add( int key );
-
  /**
 	 * @see List#add(int,Object)
 	 */
  void add( int index, int key );
-
  /**
 	 * @see List#add(int,Object)
 	 */
  boolean addAll( int index, IntCollection c );
-
  /**
 	 * @see List#add(int,Object)
 	 */
  boolean addAll( int index, IntList c );
-
  /**
 	 * @see List#add(int,Object)
 	 */
  boolean addAll( IntList c );
-
  /**
 	 * @see List#get(int)
 	 */
  int getInt( int index );
-
  /**
 	 * @see List#indexOf(Object)
 	 */
  int indexOf( int k );
-
  /**
 	 * @see List#lastIndexOf(Object)
 	 */
  int lastIndexOf( int k );
-
  /**
 	 * @see List#remove(int)
 	 */
  int removeInt( int index );
-
  /**
 	 * @see List#set(int,Object)
 	 */
  int set( int index, int k );
-
-
-
-
 }

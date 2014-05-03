@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +45,7 @@ import java.util.NoSuchElementException;
  * <P>This class implements a lightweight, fast, open, optimized,
  * reuse-oriented version of array-based lists. Instances of this class
  * represent a list with an array that is enlarged as needed when new entries
- * are created (by dividing the current length by the golden ratio), but is
+ * are created (by doubling the current length), but is
  * <em>never</em> made smaller (even on a {@link #clear()}). A family of
  * {@linkplain #trim() trimming methods} lets you control the size of the
  * backing array; this is particularly useful if you reuse instances of this class.
@@ -73,11 +67,9 @@ import java.util.NoSuchElementException;
  * @see java.util.ArrayList
  */
 public class ObjectArrayList <K> extends AbstractObjectList <K> implements RandomAccess, Cloneable, java.io.Serializable {
- public static final long serialVersionUID = -7046029254386353131L;
+ private static final long serialVersionUID = -7046029254386353131L;
  /** The initial default capacity of an array list. */
  public final static int DEFAULT_INITIAL_CAPACITY = 16;
- /** The inverse of the golden ratio times 2<sup>16</sup>. */
- protected static final long ONEOVERPHI = 106039;
  /** Whether the backing array was passed to <code>wrap()</code>. In
 	 * this case, we must reallocate with the same type of array. */
  protected final boolean wrapped;
@@ -174,7 +166,12 @@ public class ObjectArrayList <K> extends AbstractObjectList <K> implements Rando
 	 *
 	 * <P>If this array list was created by wrapping a given array, it is guaranteed
 	 * that the type of the returned array will be the same. Otherwise, the returned
-	 * array will be an array of objects.
+	 * array will be of type {@link Object Object[]} (in spite of the declared return type).
+	 * 
+	 * <strong>Warning</strong>: This behaviour may cause (unfathomable) 
+	 * run-time errors if a method expects an array
+	 * actually of type <code>K[]</code>, but this methods returns an array
+	 * of type {@link Object Object[]}.
 	 *
 	 * @return the backing array.
 	 */
@@ -218,7 +215,7 @@ public class ObjectArrayList <K> extends AbstractObjectList <K> implements Rando
   if ( ASSERTS ) assert size <= a.length;
  }
  /** Grows this array list, ensuring that it can contain the given number of entries without resizing,
-	 * and in case enlarging it at least by the golden ratio.
+	 * and in case enlarging it at least by a factor of two.
 	 *
 	 * @param capacity the new minimum capacity for this array list.
 	 */
@@ -227,7 +224,7 @@ public class ObjectArrayList <K> extends AbstractObjectList <K> implements Rando
   if ( wrapped ) a = ObjectArrays.grow( a, capacity, size );
   else {
    if ( capacity > a.length ) {
-    final int newLength = (int)Math.min( Math.max( ( ObjectArrays.ONEOVERPHI * a.length ) >>> 16, capacity ), Integer.MAX_VALUE );
+    final int newLength = (int)Math.max( Math.min( 2L * a.length, Arrays.MAX_ARRAY_SIZE ), capacity );
     final Object t[] = new Object[ newLength ];
     System.arraycopy( a, 0, t, 0, size );
     a = (K[])t;
@@ -254,14 +251,11 @@ public class ObjectArrayList <K> extends AbstractObjectList <K> implements Rando
   return a[ index ];
  }
  public int indexOf( final Object k ) {
-  int h = ( (k) == null ? 0 : (k).hashCode() );
-  for( int i = 0; i < size; i++ ) if ( ( (a[ i ]) == null ? (k) == null : (h) == (a[ i ]).hashCode() && (a[ i ]).equals(k) ) ) return i;
+  for( int i = 0; i < size; i++ ) if ( ( (k) == null ? (a[ i ]) == null : (k).equals(a[ i ]) ) ) return i;
   return -1;
  }
  public int lastIndexOf( final Object k ) {
-  int h = ( (k) == null ? 0 : (k).hashCode() );
-  int i = size;
-  while( i-- != 0 ) if ( ( (a[ i ]) == null ? (k) == null : (h) == (a[ i ]).hashCode() && (a[ i ]).equals(k) ) ) return i;
+  for( int i = size; i-- != 0; ) if ( ( (k) == null ? (a[ i ]) == null : (k).equals(a[ i ]) ) ) return i;
   return -1;
  }
  public K remove( final int index ) {

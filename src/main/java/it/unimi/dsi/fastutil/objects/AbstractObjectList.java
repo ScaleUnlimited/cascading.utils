@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,61 +133,43 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
     }
    };
  }
-
-
-
  public boolean contains( final Object k ) {
   return indexOf( k ) >= 0;
  }
-
  public int indexOf( final Object k ) {
-
-  int h = ( (k) == null ? 0 : (k).hashCode() );
-
   final ObjectListIterator <K> i = listIterator();
   K e;
   while( i.hasNext() ) {
    e = i.next();
-   if ( ( (e) == null ? (k) == null : (h) == (e).hashCode() && (e).equals(k) ) ) return i.previousIndex();
+   if ( ( (k) == null ? (e) == null : (k).equals(e) ) ) return i.previousIndex();
   }
   return -1;
  }
-
  public int lastIndexOf( final Object k ) {
-
-  int h = ( (k) == null ? 0 : (k).hashCode() );
-
   ObjectListIterator <K> i = listIterator( size() );
   K e;
   while( i.hasPrevious() ) {
    e = i.previous();
-   if ( ( (e) == null ? (k) == null : (h) == (e).hashCode() && (e).equals(k) ) ) return i.nextIndex();
+   if ( ( (k) == null ? (e) == null : (k).equals(e) ) ) return i.nextIndex();
   }
   return -1;
  }
-
  public void size( final int size ) {
   int i = size();
   if ( size > i ) while( i++ < size ) add( (null) );
   else while( i-- != size ) remove( i );
  }
-
-
  public ObjectList <K> subList( final int from, final int to ) {
   ensureIndex( from );
   ensureIndex( to );
   if ( from > to ) throw new IndexOutOfBoundsException( "Start index (" + from + ") is greater than end index (" + to + ")" );
-
   return new ObjectSubList <K>( this, from, to );
  }
-
  /** Delegates to the new covariantly stronger generic method. */
-
  @Deprecated
  public ObjectList <K> objectSubList( final int from, final int to ) {
   return subList( from, to );
  }
-
  /** Removes elements of this type-specific list one-by-one. 
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -203,7 +179,6 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
 	 * @param from the start index (inclusive).
 	 * @param to the end index (exclusive).
 	 */
-
  public void removeElements( final int from, final int to ) {
   ensureIndex( to );
   ObjectListIterator <K> i = listIterator( from );
@@ -214,7 +189,6 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
    i.remove();
   }
  }
-
  /** Adds elements to this type-specific list one-by-one. 
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -225,18 +199,15 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
 	 * @param offset the offset of the first element to add.
 	 * @param length the number of elements to add.
 	 */
-
  public void addElements( int index, final K a[], int offset, int length ) {
   ensureIndex( index );
   if ( offset < 0 ) throw new ArrayIndexOutOfBoundsException( "Offset (" + offset + ") is negative" );
   if ( offset + length > a.length ) throw new ArrayIndexOutOfBoundsException( "End index (" + ( offset + length ) + ") is greater than array length (" + a.length + ")" );
   while( length-- != 0 ) add( index++, a[ offset++ ] );
  }
-
  public void addElements( final int index, final K a[] ) {
   addElements( index, a, 0, a.length );
  }
-
  /** Copies element of this type-specific list into the given array one-by-one.
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -247,7 +218,6 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
 	 * @param offset the offset into the destination array where to store the first element copied.
 	 * @param length the number of elements to be copied.
 	 */
-
  public void getElements( final int from, final Object a[], int offset, int length ) {
   ObjectListIterator <K> i = listIterator( from );
   if ( offset < 0 ) throw new ArrayIndexOutOfBoundsException( "Offset (" + offset + ") is negative" );
@@ -255,31 +225,19 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
   if ( from + length > size() ) throw new IndexOutOfBoundsException( "End index (" + ( from + length ) + ") is greater than list size (" + size() + ")" );
   while( length-- != 0 ) a[ offset++ ] = i.next();
  }
-
-
  private boolean valEquals( final Object a, final Object b ) {
   return a == null ? b == null : a.equals( b );
  }
-
-
  public boolean equals( final Object o ) {
   if ( o == this ) return true;
   if ( ! ( o instanceof List ) ) return false;
   final List<?> l = (List<?>)o;
   int s = size();
   if ( s != l.size() ) return false;
-
   final ListIterator<?> i1 = listIterator(), i2 = l.listIterator();
-
-
-
-
   while( s-- != 0 ) if ( ! valEquals( i1.next(), i2.next() ) ) return false;
-
   return true;
  }
-
-
     /** Compares this list to another object. If the
      * argument is a {@link java.util.List}, this method performs a lexicographical comparison; otherwise,
      * it throws a <code>ClassCastException</code>.
@@ -290,17 +248,13 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
      * to, or greater than the argument.
      * @throws ClassCastException if the argument is not a list.
      */
-
  @SuppressWarnings("unchecked")
  public int compareTo( final List<? extends K> l ) {
   if ( l == this ) return 0;
-
   if ( l instanceof ObjectList ) {
-
    final ObjectListIterator <K> i1 = listIterator(), i2 = ((ObjectList <K>)l).listIterator();
    int r;
    K e1, e2;
-
    while( i1.hasNext() && i2.hasNext() ) {
     e1 = i1.next();
     e2 = i2.next();
@@ -308,17 +262,13 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
    }
    return i2.hasNext() ? -1 : ( i1.hasNext() ? 1 : 0 );
   }
-
   ListIterator<? extends K> i1 = listIterator(), i2 = l.listIterator();
   int r;
-
   while( i1.hasNext() && i2.hasNext() ) {
    if ( ( r = ((Comparable<? super K>)i1.next()).compareTo( i2.next() ) ) != 0 ) return r;
   }
   return i2.hasNext() ? -1 : ( i1.hasNext() ? 1 : 0 );
  }
-
-
  /** Returns the hash code for this list, which is identical to {@link java.util.List#hashCode()}.
 	 *
 	 * @return the hash code for this list.
@@ -332,22 +282,17 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
   }
   return h;
  }
-
-
  public void push( K o ) {
   add( o );
  }
-
  public K pop() {
   if ( isEmpty() ) throw new NoSuchElementException();
   return remove( size() - 1 );
  }
-
  public K top() {
   if ( isEmpty() ) throw new NoSuchElementException();
   return get( size() - 1 );
  }
-
  public K peek( int i ) {
   return get( size() - 1 - i );
  }
@@ -369,7 +314,7 @@ public abstract class AbstractObjectList <K> extends AbstractObjectCollection <K
   return s.toString();
  }
  public static class ObjectSubList <K> extends AbstractObjectList <K> implements java.io.Serializable {
-     public static final long serialVersionUID = -7046029254386353129L;
+     private static final long serialVersionUID = -7046029254386353129L;
   /** The list this sublist restricts. */
   protected final ObjectList <K> l;
   /** Initial (inclusive) index of this sublist. */

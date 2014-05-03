@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -26,7 +20,7 @@
 /* Object/Reference-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +42,6 @@ import it.unimi.dsi.fastutil.BidirectionalIterator;
  * @see BidirectionalIterator
  */
 public interface ObjectBidirectionalIterator <K> extends ObjectIterator <K>, BidirectionalIterator<K> {
-
  /** Moves back for the given number of elements.
 	 *
 	 * <P>The effect of this call is exactly the same as that of
@@ -59,6 +52,5 @@ public interface ObjectBidirectionalIterator <K> extends ObjectIterator <K>, Bid
 	 * @return the number of elements actually skipped.
 	 * @see java.util.Iterator#next()
 	 */
-
  int back( int n );
 }

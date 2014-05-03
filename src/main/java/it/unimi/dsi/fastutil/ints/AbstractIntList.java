@@ -1,10 +1,4 @@
-
-
 /* Generic definitions */
-
-
-
-
 /* Assertions (useful to generate conditional code) */
 /* Current type and class (and size, if applicable) */
 /* Value methods */
@@ -27,7 +21,7 @@
 /* Primitive-type-only definitions (keys) */
 /* Object/Reference-only definitions (values) */
 /*		 
- * Copyright (C) 2002-2010 Sebastiano Vigna 
+ * Copyright (C) 2002-2014 Sebastiano Vigna 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,17 +133,10 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
     }
    };
  }
-
-
-
  public boolean contains( final int k ) {
   return indexOf( k ) >= 0;
  }
-
  public int indexOf( final int k ) {
-
-
-
   final IntListIterator i = listIterator();
   int e;
   while( i.hasNext() ) {
@@ -158,11 +145,7 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
   }
   return -1;
  }
-
  public int lastIndexOf( final int k ) {
-
-
-
   IntListIterator i = listIterator( size() );
   int e;
   while( i.hasPrevious() ) {
@@ -171,29 +154,22 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
   }
   return -1;
  }
-
  public void size( final int size ) {
   int i = size();
-  if ( size > i ) while( i++ < size ) add( (0) );
+  if ( size > i ) while( i++ < size ) add( ((int)0) );
   else while( i-- != size ) remove( i );
  }
-
-
  public IntList subList( final int from, final int to ) {
   ensureIndex( from );
   ensureIndex( to );
   if ( from > to ) throw new IndexOutOfBoundsException( "Start index (" + from + ") is greater than end index (" + to + ")" );
-
   return new IntSubList ( this, from, to );
  }
-
  /** Delegates to the new covariantly stronger generic method. */
-
  @Deprecated
  public IntList intSubList( final int from, final int to ) {
   return subList( from, to );
  }
-
  /** Removes elements of this type-specific list one-by-one. 
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -203,7 +179,6 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
 	 * @param from the start index (inclusive).
 	 * @param to the end index (exclusive).
 	 */
-
  public void removeElements( final int from, final int to ) {
   ensureIndex( to );
   IntListIterator i = listIterator( from );
@@ -214,7 +189,6 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    i.remove();
   }
  }
-
  /** Adds elements to this type-specific list one-by-one. 
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -225,18 +199,15 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
 	 * @param offset the offset of the first element to add.
 	 * @param length the number of elements to add.
 	 */
-
  public void addElements( int index, final int a[], int offset, int length ) {
   ensureIndex( index );
   if ( offset < 0 ) throw new ArrayIndexOutOfBoundsException( "Offset (" + offset + ") is negative" );
   if ( offset + length > a.length ) throw new ArrayIndexOutOfBoundsException( "End index (" + ( offset + length ) + ") is greater than array length (" + a.length + ")" );
   while( length-- != 0 ) add( index++, a[ offset++ ] );
  }
-
  public void addElements( final int index, final int a[] ) {
   addElements( index, a, 0, a.length );
  }
-
  /** Copies element of this type-specific list into the given array one-by-one.
 	 *
 	 * <P>This is a trivial iterator-based implementation. It is expected that
@@ -247,7 +218,6 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
 	 * @param offset the offset into the destination array where to store the first element copied.
 	 * @param length the number of elements to be copied.
 	 */
-
  public void getElements( final int from, final int a[], int offset, int length ) {
   IntListIterator i = listIterator( from );
   if ( offset < 0 ) throw new ArrayIndexOutOfBoundsException( "Offset (" + offset + ") is negative" );
@@ -255,31 +225,24 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
   if ( from + length > size() ) throw new IndexOutOfBoundsException( "End index (" + ( from + length ) + ") is greater than list size (" + size() + ")" );
   while( length-- != 0 ) a[ offset++ ] = i.nextInt();
  }
-
-
  private boolean valEquals( final Object a, final Object b ) {
   return a == null ? b == null : a.equals( b );
  }
-
-
  public boolean equals( final Object o ) {
   if ( o == this ) return true;
   if ( ! ( o instanceof List ) ) return false;
   final List<?> l = (List<?>)o;
   int s = size();
   if ( s != l.size() ) return false;
-
+  if ( l instanceof IntList ) {
+   final IntListIterator i1 = listIterator(), i2 = ((IntList )l).listIterator();
+   while( s-- != 0 ) if ( i1.nextInt() != i2.nextInt() ) return false;
+   return true;
+  }
   final ListIterator<?> i1 = listIterator(), i2 = l.listIterator();
-
-
-
-
   while( s-- != 0 ) if ( ! valEquals( i1.next(), i2.next() ) ) return false;
-
   return true;
  }
-
-
     /** Compares this list to another object. If the
      * argument is a {@link java.util.List}, this method performs a lexicographical comparison; otherwise,
      * it throws a <code>ClassCastException</code>.
@@ -290,17 +253,13 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
      * to, or greater than the argument.
      * @throws ClassCastException if the argument is not a list.
      */
-
  @SuppressWarnings("unchecked")
  public int compareTo( final List<? extends Integer> l ) {
   if ( l == this ) return 0;
-
   if ( l instanceof IntList ) {
-
    final IntListIterator i1 = listIterator(), i2 = ((IntList )l).listIterator();
    int r;
    int e1, e2;
-
    while( i1.hasNext() && i2.hasNext() ) {
     e1 = i1.nextInt();
     e2 = i2.nextInt();
@@ -308,17 +267,13 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    }
    return i2.hasNext() ? -1 : ( i1.hasNext() ? 1 : 0 );
   }
-
   ListIterator<? extends Integer> i1 = listIterator(), i2 = l.listIterator();
   int r;
-
   while( i1.hasNext() && i2.hasNext() ) {
    if ( ( r = ((Comparable<? super Integer>)i1.next()).compareTo( i2.next() ) ) != 0 ) return r;
   }
   return i2.hasNext() ? -1 : ( i1.hasNext() ? 1 : 0 );
  }
-
-
  /** Returns the hash code for this list, which is identical to {@link java.util.List#hashCode()}.
 	 *
 	 * @return the hash code for this list.
@@ -332,152 +287,114 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
   }
   return h;
  }
-
-
  public void push( int o ) {
   add( o );
  }
-
  public int popInt() {
   if ( isEmpty() ) throw new NoSuchElementException();
   return removeInt( size() - 1 );
  }
-
  public int topInt() {
   if ( isEmpty() ) throw new NoSuchElementException();
   return getInt( size() - 1 );
  }
-
  public int peekInt( int i ) {
   return getInt( size() - 1 - i );
  }
-
-
-
  public boolean rem( int k ) {
   int index = indexOf( k );
   if ( index == -1 ) return false;
   removeInt( index );
   return true;
  }
-
  /** Delegates to <code>rem()</code>. */
  public boolean remove( final Object o ) {
   return rem( ((((Integer)(o)).intValue())) );
  }
-
  /** Delegates to a more generic method. */
  public boolean addAll( final int index, final IntCollection c ) {
   return addAll( index, (Collection<? extends Integer>)c );
  }
-
  /** Delegates to a more generic method. */
  public boolean addAll( final int index, final IntList l ) {
   return addAll( index, (IntCollection)l );
  }
-
  public boolean addAll( final IntCollection c ) {
   return addAll( size(), c );
  }
-
  public boolean addAll( final IntList l ) {
   return addAll( size(), l );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public void add( final int index, final Integer ok ) {
   add( index, ok.intValue() );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer set( final int index, final Integer ok ) {
   return (Integer.valueOf(set( index, ok.intValue() )));
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer get( final int index ) {
   return (Integer.valueOf(getInt( index )));
  }
-
  /** Delegates to the corresponding type-specific method. */
  public int indexOf( final Object ok) {
   return indexOf( ((((Integer)(ok)).intValue())) );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public int lastIndexOf( final Object ok ) {
   return lastIndexOf( ((((Integer)(ok)).intValue())) );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer remove( final int index ) {
   return (Integer.valueOf(removeInt( index )));
  }
-
  /** Delegates to the corresponding type-specific method. */
  public void push( Integer o ) {
   push( o.intValue() );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer pop() {
   return Integer.valueOf( popInt() );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer top() {
   return Integer.valueOf( topInt() );
  }
-
  /** Delegates to the corresponding type-specific method. */
  public Integer peek( int i ) {
   return Integer.valueOf( peekInt( i ) );
  }
-
-
-
-
  public String toString() {
   final StringBuilder s = new StringBuilder();
   final IntIterator i = iterator();
   int n = size();
   int k;
   boolean first = true;
-
   s.append("[");
-
   while( n-- != 0 ) {
    if (first) first = false;
    else s.append(", ");
    k = i.nextInt();
-
-
-
     s.append( String.valueOf( k ) );
   }
-
   s.append("]");
   return s.toString();
  }
-
-
  public static class IntSubList extends AbstractIntList implements java.io.Serializable {
-     public static final long serialVersionUID = -7046029254386353129L;
+     private static final long serialVersionUID = -7046029254386353129L;
   /** The list this sublist restricts. */
   protected final IntList l;
   /** Initial (inclusive) index of this sublist. */
   protected final int from;
   /** Final (exclusive) index of this sublist. */
   protected int to;
-
   private static final boolean ASSERTS = false;
-
   public IntSubList( final IntList l, final int from, final int to ) {
    this.l = l;
    this.from = from;
    this.to = to;
   }
-
   private void assertRange() {
    if ( ASSERTS ) {
     assert from <= l.size();
@@ -485,21 +402,18 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
     assert to >= from;
    }
   }
-
   public boolean add( final int k ) {
    l.add( to, k );
    to++;
    if ( ASSERTS ) assertRange();
    return true;
   }
-
   public void add( final int index, final int k ) {
    ensureIndex( index );
    l.add( from + index, k );
    to++;
    if ( ASSERTS ) assertRange();
   }
-
   public boolean addAll( final int index, final Collection<? extends Integer> c ) {
    ensureIndex( index );
    to += c.size();
@@ -510,38 +424,31 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    }
    return l.addAll( from + index, c );
   }
-
   public int getInt( int index ) {
    ensureRestrictedIndex( index );
    return l.getInt( from + index );
   }
-
   public int removeInt( int index ) {
    ensureRestrictedIndex( index );
    to--;
    return l.removeInt( from + index );
   }
-
   public int set( int index, int k ) {
    ensureRestrictedIndex( index );
    return l.set( from + index, k );
   }
-
   public void clear() {
    removeElements( 0, size() );
    if ( ASSERTS ) assertRange();
   }
-
   public int size() {
    return to - from;
   }
-
   public void getElements( final int from, final int[] a, final int offset, final int length ) {
    ensureIndex( from );
    if ( from + length > size() ) throw new IndexOutOfBoundsException( "End index (" + from + length + ") is greater than list size (" + size() + ")" );
    l.getElements( this.from + from, a, offset, length );
   }
-
   public void removeElements( final int from, final int to ) {
    ensureIndex( from );
    ensureIndex( to );
@@ -549,20 +456,16 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    this.to -= ( to - from );
    if ( ASSERTS ) assertRange();
   }
-
   public void addElements( int index, final int a[], int offset, int length ) {
    ensureIndex( index );
    l.addElements( this.from + index, a, offset, length );
    this.to += length;
    if ( ASSERTS ) assertRange();
   }
-
   public IntListIterator listIterator( final int index ) {
    ensureIndex( index );
-
    return new AbstractIntListIterator () {
      int pos = index, last = -1;
-
      public boolean hasNext() { return pos < size(); }
      public boolean hasPrevious() { return pos > 0; }
      public int nextInt() { if ( ! hasNext() ) throw new NoSuchElementException(); return l.getInt( from + ( last = pos++ ) ); }
@@ -589,17 +492,12 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
      }
     };
   }
-
   public IntList subList( final int from, final int to ) {
    ensureIndex( from );
    ensureIndex( to );
    if ( from > to ) throw new IllegalArgumentException( "Start index (" + from + ") is greater than end index (" + to + ")" );
-
    return new IntSubList ( this, from, to );
   }
-
-
-
   public boolean rem( int k ) {
    int index = indexOf( k );
    if ( index == -1 ) return false;
@@ -608,11 +506,9 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    if ( ASSERTS ) assertRange();
    return true;
   }
-
   public boolean remove( final Object o ) {
    return rem( ((((Integer)(o)).intValue())) );
   }
-
   public boolean addAll( final int index, final IntCollection c ) {
    ensureIndex( index );
    to += c.size();
@@ -623,7 +519,6 @@ public abstract class AbstractIntList extends AbstractIntCollection implements I
    }
    return l.addAll( from + index, c );
   }
-
   public boolean addAll( final int index, final IntList l ) {
    ensureIndex( index );
    to += l.size();
