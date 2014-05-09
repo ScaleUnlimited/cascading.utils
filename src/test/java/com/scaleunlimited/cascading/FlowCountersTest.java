@@ -5,6 +5,7 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.assertFalse;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowProcess;
+import cascading.flow.StepCounters;
 import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.flow.local.LocalFlowConnector;
@@ -119,14 +121,43 @@ public class FlowCountersTest {
     @Test
     @SuppressWarnings("rawtypes")
     public void testCountersWithLocalMode() throws Exception {
+        final int numDatums = 8;
         
+        Map<Enum, Long> counters = FlowCounters.run(makeCountersFlow(numDatums), FlowCountersTestEnum.PRE_BREAK_COUNT, FlowCountersTestEnum.POST_BREAK_COUNT,
+                        FlowCountersTestEnum.LEFT_COUNT, FlowCountersTestEnum.RIGHT_COUNT);
+        
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
+        assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
+        assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+        
+        // Do the same thing, but this time run it with no counters specified. We should get all of the same
+        // counters, plus a few more.
+        counters = FlowCounters.run(makeCountersFlow(numDatums));
+        
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
+        assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
+        assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+        
+        assertEquals(numDatums, (long)counters.get(StepCounters.Tuples_Read));
+        
+        // One more time, but now we pass in a single Enum
+        counters = FlowCounters.run(makeCountersFlow(numDatums), FlowCountersTestEnum.class);
+        
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
+        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
+        assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
+        assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+    }
+    
+    private Flow makeCountersFlow(int numDatums) throws IOException {
         // We want to create a Flow with two tail pipes, and have each of the
         // tail pipes set counters that we'll check.
         final Fields testFields = new Fields("user", "value");
         
-        final int numDatums = 8;
         
-        final String testDir = "build/test/FlowCountersTest/testCountersWithLocalMode/";
+        final String testDir = "build/test/FlowCountersTest/makeCountersFlow/";
         String in = testDir + "in";
 
         DirectoryTap sourceTap = new DirectoryTap(new KryoScheme(testFields), in, SinkMode.REPLACE);
@@ -158,16 +189,6 @@ public class FlowCountersTest {
         sinks.put(rightPipe.getName(), new NullSinkTap());
         
         Flow flow = new LocalFlowConnector().connect(sourceTap, sinks, leftPipe, rightPipe);
-        // flow.writeDOT(testDir + "flow.dot");
-        // This fails with "more than one sink" error message.
-        // flow.writeStepsDOT(testDir + "flowstep.dot");
-        
-        Map<Enum, Long> counters = FlowCounters.run(flow, FlowCountersTestEnum.PRE_BREAK_COUNT, FlowCountersTestEnum.POST_BREAK_COUNT,
-                        FlowCountersTestEnum.LEFT_COUNT, FlowCountersTestEnum.RIGHT_COUNT);
-        
-        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.PRE_BREAK_COUNT));
-        assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
-        assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
-        assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+        return flow;
     }
 }
