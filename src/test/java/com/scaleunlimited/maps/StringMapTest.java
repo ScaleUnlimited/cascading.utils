@@ -110,6 +110,13 @@ public class StringMapTest {
             assertFalse(sm.containsKey(s));
             assertNull(sm.put(s, v));
             assertTrue(sm.containsKey(s));
+            
+            // Every so often we want to put a different value.
+            if ((i % 1000) == 0) {
+                String v2 = "value-" + (numKeys + i);
+                assertEquals(v, sm.put(s,  v2));
+                assertEquals(v2, sm.get(s));
+            }
         }
 
         File dir = new File("build/test/StringMapTest/testBigSerialization/");
@@ -131,10 +138,42 @@ public class StringMapTest {
         
         for (int i = 0; i < numKeys; i++) {
             String s = "test-" + i;
-            String v = "value-" + i;
+            String v = "value-" + (((i % 1000) == 0) ? (numKeys + i) : i);
             assertTrue("Must contain " + s, sm2.containsKey(s));
-            assertEquals(v, sm2.get(s));
+            assertEquals("Must have correct value for key " + i, v, sm2.get(s));
         }
+    }
+    
+    @Test
+    public void testUpdateSerialization() throws Exception {
+        StringMap sm = new StringMap();
+
+        String key = "key";
+        assertFalse(sm.containsKey(key));
+        String curValue = null;
+        for (int i = 0; i < 100000; i++) {
+            String newValue = "value-" + i;
+            assertEquals(curValue, sm.put(key, newValue));
+            curValue = newValue;
+        }
+        
+        File dir = new File("build/test/StringMapTest/testUpdateSerialization/");
+        dir.mkdirs();
+        File file = new File(dir, "string.map");
+        file.delete();
+        
+        OutputStream os = new FileOutputStream(file);
+        DataOutputStream out = new DataOutputStream(os);
+        sm.write(out);
+        out.close();
+
+        StringMap sm2 = new StringMap();
+        InputStream is = new FileInputStream(file);
+        DataInputStream in = new DataInputStream(is);
+        sm2.readFields(in);
+
+        assertEquals(1, sm2.size());
+        assertEquals(curValue, sm2.get(key));
     }
     
     @Test
