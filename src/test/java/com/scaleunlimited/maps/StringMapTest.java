@@ -8,10 +8,16 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+
+import com.scaleunlimited.cascading.BasePath;
+import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
+import com.scaleunlimited.cascading.local.LocalPlatform;
 
 public class StringMapTest {
 
@@ -144,14 +150,87 @@ public class StringMapTest {
         }
     }
     
+
+    /**
+     * Test case to verify fix for issue seen using StringMap in workflow.
+     * 
+     * @throws Throwable
+     */
+    @Test
+    public void testCream() throws Throwable {
+        StringMap sm = new StringMap(true);
+        int numTestKeys = 1000;
+        int numCreamPuts = 8;
+        for (int i = 0; i < numTestKeys; i++) {
+            String s = "test-" + i;
+            assertFalse(sm.containsKey(s));
+            assertNull(sm.put(s, s));
+            assertTrue(sm.containsKey(s));
+            assertEquals(s, sm.put(s, s));
+            if ((i % (numTestKeys / numCreamPuts)) == 0) {
+                sm.put("cream", "0CREAM");
+            }
+        }
+        assertEquals("0CREAM", sm.get("cream"));
+        
+        File dest = new File("build/test/StringMapTest/testCream/string.map");
+        LocalPlatform localPlatform = new LocalPlatform(StringMapTest.class);
+        BasePath smDir = localPlatform.makePath(dest.getParentFile().getAbsolutePath());
+        smDir.mkdirs();
+        BasePath smPath = localPlatform.makePath(smDir, dest.getName());
+        
+        serialize(sm, smPath);
+        StringMap sm2 = deserialize(smPath);
+        
+        assertEquals("test-0", "test-0");
+        assertEquals("0CREAM", sm2.get("cream"));
+        
+        HadoopPlatform hadoopPlatform = new HadoopPlatform(StringMapTest.class);
+        smPath = hadoopPlatform.makePath(dest.getAbsolutePath());
+        
+        serialize(sm, smPath);
+        sm2 = deserialize(smPath);
+        
+        assertEquals("test-0", "test-0");
+        assertEquals("0CREAM", sm2.get("cream"));
+    }
+
+    protected void serialize(StringMap sm, BasePath smPath) throws IOException {
+        OutputStream os = null;
+        DataOutputStream dos = null;
+        try {
+            os = smPath.openOutputStream();
+            dos = new DataOutputStream(os);
+            sm.write(dos);
+        } finally {
+            IOUtils.closeQuietly(os);
+            IOUtils.closeQuietly(dos);
+        }
+    }
+
+    protected StringMap deserialize(BasePath smPath) throws IOException {
+        InputStream is = null;
+        DataInputStream dis = null;
+        StringMap sm2 = new StringMap();
+        try {
+            is = smPath.openInputStream();
+            dis = new DataInputStream(is);
+            sm2.readFields(dis);
+        } finally {
+            IOUtils.closeQuietly(dis);
+            IOUtils.closeQuietly(is);
+        }
+        return sm2;
+    }
+
     @Test
     public void testUpdateSerialization() throws Exception {
-        StringMap sm = new StringMap();
+        StringMap sm = new StringMap(true);
 
         String key = "key";
         assertFalse(sm.containsKey(key));
         String curValue = null;
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             String newValue = "value-" + i;
             assertEquals(curValue, sm.put(key, newValue));
             curValue = newValue;
@@ -174,6 +253,11 @@ public class StringMapTest {
 
         assertEquals(1, sm2.size());
         assertEquals(curValue, sm2.get(key));
+        
+        // Now let's make sure we get back null for every non-key.
+        for (int i = 0; i < 100000; i++) {
+            assertNull(sm2.get("key-"+i));
+        }
     }
     
     @Test
