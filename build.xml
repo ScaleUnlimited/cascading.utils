@@ -197,7 +197,7 @@
 		       printsummary="yes"
 		       haltonfailure="no"
 		       fork="yes"
-		       maxmemory="384m"
+		       maxmemory="512m"
 		       dir="${basedir}"
 		       errorProperty="tests.failed"
 		       failureProperty="tests.failed">
