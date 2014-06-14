@@ -37,6 +37,12 @@ public class LocalPathTest {
     }
     
     @Test
+    public void testNoSuchDirectory() throws Exception {
+        BasePath path = new LocalPath("build/test/LocalPathTest/boguspathtononexistentdirectory");
+        assertEquals(0, path.list().length);
+    }
+    
+    @Test
     public void testInputOutput() throws Exception {
         // Clear it out first.
         final String targetDirname = "build/test/LocalPathTest/testInputOutput";

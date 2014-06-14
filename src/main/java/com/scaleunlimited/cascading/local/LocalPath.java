@@ -84,6 +84,10 @@ public class LocalPath extends BasePath {
     @Override
     public BasePath[] list() throws Exception {
         File[] paths = _pathFile.listFiles();
+        if (paths == null) {
+            return new BasePath[0];
+        }
+        
         LocalPath[] result = new LocalPath[paths.length];
         
         for (int i = 0; i < paths.length; i++) {
