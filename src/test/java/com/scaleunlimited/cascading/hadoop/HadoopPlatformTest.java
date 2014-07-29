@@ -17,9 +17,11 @@ import cascading.tuple.TupleEntryIterator;
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
 import com.scaleunlimited.cascading.AbstractPlatformTest;
+import com.scaleunlimited.cascading.hadoop.test.MiniClusterPlatform;
 
 public class HadoopPlatformTest extends AbstractPlatformTest {
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testTempPath() throws Exception {
         BasePlatform platform = new HadoopPlatform(HadoopPlatformTest.class);
@@ -101,9 +103,37 @@ public class HadoopPlatformTest extends AbstractPlatformTest {
         assertFalse(dst.exists());
         platform.rename(src, dst);
         
-        assertTrue(dst.exists());
         assertFalse(src.exists());
+        assertTrue(dst.exists());
+        assertEquals("dst", dst.getName());
         
+        
+        platform = new MiniClusterPlatform(HadoopPlatformTest.class);
+        platform.rename(dst, src);
+        assertFalse(dst.exists());
+        assertTrue(src.exists());
+        assertEquals("src", src.getName());
+       
+        BasePath subDir = platform.makePath(path, "dst/subDir");
+        platform.rename(src, subDir);
+        assertFalse(src.exists());
+        assertTrue(dst.exists());
+        assertTrue(subDir.exists());
+        assertEquals("subDir", subDir.getName());
+        
+        BasePath aFile = platform.makePath(subDir, "aFile");
+        assertFalse(aFile.exists());
+        aFile.createNewFile();
+        assertTrue(aFile.exists());
+        
+        src.mkdirs();
+        BasePath  bFile = platform.makePath(src, "bFile");
+        assertFalse(bFile.exists());
+        platform.rename(aFile, bFile);
+        assertFalse(aFile.exists());
+        assertTrue(bFile.exists());
+        
+
     }
 
     @Test
