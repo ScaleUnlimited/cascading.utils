@@ -171,8 +171,8 @@ public class FlowMonitor<Config> {
                     stepEntry.setStartTime(stepStat.getStartTime());
                     stepEntry.setStatus(stepStat.getStatus());
                 }
-                
-                if ((oldStatus == Status.RUNNING) || (newStatus == Status.RUNNING)) {
+                if ((oldStatus == Status.RUNNING) || (newStatus == Status.RUNNING)
+                                ||(oldStatus == Status.SUCCESSFUL) || (newStatus == Status.SUCCESSFUL)) {
                     if (stepStat.isFinished()) {
                         stepEntry.setDuration(stepStat.getDuration());
                     } else if (stepStat.isRunning()) {

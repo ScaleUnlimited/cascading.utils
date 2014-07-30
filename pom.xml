@@ -33,8 +33,8 @@
 	</repositories>
 	
     <properties>
-        <cascading.version>2.2.1</cascading.version>
-        <hadoop.version>1.0.4</hadoop.version>
+        <cascading.version>2.5.5</cascading.version>
+        <hadoop.version>1.2.1</hadoop.version>
     </properties>
     
 	<dependencies>

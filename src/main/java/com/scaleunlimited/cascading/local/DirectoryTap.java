@@ -114,7 +114,7 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
 
                 for (File file : files) {
                     // Ignore .xxx files, like .part-00000.crc
-                    if (file.isFile() && (!file.getName().startsWith("."))) {
+                    if (file.isFile() && (!file.getName().startsWith(".")) && (!file.getName().equals("_SUCCESS"))) {
                         result.add(new FileTap(getScheme(), file.getAbsolutePath()));
                     }
                 }
