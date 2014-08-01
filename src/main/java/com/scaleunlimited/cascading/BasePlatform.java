@@ -13,6 +13,7 @@ import cascading.property.AppProps;
 import cascading.scheme.Scheme;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
 
 @SuppressWarnings({ "rawtypes", "serial" })
@@ -115,6 +116,10 @@ public abstract class BasePlatform implements Serializable {
         _logDir = logDir;
     }
     
+    public Tap makePartitionTap(Tap parentTap, Partition partition) throws Exception {
+        return makePartitionTap(parentTap, partition, SinkMode.KEEP);
+    }
+    
     public abstract File getDefaultLogDir();
     
     public abstract BasePath getTempDir() throws Exception;
@@ -145,6 +150,8 @@ public abstract class BasePlatform implements Serializable {
     public abstract Tap makeTap(Scheme scheme, BasePath path, SinkMode mode) throws Exception;
 
     public abstract Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception;
+
+    public abstract Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception;
 
     public abstract Scheme makeBinaryScheme(Fields fields) throws Exception;
 

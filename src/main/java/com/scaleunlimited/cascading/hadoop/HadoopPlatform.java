@@ -35,6 +35,9 @@ import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.hadoop.Hfs;
 import cascading.tap.hadoop.TemplateTap;
+import cascading.tap.local.FileTap;
+import cascading.tap.hadoop.PartitionTap;
+import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
 import cascading.tuple.hadoop.TupleSerializationProps;
 
@@ -218,6 +221,15 @@ public class HadoopPlatform extends BasePlatform {
     @Override
     public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
         return new TemplateTap((Hfs) tap, pattern, fields);
+    }
+    
+    @Override
+    public Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception {
+        if (parentTap instanceof Hfs) {
+            Hfs tap = (Hfs) parentTap;
+            return new PartitionTap(tap, partition, mode);
+        }
+        throw new RuntimeException("parentTap needs to an instance of Hfs - instead got: " + parentTap.getClass().getName());
     }
     
     @Override
