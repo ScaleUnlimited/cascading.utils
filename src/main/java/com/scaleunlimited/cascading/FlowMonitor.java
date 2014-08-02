@@ -157,8 +157,6 @@ public class FlowMonitor<Config> {
         FlowStats stats;
         
         do {
-            Thread.sleep(_updateInterval);
-
             stats = _flow.getFlowStats();
             List<FlowStepStats> stepStats = stats.getFlowStepStats();
          
@@ -223,6 +221,9 @@ public class FlowMonitor<Config> {
             FileWriterWithEncoding fw = new FileWriterWithEncoding(htmlFile, "UTF-8");
             IOUtils.write(topTemplate.toString(), fw);
             fw.close();
+            
+            Thread.sleep(_updateInterval);
+
         } while (!stats.isFinished());
 
         // Create a copy of the file as an archive, once we're done.
