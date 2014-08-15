@@ -4,10 +4,16 @@ import java.io.File;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Before;
 import org.junit.Test;
 
+import cascading.flow.Flow;
+import cascading.flow.FlowDef;
+import cascading.pipe.Pipe;
 import cascading.scheme.Scheme;
+import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.partition.DelimitedPartition;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -20,6 +26,18 @@ import com.scaleunlimited.cascading.BasePlatform;
 
 public class LocalPlatformTest extends AbstractPlatformTest {
 
+    private static final String WORKING_DIR = "build/test/LocalPlatformTest";
+    
+    @Before
+    public void setup() {
+        File workingDir = new File(WORKING_DIR);
+        if (workingDir.exists()) {
+            FileUtils.deleteQuietly(workingDir);
+        }
+        workingDir.mkdirs();
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testTempPath() throws Exception {
         BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
@@ -130,5 +148,52 @@ public class LocalPlatformTest extends AbstractPlatformTest {
     public void testPlatformType() throws Exception {
         BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
         assertEquals(LocalPlatform.PLATFORM_TYPE, platform.getPlatformType());
+    }
+    
+    @SuppressWarnings("rawtypes")
+  //  @Test
+    public void testPartitionTap() throws Exception {
+        
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
+        BasePath workingDir = platform.makePath(WORKING_DIR);
+        BasePath testDir = platform.makePath(workingDir, "testPartitionTap");
+        BasePath input = platform.makePath(testDir, "input");
+        input.mkdirs();
+        
+        // Make two month-year directories
+        createDataDir(platform, input, "07-2014", "input1 test");
+        createDataDir(platform, input, "08-2014", "input2 test");
+         
+        
+        // create a flow to read from the input
+        Pipe inputPipe = new Pipe("input");
+        Tap parentSourceTap = platform.makeTap(platform.makeTextScheme(), input);
+        DelimitedPartition monthYearPartition = new DelimitedPartition( new Fields( "month", "year" ), "-" );
+        Tap monthYearTap = platform.makePartitionTap(parentSourceTap, monthYearPartition);
+        
+        // and write to output - but as year-month
+        BasePath output = platform.makePath(testDir, "output");
+        Tap parentSinkTap = platform.makeTap(platform.makeTextScheme(), output);
+        DelimitedPartition yearMonthPartition = new DelimitedPartition( new Fields( "year", "month" ), "-" );
+        Tap yearMonthTap = platform.makePartitionTap(parentSinkTap, yearMonthPartition, SinkMode.REPLACE);
+        
+        FlowDef flowDef = new FlowDef()
+                       .setName("Local PartitionTap Test")
+                       .addSource(inputPipe, monthYearTap)
+                       .addTailSink(inputPipe, yearMonthTap);
+        Flow flow = platform.makeFlowConnector().connect(flowDef);
+        flow.complete();
+        // TODO  verify that input and output exist
+        
+        
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void createDataDir(BasePlatform platform, BasePath input, String dirName, String data) throws Exception {
+        BasePath input1 = platform.makePath(input, dirName);
+        Tap tap = platform.makeTap(platform.makeTextScheme(), input1);
+        TupleEntryCollector tupleEntryCollector = tap.openForWrite(platform.makeFlowProcess());
+        tupleEntryCollector.add(new Tuple(data));
+        tupleEntryCollector.close();
     }
 }
