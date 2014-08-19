@@ -13,6 +13,7 @@ import cascading.pipe.Pipe;
 import cascading.scheme.Scheme;
 import cascading.tap.SinkMode;
 import cascading.tap.Tap;
+import cascading.tap.local.FileTap;
 import cascading.tap.partition.DelimitedPartition;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
@@ -151,7 +152,7 @@ public class LocalPlatformTest extends AbstractPlatformTest {
     }
     
     @SuppressWarnings("rawtypes")
-  //  @Test
+    @Test
     public void testPartitionTap() throws Exception {
         
         BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
@@ -185,15 +186,63 @@ public class LocalPlatformTest extends AbstractPlatformTest {
         flow.complete();
         // TODO  verify that input and output exist
         
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testPartitionTapWithSlashes() throws Exception {
+        
+        BasePlatform platform = new LocalPlatform(LocalPlatformTest.class);
+        BasePath workingDir = platform.makePath(WORKING_DIR);
+        BasePath testDir = platform.makePath(workingDir, "testPartitionTapWithSlashes");
+        BasePath input = platform.makePath(testDir, "input");
+        input.mkdirs();
+        
+        // Make two month-year directories
+        createDataDir(platform, input, "07/2014", "input1 test");
+        createDataDir(platform, input, "08/2014", "input2 test");
+         
+        
+        // create a flow to read from the input
+        Pipe inputPipe = new Pipe("input");
+        Tap parentSourceTap = platform.makeTap(platform.makeTextScheme(), input);
+        DelimitedPartition monthYearPartition = new DelimitedPartition( new Fields( "month", "year" ), "/" );
+        Tap monthYearTap = platform.makePartitionTap(parentSourceTap, monthYearPartition);
+        
+        // and write to output - but as year-month
+        BasePath output = platform.makePath(testDir, "output");
+        Tap parentSinkTap = platform.makeTap(platform.makeTextScheme(), output);
+        DelimitedPartition yearMonthPartition = new DelimitedPartition( new Fields( "year", "month" ), "/" );
+        Tap yearMonthTap = platform.makePartitionTap(parentSinkTap, yearMonthPartition, SinkMode.REPLACE);
+        
+        FlowDef flowDef = new FlowDef()
+                       .setName("Local PartitionTap Test")
+                       .addSource(inputPipe, monthYearTap)
+                       .addTailSink(inputPipe, yearMonthTap);
+        Flow flow = platform.makeFlowConnector().connect(flowDef);
+        flow.complete();
+        // TODO  verify that input and output exist
+        
         
     }
 
+    /**
+     * We need to create the input data we're using, which requires that we use an explicit FileTap, as that's
+     * what a PartitionTap needs, and thus we have to write out data as files, not <path to directory>/part-00000
+     * 
+     * @param platform
+     * @param input
+     * @param dirName
+     * @param data
+     * @throws Exception
+     */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void createDataDir(BasePlatform platform, BasePath input, String dirName, String data) throws Exception {
-        BasePath input1 = platform.makePath(input, dirName);
-        Tap tap = platform.makeTap(platform.makeTextScheme(), input1);
+        BasePath destPath = platform.makePath(input, dirName);
+        Tap tap = new FileTap(platform.makeTextScheme(), destPath.getAbsolutePath());
         TupleEntryCollector tupleEntryCollector = tap.openForWrite(platform.makeFlowProcess());
         tupleEntryCollector.add(new Tuple(data));
         tupleEntryCollector.close();
     }
+
 }

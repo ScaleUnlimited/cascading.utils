@@ -6,10 +6,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.JobConf;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
@@ -214,6 +218,56 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
         }
 
         return modified;
+    }
+
+    @Override
+    public String[] getChildIdentifiers(Properties conf) throws IOException {
+        return getChildIdentifiers(conf, 1, false);
+    }
+
+    @Override
+    public String[] getChildIdentifiers(Properties conf, int depth, boolean fullyQualified) throws IOException {
+        if (!resourceExists(conf))
+            return new String[0];
+
+        Set<String> results = new LinkedHashSet<String>();
+
+        getChildPaths(results, getIdentifier(), depth);
+
+        String[] allPaths = results.toArray(new String[results.size()]);
+
+        if (!fullyQualified)
+            return allPaths;
+
+        for (int i = 0; i < allPaths.length; i++)
+            allPaths[i] = fullyQualifyIdentifier(allPaths[i]);
+
+        return allPaths;
+    }
+
+    private boolean getChildPaths(Set<String> results, String identifier, int depth) {
+        File file = new File(identifier);
+
+        if (depth == 0 || file.isFile()) {
+            results.add(identifier);
+            return true;
+        }
+
+        String[] paths = file.list();
+
+        if (paths == null)
+            return false;
+
+        boolean result = false;
+
+        for (String path : paths)
+            result |= getChildPaths(results, new File(file, path).getPath(), depth - 1);
+
+        return result;
+    }
+
+    private String fullyQualifyIdentifier( String identifier ) {
+        return new File( identifier ).getAbsoluteFile().toURI().toString();
     }
 
     @Override

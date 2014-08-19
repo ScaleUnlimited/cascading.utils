@@ -118,11 +118,17 @@ public class LocalPlatform extends BasePlatform {
     
     @Override
     public Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception {
-        if (parentTap instanceof FileTap) {
-            FileTap tap = (FileTap) parentTap;
+        if (parentTap instanceof DirectoryTap) {
+            // The local PartitionTap is hard-coded to only work with a FileTap (it expects that the child paths
+            // will be paths to files, not directories).
+            FileTap tap = new FileTap(parentTap.getScheme(), parentTap.getIdentifier(), parentTap.getSinkMode());
             return new PartitionTap(tap, partition, mode);
+        } else if (parentTap instanceof FileTap) {
+            FileTap tap = (FileTap)parentTap;
+            return new PartitionTap(tap, partition, mode);
+        } else {
+            throw new RuntimeException("parentTap needs to an instance of FileTap - instead got: " + parentTap.getClass().getName());
         }
-        throw new RuntimeException("parentTap needs to an instance of Hfs - instead got: " + parentTap.getClass().getName());
     }
     
     @Override
