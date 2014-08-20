@@ -4,41 +4,39 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.MiniMRCluster;
-
-import cascading.util.Util;
+import org.apache.hadoop.mapred.MiniMRClientCluster;
+import org.apache.hadoop.mapred.MiniMRClientClusterFactory;
 
 import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
 
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({ "rawtypes", "serial" })
 public class MiniClusterPlatform extends HadoopPlatform {
 
-    private static final int DEFAULT_NUM_MAP_SLOTS = 2;
-    private static final int DEFAULT_NUM_REDUCE_SLOTS = 2;
     private static final String DEFAULT_LOGDIR_NAME = "minicluster-logs";
-    private static final String DEFAULT_TEMPDIR_NAME = "minicluster-tmp";
+//    private static final String DEFAULT_TEMPDIR_NAME = "minicluster-tmp";
     
-    private MiniMRCluster _mr = null;
+    private MiniMRClientCluster _mr2 = null;
     MiniDFSCluster _dfs = null;
     
     public MiniClusterPlatform(Class applicationJarClass) throws IOException {
-        this(applicationJarClass, DEFAULT_NUM_MAP_SLOTS, DEFAULT_NUM_REDUCE_SLOTS, null);
+        this(applicationJarClass, 1);
     }
 
-    public MiniClusterPlatform(Class applicationJarClass, int numMapSlots, int numReduceSlots, String logDirName) throws IOException {
-        this(applicationJarClass, numMapSlots, numReduceSlots, logDirName, null);
+    public MiniClusterPlatform(Class applicationJarClass, int numContainers) throws IOException {
+        this(applicationJarClass, numContainers, null);
     }
 
-    public MiniClusterPlatform(Class applicationJarClass, int numMapSlots, int numReduceSlots, String logDirName, String tempDirName) throws IOException {
+    public MiniClusterPlatform(Class applicationJarClass, int numContainers, String logDirName) throws IOException {
         super(applicationJarClass);
-        setupMiniClusterPlatform(numMapSlots, numReduceSlots, logDirName, tempDirName);
+        setupMiniClusterPlatform(numContainers, logDirName);
     }
 
     
-    private void setupMiniClusterPlatform(int numMapSlots, int numReduceSlots, String logDirName, String tempDirName) throws IOException {
+    private void setupMiniClusterPlatform(int numContainers, String logDirName) throws IOException {
         
         String sysTmpDir = System.getProperty("java.io.tmpdir");
 
@@ -47,21 +45,27 @@ public class MiniClusterPlatform extends HadoopPlatform {
             logDirName = logDir.getAbsolutePath();
         }
         
-        System.setProperty("hadoop.log.dir", logDirName);
+        
+//        // TODO figure out if we need to set System properties.
+//        System.setProperty("hadoop.log.dir", logDirName);
+//        System.setProperty("yarn.nodemanager.log-dirs", logDirName);
         File logDir = new File(logDirName);
         logDir.mkdirs();
         FileUtils.deleteDirectory(logDir);
-
-        if (tempDirName == null) {
-            File tempDir = new File(sysTmpDir, DEFAULT_TEMPDIR_NAME);
-            tempDirName = tempDir.getAbsolutePath(); 
-        }
+        setLogDir(logDir);
         
-        // Always set the temp dir location, otherwise it winds up being /tmp/hadoop-${user.name}
-        System.setProperty("hadoop.tmp.dir", tempDirName);
-        File tempDir = new File(tempDirName);
-        tempDir.mkdirs();
-        FileUtils.deleteDirectory(tempDir);
+//
+//        if (tempDirName == null) {
+//            File tempDir = new File(sysTmpDir, DEFAULT_TEMPDIR_NAME);
+//            tempDirName = tempDir.getAbsolutePath(); 
+//        }
+//        
+//        // Always set the temp dir location, otherwise it winds up being /tmp/hadoop-${user.name}
+//        System.setProperty("hadoop.tmp.dir", tempDirName);
+//        System.setProperty("yarn.nodemanager.local-dirs", tempDirName);
+//        File tempDir = new File(tempDirName);
+//        tempDir.mkdirs();
+//        FileUtils.deleteDirectory(tempDir);
         
         // MiniMR cluster always uses (CWD-relative) "build/test/mapred/" for its data. Nice.
         // MinDFS cluster uses "build/test/data/", but you can override it via the test.build.data
@@ -75,45 +79,33 @@ public class MiniClusterPlatform extends HadoopPlatform {
         System.setProperty("java.security.krb5.realm", "");
         System.setProperty("java.security.krb5.kdc", "");
 
-        JobConf conf = new JobConf();
-        conf.setInt("mapred.job.reuse.jvm.num.tasks", -1);
-        conf.set("hadoop.tmp.dir", tempDirName);
-        conf.set("hadoop.log.dir", logDirName);
-        
-        int totalSlots = numMapSlots + numReduceSlots;
-        _dfs = new MiniDFSCluster(conf, numMapSlots, true, null);
+        System.clearProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA);
+        Configuration conf = new HdfsConfiguration();
+        conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getAbsolutePath());
+//        conf.set("hadoop.tmp.dir", tempDirName);
+//        conf.set("yarn.nodemanager.local-dirs", tempDirName);
+//        conf.set("hadoop.log.dir", logDirName);
+//        conf.set("yarn.nodemanager.log-dirs", logDirName);
+        _dfs = new MiniDFSCluster.Builder(conf).build();
         _dfs.waitClusterUp();
         
-        FileSystem fileSys = _dfs.getFileSystem();
-        _mr = new MiniMRCluster(totalSlots, fileSys.getUri().toString(), 1, null, null, conf);
-        _mr.setInlineCleanupThreads();
+        _mr2 = MiniMRClientClusterFactory.create(this.getClass(), numContainers, conf);
+        _mr2.start();
         
-        JobConf jobConf = _mr.createJobConf();
-
-        jobConf.set("mapred.child.java.opts", "-Xmx256m");
-        jobConf.setInt("mapred.job.reuse.jvm.num.tasks", -1);
-        jobConf.setInt("jobclient.completion.poll.interval", 50);
-        jobConf.setInt("jobclient.progress.monitor.poll.interval", 50);
-        jobConf.setMapSpeculativeExecution(false);
-        jobConf.setReduceSpeculativeExecution(false);
-
-        jobConf.setNumMapTasks(numMapSlots);
-        jobConf.setNumReduceTasks(numReduceSlots);
-
         // Update _conf to match what we get back from the minicluster
-        _conf = new JobConf(jobConf);
+        Configuration newConf = _mr2.getConfig();
+        _conf = new JobConf(newConf);
     }
 
-    public void shutdown() throws InterruptedException {
-        if (_mr != null) {
-            _mr.shutdown();
+    public void shutdown() throws InterruptedException, IOException {
+        if (_mr2 != null) {
+            _mr2.stop();
         }
 
         if (_dfs != null) {
             _dfs.shutdown();
-            while (_dfs.isClusterUp()) {
-                Thread.sleep(100L);
-            }
+            // Note that we don't wait for the cluster to be down, since
+            // isClusterUp() always returns true.
         }
     }
 

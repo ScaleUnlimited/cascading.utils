@@ -231,10 +231,11 @@ public class FlowRunnerTest extends Assert {
     
     @Test
     public void testStatsHadoopMiniCluster() throws Exception {
-        MiniClusterPlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, 2, 2, 
-                        "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/log/", 
-                        "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/tmp");
+        final int numContainers = 2;
+        MiniClusterPlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, numContainers, 
+                        "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/log/");
         platform.setJobPollingInterval(10);
+        platform.setNumReduceTasks(numContainers);
         
         FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
@@ -254,11 +255,15 @@ public class FlowRunnerTest extends Assert {
     }
     
     private BufferedReader openStatsFile(String logDirName, String testName) throws FileNotFoundException {
-        File statsDir = new File(logDirName);
-        File statsFile = new File(statsDir, testName + "-stats.tsv");
+        File statsFile = getStatsFile(logDirName, testName);
         assertTrue(statsFile.exists());
         
         return new BufferedReader(new FileReader(statsFile));
+    }
+    
+    private File getStatsFile(String logDirName, String testName) {
+        File statsDir = new File(logDirName);
+        return new File(statsDir, testName + "-stats.tsv");
     }
     
     private BufferedReader openDetailsFile(String logDirName, String testName) throws FileNotFoundException {
@@ -289,7 +294,7 @@ public class FlowRunnerTest extends Assert {
             }
         }
         
-        fail("Couldn't find target line in stats file");
+        fail("Couldn't find target line in stats file: " + getStatsFile(logDirName, testName));
     }
     
     private void checkDetailsFile(String logDirName, String testName, String stepName, int numMaps, int numReduces) throws IOException {

@@ -108,9 +108,10 @@ public class UniqueCountTest extends Assert {
     @Test
     public void testHadoopCluster() throws Exception {
         final Fields groupFields = new Fields("user");
+        final int numContainers = 2;
         
-        MiniClusterPlatform platform = new MiniClusterPlatform(UniqueCountTest.class, 
-                       2, 2, OUTPUT_DIR+"/testHadoopCluster/log/", OUTPUT_DIR+"/testHadoopCluster/tmp");
+        MiniClusterPlatform platform = new MiniClusterPlatform( UniqueCountTest.class, 
+                                                                numContainers);
         Flow flow = makeFlow("testHadoopCluster", 10, groupFields, new Fields("id"),  false, platform);
         flow.complete();
         // validate
