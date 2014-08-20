@@ -16,6 +16,8 @@ import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
 @SuppressWarnings({ "rawtypes", "serial" })
 public class MiniClusterPlatform extends HadoopPlatform {
 
+    private static final String MR_IDENTIFIER = "com.scaleunlimited.cascading.MiniClusterPlatform";
+    
     private static final String DEFAULT_LOGDIR_NAME = "minicluster-logs";
 //    private static final String DEFAULT_TEMPDIR_NAME = "minicluster-tmp";
     
@@ -45,35 +47,13 @@ public class MiniClusterPlatform extends HadoopPlatform {
             logDirName = logDir.getAbsolutePath();
         }
         
-        
-//        // TODO figure out if we need to set System properties.
-//        System.setProperty("hadoop.log.dir", logDirName);
-//        System.setProperty("yarn.nodemanager.log-dirs", logDirName);
         File logDir = new File(logDirName);
         logDir.mkdirs();
         FileUtils.deleteDirectory(logDir);
         setLogDir(logDir);
         
-//
-//        if (tempDirName == null) {
-//            File tempDir = new File(sysTmpDir, DEFAULT_TEMPDIR_NAME);
-//            tempDirName = tempDir.getAbsolutePath(); 
-//        }
-//        
-//        // Always set the temp dir location, otherwise it winds up being /tmp/hadoop-${user.name}
-//        System.setProperty("hadoop.tmp.dir", tempDirName);
-//        System.setProperty("yarn.nodemanager.local-dirs", tempDirName);
-//        File tempDir = new File(tempDirName);
-//        tempDir.mkdirs();
-//        FileUtils.deleteDirectory(tempDir);
-        
-        // MiniMR cluster always uses (CWD-relative) "build/test/mapred/" for its data. Nice.
-        // MinDFS cluster uses "build/test/data/", but you can override it via the test.build.data
-        // system property, but that doesn't help us much here.
         File dfsDir = new File("build/test/data");
         FileUtils.deleteDirectory(dfsDir);
-        File mrDir = new File("build/test/mapred");
-        FileUtils.deleteDirectory(mrDir);
 
         // Get rid of warnings that we get from bogus security settings.
         System.setProperty("java.security.krb5.realm", "");
@@ -81,15 +61,29 @@ public class MiniClusterPlatform extends HadoopPlatform {
 
         System.clearProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA);
         Configuration conf = new HdfsConfiguration();
+        // TODO seems like we'd want to set up other config values, e.g. some candidates are:
+        //
+        //  yarn.nodemanager.local-dirs - ignored?
+        //  yarn.nodemanager.log-dirs - ignored?
+        //  dfs.data.dir - ignored, use MiniDFSCluster.HDFS_MINIDFS_BASEDIR
+        //  mapreduce.map.memory.mb - ???
+        //  mapreduce.reduce.memory.mb - ???
+        //  mapreduce.map.java.opts - ???
+        //  mapreduce.reduce.java.opts - ???
+        //  yarn.nodemanager.resource.memory-mb - ???
+        //  yarn.scheduler.minimum-allocation-mb - ???
+        //  yarn.scheduler.maximum-allocation-mb - ???
+        //  yarn.app.mapreduce.am.resource.mb - ???
+        //  yarn.app.mapreduce.am.command-opts - ???
+        //  yarn.nodemanager.resource.cpu-vcores - ???
+        //  mapreduce.map.cpu.vcores - ??? (defaults to 1)
+        //  mapreduce.reduce.cpu.vcores - ??? (defaults to 1)
+        
         conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getAbsolutePath());
-//        conf.set("hadoop.tmp.dir", tempDirName);
-//        conf.set("yarn.nodemanager.local-dirs", tempDirName);
-//        conf.set("hadoop.log.dir", logDirName);
-//        conf.set("yarn.nodemanager.log-dirs", logDirName);
         _dfs = new MiniDFSCluster.Builder(conf).build();
         _dfs.waitClusterUp();
         
-        _mr2 = MiniMRClientClusterFactory.create(this.getClass(), numContainers, conf);
+        _mr2 = MiniMRClientClusterFactory.create(this.getClass(), MR_IDENTIFIER, numContainers, conf);
         _mr2.start();
         
         // Update _conf to match what we get back from the minicluster
@@ -106,6 +100,21 @@ public class MiniClusterPlatform extends HadoopPlatform {
             _dfs.shutdown();
             // Note that we don't wait for the cluster to be down, since
             // isClusterUp() always returns true.
+        }
+        
+        // Sadly, the Hadoop 2.2 MiniDFSCluster always put stuff into a "target"
+        // directory that's relative to the CWD. So we'll need to get rid of "target/MR_IDENTIFIER"
+        // and also target/test-dir (hard-coded as well)
+        File targetDir = new File("target");
+        File idDir = new File(targetDir, MR_IDENTIFIER);
+        FileUtils.deleteDirectory(idDir);
+        
+        File testDir = new File(targetDir, "test-dir");
+        FileUtils.deleteDirectory(testDir);
+        
+        // And now, if "target" is empty, we should get rid of it to, since we created it.
+        if (FileUtils.listFiles(targetDir, null, false).isEmpty()) {
+            FileUtils.deleteDirectory(targetDir);
         }
     }
 

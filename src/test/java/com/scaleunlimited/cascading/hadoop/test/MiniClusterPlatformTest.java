@@ -47,7 +47,7 @@ public class MiniClusterPlatformTest {
     }
     
     @Test
-    public void testFullConstructor1() throws Exception {
+    public void testFullConstructor() throws Exception {
         _platform = new MiniClusterPlatform(MiniClusterPlatformTest.class, 2);
 
         Flow flow = makeFlow("testFullConstructor1");
