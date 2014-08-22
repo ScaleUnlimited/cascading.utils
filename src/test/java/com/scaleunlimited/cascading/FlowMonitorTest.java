@@ -25,12 +25,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.FlowMonitor;
-import com.scaleunlimited.cascading.IMonitorTask;
-import com.scaleunlimited.cascading.StepUtils;
-
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowStep;
 import cascading.flow.hadoop.HadoopFlowConnector;
@@ -59,7 +54,7 @@ public class FlowMonitorTest {
         FILTER_REQUESTS,
     }
     
-    @SuppressWarnings({ "serial", "unchecked" })
+    @SuppressWarnings({ "serial", "rawtypes" })
     private static class MyFilter extends BaseOperation implements Filter {
 
         private int _delay;
@@ -94,6 +89,7 @@ public class FlowMonitorTest {
         }
     }
     
+    @SuppressWarnings("rawtypes")
     private static class MyTask implements IMonitorTask {
 
         @Override
@@ -108,6 +104,7 @@ public class FlowMonitorTest {
         
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void testHtmlGeneration() throws Throwable {
         final Fields groupField = new Fields("user");
@@ -164,6 +161,7 @@ public class FlowMonitorTest {
         Assert.assertFalse(content.contains("<td>-"));
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     public void testArchivingFiles() throws Throwable {
         final Fields testFields = new Fields("user", "value");
