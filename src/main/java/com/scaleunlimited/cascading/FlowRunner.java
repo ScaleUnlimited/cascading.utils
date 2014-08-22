@@ -36,6 +36,7 @@ public class FlowRunner {
     static final Logger LOGGER = LoggerFactory.getLogger(FlowRunner.class);
 
     private static final long FLOW_CHECK_INTERVAL = 1 * 1000L;
+    private static final long TERMINATE_CHECK_INTERVAL = 100L;
 
     // Default number of flows to run in parallel
     private static final int DEFAULT_MAX_FLOWS = 100;
@@ -172,7 +173,19 @@ public class FlowRunner {
                 Map<String, Long> reduceMilliseconds = new HashMap<String, Long>();
                 
                 try {
-                    while (true) {
+                    boolean terminating = false;
+                    
+                    while (!terminating) {
+                        // We sleep at the top, so that when we get interrupted (typically when a flow is done)
+                        // we collect the final stats for the flow.
+                        try {
+                            Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
+                        } catch (InterruptedException e) {
+                            // We were interrupted, so terminate.
+                            LOGGER.info("Terminating Flow stats thread");
+                            terminating = true;
+                        }
+
                         Map<String, TaskStats> taskCounts = new HashMap<String, TaskStats>();
 
                         String timestamp = timeFormatter.format(nextCheckTime);
@@ -211,14 +224,6 @@ public class FlowRunner {
                                                 flowAndStepName,
                                                 timestamp));
                             }
-                        }
-
-                        try {
-                            Thread.sleep(Math.max(0, nextCheckTime - System.currentTimeMillis()));
-                        } catch (InterruptedException e) {
-                            // We were interrupted, so terminate.
-                            LOGGER.info("Terminating Flow stats thread");
-                            break;
                         }
                     }
                     
@@ -520,17 +525,7 @@ public class FlowRunner {
     }
     
     public void terminate() {
-        if (_statsThread != null) {
-            synchronized(_statsThread) {
-                // Somebody might have cleared the thread
-                if ((_statsThread != null) && _statsThread.isAlive()) {
-                    _statsThread.interrupt();
-                    _statsThread = null;
-                }
-            }
-        }
-        
-        // Now terminate all of the running flows.
+        // First terminate all of the running flows.
         synchronized (_flowFutures) {
             Iterator<FlowFuture> iter = _flowFutures.iterator();
             while (iter.hasNext()) {
@@ -541,6 +536,38 @@ public class FlowRunner {
                     ff.cancel(true);
                 }
             }
+        }
+        
+        // And now interrupt the stats thread, as we should now have collected
+        // all of the data.
+        Thread statsThread = null;
+        if (_statsThread != null) {
+            synchronized(_statsThread) {
+                // Somebody might have cleared the thread
+                if ((_statsThread != null) && _statsThread.isAlive()) {
+                    _statsThread.interrupt();
+                    // Save thread off, since we have to leave the synchronized
+                    // block before the actual running code can clear the thread
+                    // state.
+                    statsThread = _statsThread;
+                    _statsThread = null;
+                }
+            }
+        }
+        
+        // Now we need to wait until the stats thread has really stopped,
+        // so that stats results are available after a call to terminate().
+        // This is mostly so that unit tests can reliably run.
+        if (statsThread != null) {
+            // Wait until the stats thread has really stopped
+            while (statsThread.isAlive()) {
+                try {
+                    Thread.sleep(TERMINATE_CHECK_INTERVAL);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Stats thread termination interrupted!");
+                }
+            }
+
         }
     }
     
