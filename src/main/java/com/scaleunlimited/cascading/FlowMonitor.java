@@ -21,7 +21,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
@@ -126,7 +128,7 @@ public class FlowMonitor<Config> {
         _tasks.add(task);
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public boolean run(Enum... counters) throws Throwable {
         if (_htmlDir == null) {
             _htmlDir = getDefaultLogDir(_flow.getConfig());
@@ -155,11 +157,15 @@ public class FlowMonitor<Config> {
         _flow.start();
         
         FlowStats stats;
-        
+        Set<String> loggingStatus = new HashSet<String>();
+        loggingStatus.add(Status.RUNNING.name());
+        loggingStatus.add(Status.SUCCESSFUL.name());
+        loggingStatus.add(Status.STOPPED.name());
+        loggingStatus.add(Status.FAILED.name());
+
         do {
             stats = _flow.getFlowStats();
             List<FlowStepStats> stepStats = stats.getFlowStepStats();
-         
             for (FlowStepStats stepStat : stepStats) {
                 String stepId = stepStat.getID();
                 StepEntry stepEntry = findStepById(stepId);
@@ -169,8 +175,7 @@ public class FlowMonitor<Config> {
                     stepEntry.setStartTime(stepStat.getStartTime());
                     stepEntry.setStatus(stepStat.getStatus());
                 }
-                if ((oldStatus == Status.RUNNING) || (newStatus == Status.RUNNING)
-                                ||(oldStatus == Status.SUCCESSFUL) || (newStatus == Status.SUCCESSFUL)) {
+                if (loggingStatus.contains(newStatus.name())) {
                     if (stepStat.isFinished()) {
                         stepEntry.setDuration(stepStat.getDuration());
                     } else if (stepStat.isRunning()) {
@@ -261,7 +266,7 @@ public class FlowMonitor<Config> {
         throw new RuntimeException("Can't find StepEntry with id " + stepId);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     private TimeEntry makeTimeEntry(StepEntry stepEntry, FlowStepStats stepStats, Enum... counters) {
         FlowStep flowStep = stepEntry.getStep();
         TimeEntry result = new TimeEntry(stepEntry.getDuration());
@@ -287,7 +292,7 @@ public class FlowMonitor<Config> {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     private String getTableHeader(FlowStep flowStep, Enum...counters) {        
         StringBuilder header = new StringBuilder();
         for (Enum counter : counters) {
@@ -421,6 +426,7 @@ public class FlowMonitor<Config> {
         }
     }
     
+    @SuppressWarnings("rawtypes")
     private static class StepEntry {
         Status _status;
         FlowStep _step;
