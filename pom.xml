@@ -30,6 +30,8 @@
 			<name>Cascading repository</name>
 			<url>http://conjars.org/repo/</url>
 		</repository>
+		<!-- Blacklist the java.net repo, which has 301 redirects that cause problems. All of the 
+		     artifacts being loaded from here already exist in Maven central -->
         <repository>
             <id>glassfish-repository</id>
             <url>http://download.java.net/maven/2/</url>
