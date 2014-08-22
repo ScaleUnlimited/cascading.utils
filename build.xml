@@ -212,6 +212,7 @@
 			<formatter type="plain" />
 		    <jvmarg value="-Djava.security.krb5.realm="/>
 		    <jvmarg value="-Djava.security.krb5.kdc="/>
+		    <jvmarg value="-Djava.security.krb5.conf=/dev/null"/>
 			<batchtest fork="yes"
 			           todir="${build.dir.test-reports}"
 			           unless="testcase">
