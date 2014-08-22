@@ -30,7 +30,17 @@
 			<name>Cascading repository</name>
 			<url>http://conjars.org/repo/</url>
 		</repository>
-	</repositories>
+        <repository>
+            <id>glassfish-repository</id>
+            <url>http://download.java.net/maven/2/</url>
+            <releases>
+              <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 	
     <properties>
         <cascading.version>2.5.5</cascading.version>
