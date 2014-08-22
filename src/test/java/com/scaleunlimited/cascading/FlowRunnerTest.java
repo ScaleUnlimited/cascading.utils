@@ -315,14 +315,18 @@ public class FlowRunnerTest extends Assert {
         String targetText = String.format("%s|%s", testName, stepName);
         BufferedReader br = openSummaryFile(logDirName, testName);
         
+        StringBuilder errorReport = new StringBuilder();
+        
         String curLine;
         while ((curLine = br.readLine()) != null) {
             if (curLine.contains(targetText)) {
                 return;
             }
+            errorReport.append(curLine);
+            errorReport.append("\\n");
         }
         
-        fail(String.format("Couldn't find target line \"%s\" in summary file", targetText));
+        fail(String.format("Couldn't find target line \"%s\" in summary file, got %s", targetText, errorReport.toString()));
     }
     
     @SuppressWarnings("rawtypes")
