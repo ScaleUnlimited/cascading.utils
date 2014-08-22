@@ -181,8 +181,8 @@ public class FlowRunnerTest extends Assert {
         BasePlatform platform = new LocalPlatform(FlowRunnerTest.class);
         platform.setLogDir(new File(logDirName));
         FlowRunner fr = new FlowRunner("testStatsLocal", 1, new File(logDirName), 10);
-        FlowFuture result0 = fr.addFlow(makeFlow("testStatsLocal", 10, 0, false, platform));
-        result0.get();
+        FlowFuture ff = fr.addFlow(makeFlow("testStatsLocal", 10, 0, false, platform));
+        ff.get();
         fr.terminate();
         
         // We should some number of entries in the stats file
@@ -315,18 +315,15 @@ public class FlowRunnerTest extends Assert {
         String targetText = String.format("%s|%s", testName, stepName);
         BufferedReader br = openSummaryFile(logDirName, testName);
         
-        StringBuilder errorReport = new StringBuilder();
-        
         String curLine;
         while ((curLine = br.readLine()) != null) {
             if (curLine.contains(targetText)) {
                 return;
             }
-            errorReport.append(curLine);
-            errorReport.append("\\n");
         }
         
-        fail(String.format("Couldn't find target line \"%s\" in summary file, got %s", targetText, errorReport.toString()));
+        String filename = logDirName + "/" + testName + "-summary.tsv";
+        fail(String.format("Couldn't find target line \"%s\" in summary file %s", targetText, filename));
     }
     
     @SuppressWarnings("rawtypes")
