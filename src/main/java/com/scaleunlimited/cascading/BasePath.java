@@ -27,6 +27,7 @@ public abstract class BasePath {
     public abstract boolean isLocal();
     public abstract boolean exists();
     public abstract boolean mkdirs();
+    public abstract boolean rename(BasePath path) throws IOException;
     public abstract boolean createNewFile() throws IOException;
     public abstract boolean delete(boolean isRecursive);
     

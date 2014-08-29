@@ -106,7 +106,12 @@ public class HadoopPath extends BasePath {
             return false;
         }
     }
-    
+
+    @Override public boolean rename(BasePath path) throws IOException {
+        if(!(path instanceof HadoopPath)) throw new IllegalArgumentException("HadoopPath can only be renamed to another HadoopPath.");
+        return _hadoopFS.rename(_hadoopPath, ((HadoopPath) path)._hadoopPath);
+    }
+
     @Override
     public boolean delete(boolean isRecursive) {
         try {

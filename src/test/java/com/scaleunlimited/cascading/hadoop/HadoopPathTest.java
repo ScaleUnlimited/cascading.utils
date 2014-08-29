@@ -1,10 +1,6 @@
 package com.scaleunlimited.cascading.hadoop;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.scaleunlimited.cascading.BasePath;
-import com.scaleunlimited.cascading.local.LocalPath;
 
 public class HadoopPathTest extends Assert {
 
@@ -42,6 +37,13 @@ public class HadoopPathTest extends Assert {
         final String subdirName = "subdir";
         BasePath subPath = new HadoopPath(path, subdirName);
         assertEquals(targetDirname + "/subdir", subPath.getPath());
+
+        BasePath dest = new HadoopPath("build/test/HadoopPathTest/test2");
+        dest.delete(true);
+        assertFalse(dest.exists());
+        assertTrue(path.rename(dest));
+        assertTrue(dest.exists());
+        assertFalse(path.exists());
     }
 
     @Test

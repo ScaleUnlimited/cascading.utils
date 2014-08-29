@@ -10,7 +10,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import com.scaleunlimited.cascading.BasePath;
-import com.scaleunlimited.cascading.hadoop.HadoopPath;
 
 public class LocalPathTest {
 
@@ -34,6 +33,13 @@ public class LocalPathTest {
         assertFalse(path.isFile());
         assertTrue(targetDirFile.exists());
         assertTrue(targetDirFile.isDirectory());
+
+        BasePath dest = new LocalPath("build/test/LocalPathTest/test2");
+        dest.delete(true);
+        assertFalse(dest.exists());
+        assertTrue(path.rename(dest));
+        assertTrue(dest.exists());
+        assertFalse(path.exists());
     }
     
     @Test
