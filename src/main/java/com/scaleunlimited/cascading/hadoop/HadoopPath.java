@@ -1,6 +1,8 @@
 package com.scaleunlimited.cascading.hadoop;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -213,6 +215,26 @@ public class HadoopPath extends BasePath {
         return result;
     }
     
+    @Override
+    public boolean isLocal() {
+        return _hadoopFS.getUri().getScheme().equals("file://");
+    }
+
+    @Override
+    public boolean createNewFile() throws IOException {
+        return _hadoopFS.createNewFile(_hadoopPath);
+    }
+    
+    @Override
+    public InputStream openInputStream() throws IOException {
+        return _hadoopFS.open(_hadoopPath);
+    }
+
+    @Override
+    public OutputStream openOutputStream() throws IOException {
+        return _hadoopFS.create(_hadoopPath, true);
+    }
+
     @Override
     public String toString() {
         return getAbsolutePath();

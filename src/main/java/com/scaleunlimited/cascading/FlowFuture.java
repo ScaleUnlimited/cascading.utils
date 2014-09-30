@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import cascading.flow.Flow;
 import cascading.flow.FlowListener;
 
+@SuppressWarnings("rawtypes")
 public class FlowFuture implements Future<FlowResult> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowFuture.class);
 
@@ -159,7 +160,7 @@ public class FlowFuture implements Future<FlowResult> {
 //            }
 //        }
 //
-        LOGGER.info("Flow " + _flow.getName() + "has completed");
+        LOGGER.info("Flow " + _flow.getName() + " has completed");
         return new FlowResult(FlowCounters.getCounters(_flow));
     }
     

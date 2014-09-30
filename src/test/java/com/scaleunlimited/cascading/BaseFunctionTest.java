@@ -1,11 +1,6 @@
 package com.scaleunlimited.cascading;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
-
-import com.scaleunlimited.cascading.BaseDatum;
-import com.scaleunlimited.cascading.BaseFunction;
 
 import cascading.tuple.Fields;
 
@@ -36,7 +31,6 @@ public class BaseFunctionTest {
     @Test
     public void test() throws Exception {
         MyFunction f = new MyFunction(MyDatum.class, MyDatum.class);
-
     }
 
 }

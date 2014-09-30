@@ -90,7 +90,7 @@ public class MiniClusterPlatform extends HadoopPlatform {
         
         JobConf jobConf = _mr.createJobConf();
 
-        jobConf.set("mapred.child.java.opts", "-Xmx128m");
+        jobConf.set("mapred.child.java.opts", "-Xmx256m");
         jobConf.setInt("mapred.job.reuse.jvm.num.tasks", -1);
         jobConf.setInt("jobclient.completion.poll.interval", 50);
         jobConf.setInt("jobclient.progress.monitor.poll.interval", 50);

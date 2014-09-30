@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 TransPac Software, Inc.
+ * Copyright 2011-2014 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.scaleunlimited.cascading;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -33,10 +35,60 @@ import cascading.stats.FlowStepStats;
 public class FlowCounters {
     static final Logger LOGGER = LoggerFactory.getLogger(FlowCounters.class);
 
+    private enum InvalidEnum {
+        
+    }
+    
+    /**
+     * Run the flow, and return back a Map that has entries for every requested
+     * counter group where that counter has been set during the Flow execution.
+     * Note that a Flow with multiple steps (Hadoop jobs) will sum the counter
+     * values for all jobs, but warn when that happens.
+     * 
+     * Note we have to have the funky counterGroup and extraGroups to avoid
+     * a collision with the existing run(flow) method, if only a Flow is passed.
+     * 
+     * @param flow Flow to be run & counted
+     * @param counterGroup Counter group to return.
+     * @param extraGroups Additional counter groups to return.
+     * @return Map of counter enum => counts.
+     */
+    public static Map<Enum, Long> run(Flow flow, Class<? extends Enum> counterGroup, Class<? extends Enum>... extraGroups) {
+        
+        Map<Enum, Long> result = new HashMap<Enum, Long>();
+        
+        flow.complete();
+
+        List<Class<? extends Enum>> enums = new ArrayList<Class<? extends Enum>>(Arrays.asList(extraGroups));
+        enums.add(counterGroup);
+        
+        FlowStats stats = flow.getFlowStats();
+        List<FlowStepStats> stepStats = stats.getFlowStepStats();
+        for (FlowStepStats stepStat : stepStats) {
+            for (Class<? extends Enum> group : enums) {
+                for (Enum counter : group.getEnumConstants()) {
+                    long counterValue = stepStat.getCounterValue(counter);
+                    if (counterValue != 0) {
+                        if (result.containsKey(counter)) {
+                            counterValue += result.get(counter);
+                        }
+
+                        result.put(counter, counterValue);
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+
     /**
      * Run the flow, and return back a Map that has entries for every requested
      * counter. Note that a Flow with multiple steps (Hadoop jobs) will sum the
      * counter values for all jobs, but warn when that happens.
+     * 
+     * If no counters are passed, we'll return all available counters.
      * 
      * @param flow Flow to be run & counted
      * @param counters Which counters to return in the map.
@@ -52,14 +104,39 @@ public class FlowCounters {
         List<FlowStepStats> stepStats = stats.getFlowStepStats();
 
         for (FlowStepStats stepStat : stepStats) {
-            for (Enum counter : counters) {
-                long counterValue = stepStat.getCounterValue(counter);
-                if (counterValue != 0) {
-                    if (result.containsKey(counter)) {
-                        counterValue += result.get(counter);
+            if (counters.length == 0) {
+                // We want all counters.
+                for (String groupName : stepStat.getCounterGroups()) {
+                    Class<? extends Enum> groupClass;
+                    try {
+                        groupClass = (Class<? extends Enum>)FlowCounters.class.forName(groupName);
+                    } catch (ClassNotFoundException e) {
+                        // Something went wrong, just map it to a bogus class.
+                        groupClass = InvalidEnum.class;
                     }
+                    
+                    for (String counterName : stepStat.getCountersFor(groupClass)) {
+                        Enum counterEnum = Enum.valueOf(groupClass, counterName);
+                        long counterValue = stepStat.getCounterValue(counterEnum);
+                        if (counterValue != 0) {
+                            if (result.containsKey(counterEnum)) {
+                                counterValue += result.get(counterEnum);
+                            }
 
-                    result.put(counter, counterValue);
+                            result.put(counterEnum, counterValue);
+                        }
+                    }
+                }
+            } else {
+                for (Enum counter : counters) {
+                    long counterValue = stepStat.getCounterValue(counter);
+                    if (counterValue != 0) {
+                        if (result.containsKey(counter)) {
+                            counterValue += result.get(counter);
+                        }
+
+                        result.put(counter, counterValue);
+                    }
                 }
             }
         }
