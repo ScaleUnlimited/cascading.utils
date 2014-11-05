@@ -36,7 +36,7 @@
 	<!-- ================================================================== -->
 
     <target name="mvn-init" unless="compile.classpath" xmlns:artifact="urn:maven-artifact-ant">
-    	<path id="maven.ant.tasks.classpath" path="${lib.dir}/maven-ant-tasks-2.0.10.jar" />
+    	<path id="maven.ant.tasks.classpath" path="${lib.dir}/maven-ant-tasks-2.1.3.jar" />
     	
         <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant"
             classpathref="maven.ant.tasks.classpath"/>
