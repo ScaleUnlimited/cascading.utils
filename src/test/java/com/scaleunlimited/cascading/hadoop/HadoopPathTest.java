@@ -44,6 +44,9 @@ public class HadoopPathTest extends Assert {
         assertTrue(path.rename(dest));
         assertTrue(dest.exists());
         assertFalse(path.exists());
+        
+        // A rename to itself always succeeds, it's just that nothing has changed.
+        assertTrue(dest.rename(dest));
     }
 
     @Test

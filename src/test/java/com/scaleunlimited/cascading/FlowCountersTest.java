@@ -149,6 +149,13 @@ public class FlowCountersTest {
         assertEquals(numDatums, (long)counters.get(FlowCountersTestEnum.POST_BREAK_COUNT));
         assertEquals(1, (long)counters.get(FlowCountersTestEnum.LEFT_COUNT));
         assertEquals(2, (long)counters.get(FlowCountersTestEnum.RIGHT_COUNT));
+        
+        // But wait, now get back all counters as strings.
+        Map<String, Long> countersAsStrings = FlowCounters.runAndReturnAllCounters(makeCountersFlow(numDatums));
+        assertEquals(numDatums, (long)countersAsStrings.get(FlowCounters.getCounterKey(FlowCountersTestEnum.PRE_BREAK_COUNT)));
+        assertEquals(numDatums, (long)countersAsStrings.get(FlowCounters.getCounterKey(FlowCountersTestEnum.POST_BREAK_COUNT)));
+        assertEquals(1, (long)countersAsStrings.get(FlowCounters.getCounterKey(FlowCountersTestEnum.LEFT_COUNT)));
+        assertEquals(2, (long)countersAsStrings.get(FlowCounters.getCounterKey(FlowCountersTestEnum.RIGHT_COUNT)));
     }
     
     private Flow makeCountersFlow(int numDatums) throws IOException {

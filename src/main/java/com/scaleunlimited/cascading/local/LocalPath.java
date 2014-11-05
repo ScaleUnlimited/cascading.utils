@@ -60,8 +60,12 @@ public class LocalPath extends BasePath {
         return _pathFile.mkdirs();
     }
 
-    @Override public boolean rename(BasePath path) {
-        if(!(path instanceof LocalPath)) throw new IllegalArgumentException("LocalPath can only be renamed to another LocalPath.");
+    @Override
+    public boolean rename(BasePath path) {
+        if (!(path instanceof LocalPath)) {
+            throw new IllegalArgumentException("LocalPath can only be renamed to another LocalPath.");
+        }
+        
         return _pathFile.renameTo(((LocalPath)path)._pathFile);
     }
 

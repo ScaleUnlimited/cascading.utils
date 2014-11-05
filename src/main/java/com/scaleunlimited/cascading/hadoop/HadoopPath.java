@@ -107,8 +107,12 @@ public class HadoopPath extends BasePath {
         }
     }
 
-    @Override public boolean rename(BasePath path) throws IOException {
-        if(!(path instanceof HadoopPath)) throw new IllegalArgumentException("HadoopPath can only be renamed to another HadoopPath.");
+    @Override
+    public boolean rename(BasePath path) throws IOException {
+        if (!(path instanceof HadoopPath)) {
+            throw new IllegalArgumentException("HadoopPath can only be renamed to another HadoopPath.");
+        }
+        
         return _hadoopFS.rename(_hadoopPath, ((HadoopPath) path)._hadoopPath);
     }
 
@@ -186,12 +190,11 @@ public class HadoopPath extends BasePath {
                     LOGGER.error(message);
                     return false;
                 }
-                
             } else {
                 String message = 
-                    String.format(  "Initial FileSystem.delete of %s failed!",
+                    String.format(  "Initial FileSystem.delete of %s returned false",
                                     _hadoopPath);
-                LOGGER.error(message);
+                LOGGER.debug(message);
                 return false;
             }
             
