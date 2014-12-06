@@ -193,7 +193,6 @@ public class StringSet implements Set<String>, Writable {
     @Override
     public Iterator<String> iterator() {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
         // We'd need to create an iterator that iterates over all of the values, and
         // also returns everything from the collision set.
     }
@@ -201,13 +200,11 @@ public class StringSet implements Set<String>, Writable {
     @Override
     public Object[] toArray() {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override
@@ -272,25 +269,21 @@ public class StringSet implements Set<String>, Writable {
     @Override
     public boolean containsAll(Collection<?> c) {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override
     public boolean addAll(Collection<? extends String> c) {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
         throw new UnsupportedOperationException("Not yet implemented");
-        // TODO Auto-generated method stub
     }
 
     @Override

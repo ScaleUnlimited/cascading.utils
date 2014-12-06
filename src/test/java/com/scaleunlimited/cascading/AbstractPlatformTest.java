@@ -16,6 +16,8 @@ public abstract class AbstractPlatformTest extends Assert {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(baos);
         out.writeObject(platform);
+        out.close();
+        
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         ObjectInputStream in = new ObjectInputStream(bais);
         BasePlatform newPlatform = (BasePlatform) in.readObject();

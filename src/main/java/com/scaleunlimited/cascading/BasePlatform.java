@@ -2,7 +2,6 @@ package com.scaleunlimited.cascading;
 
 import java.io.File;
 import java.io.Serializable;
-import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -38,7 +37,7 @@ public abstract class BasePlatform implements Serializable {
         // For serialization
     }
     
-    public BasePlatform(Class applicationJarClass) {
+    protected BasePlatform(Class applicationJarClass) {
         _props = new Properties();
         
         // We assume that this is getting called from some main() method, so Cascading
@@ -46,29 +45,134 @@ public abstract class BasePlatform implements Serializable {
         AppProps.setApplicationJarClass(_props, applicationJarClass);
     }
     
-    public void setProperty(String name, String value) {
-        _props.put(name, value);
-    }
+    /**
+     * Get a local copy of <code>sharedDirName</code>, which was shared by
+     * {@link #shareLocalDir(String)}
+     * @param flowProcess for the currently running Operation
+     * @param sharedDirName where {@link #shareLocalDir(String)}
+     * shared it
+     * @return canonical name of path to local copy of directory
+     */
+    public abstract String copySharedDirToLocal(FlowProcess flowProcess, String sharedDirName);
+
+    public abstract File getDefaultLogDir();
     
-    public void setProperty(String name, int value) {
-        _props.put(name, value);
-    }
+    public abstract File getLogDir();
     
-    public String getProperty(String name) {
-        return (String)_props.get(name);
-    }
+    public abstract int getNumReduceTasks() throws Exception;
+
+    public abstract String getProperty(String name);
     
-    public int getIntProperty(String name) {
-        return (Integer)_props.get(name);
-    }
+    public abstract int getIntProperty(String name);
     
-    public void setJobPollingInterval(long interval) {
+    public abstract boolean getBooleanProperty(String name);
+    
+    public abstract BasePath getTempDir() throws Exception;
+    
+    public abstract boolean isTextSchemeCompressable();
+
+    public abstract FlowConnector makeFlowConnector() throws Exception;
+
+    public abstract FlowProcess makeFlowProcess() throws Exception;
+    
+    public abstract BasePath makePath(String path) throws Exception;
+
+    public abstract BasePath makePath(BasePath parent, String subdir) throws Exception;
+
+    public abstract Tap makeTap(Scheme scheme, BasePath path) throws Exception;
+    
+    public abstract Tap makeTap(Scheme scheme, BasePath path, SinkMode mode) throws Exception;
+
+    public abstract Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception;
+
+    public abstract Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception;
+
+    public abstract Scheme makeBinaryScheme(Fields fields) throws Exception;
+
+    public abstract Tap makePartitionTap(Tap parentTap, Partition partition) throws Exception;
+
+    public abstract Scheme makeTextScheme(boolean isEnableCompression) throws Exception;
+    
+    public abstract Scheme makeTextScheme() throws Exception;
+    
+    public abstract boolean rename(BasePath src, BasePath dst) throws Exception;
+    
+    /**
+     * Reset the number of reduce tasks to the default for the platform
+     * 
+     * @throws Exception
+     */
+    public abstract void resetNumReduceTasks() throws Exception;
+    
+    public abstract void setFlowPriority(FlowPriority priority) throws Exception;
+
+    public abstract void setJobPollingInterval(long interval);
+    
+    public abstract void setNumReduceTasks(int numReduceTasks) throws Exception;
+
+    public abstract void setLogDir(File logDir);
+
+    /**
+     * Set the logging level for the specified packages to be <level>. If a package
+     * name is empty ("") then it's setting the global logging level, not the level
+     * for a specific package.
+     * 
+     * @param level
+     * @param packageNames
+     */
+    public abstract void setLogLevel(Level level, String... packageNames);
+
+    public abstract void setProperty(String name, String value);
+    
+    public abstract void setProperty(String name, int value);
+    
+    public abstract void setProperty(String name, boolean value);
+    
+    /**
+     * Ensure that {@link #copySharedDirToLocal(FlowProcess, String)}
+     * will have access to the data in <code>localDirName</code> by copying it
+     * to a shared location (e.g., HDFS) if necessary.
+     * @param localDirName of path to local copy of directory
+     * @return shared directory name to pass to
+     * {@link #copySharedDirToLocal(FlowProcess, String)}
+     */
+    public abstract String shareLocalDir(String localDirName);
+    
+    /***************************************************************************
+     * These are the helper methods that can be used by concrete implementations
+     * to interact with the member variables maintained by the BasePlatform
+     ***************************************************************************
+     */
+
+    protected void setJobPollingIntervalHelper(long interval) {
         FlowProps.setJobPollingInterval(_props, interval);
     }
     
-    public void setLogLevel(Level level, String... packageNames) {
-        // TODO check for existing level set for package name, and just update
-        // TODO VMa - we still have a log4j dependency here...
+    protected void setPropertyHelper(String name, String value) {
+        _props.put(name, value);
+    }
+    
+    protected void setPropertyHelper(String name, int value) {
+        _props.put(name, value);
+    }
+    
+    protected void setPropertyHelper(String name, boolean value) {
+        _props.put(name, value);
+    }
+    
+    protected String getPropertyHelper(String name) {
+        return (String)_props.get(name);
+    }
+    
+    protected int getIntPropertyHelper(String name) {
+        return (Integer)_props.get(name);
+    }
+    
+    protected boolean getBooleanPropertyHelper(String name) {
+        return (Boolean)_props.get(name);
+    }
+    
+    protected void setLogLevelHelper(Level level, String... packageNames) {
         String curLogSettings = (String)_props.get("log4j.logger");
         if  ((curLogSettings == null) || (curLogSettings.trim().isEmpty())) {
             curLogSettings = "";
@@ -77,6 +181,12 @@ public abstract class BasePlatform implements Serializable {
         StringBuilder newLogSettings = new StringBuilder(curLogSettings);
         
         for (String packageName : packageNames) {
+            // Handling of global log level is platform-specific.
+            if (packageName.isEmpty()) {
+                continue;
+            }
+            
+            // TODO check for existing level set for package name, and just update
             if (newLogSettings.length() > 0) {
                 newLogSettings.append(',');
             }
@@ -89,17 +199,7 @@ public abstract class BasePlatform implements Serializable {
         _props.put("log4j.logger", newLogSettings.toString());
     }
     
-    public void assertPathExists(BasePath path, String description) {
-        if (!path.exists()) {
-            throw new InvalidParameterException(String.format("%s doesn't exist: %s", description, path));
-        }
-    }
-    
-    public Tap makeTap(Scheme scheme, BasePath path) throws Exception {
-        return makeTap(scheme, path, SinkMode.KEEP);
-    }
-
-    public File getLogDir() {
+    protected File getLogDirHelper() {
         File result = _logDir;
         if (result == null) {
             result = getDefaultLogDir();
@@ -112,75 +212,10 @@ public abstract class BasePlatform implements Serializable {
         return result;
     }
     
-    public void setLogDir(File logDir) {
+    protected void setLogDirHealer(File logDir) {
         _logDir = logDir;
     }
     
-    public Tap makePartitionTap(Tap parentTap, Partition partition) throws Exception {
-        return makePartitionTap(parentTap, partition, SinkMode.KEEP);
-    }
-    
-    public abstract File getDefaultLogDir();
-    
-    public abstract BasePath getTempDir() throws Exception;
-    
-    public abstract boolean isTextSchemeCompressable();
-
-    public abstract void setNumReduceTasks(int numReduceTasks) throws Exception;
-
-    public abstract int getNumReduceTasks() throws Exception;
-
-    /**
-     * Reset the number of reduce tasks to the default for the platform
-     * 
-     * @throws Exception
-     */
-    public abstract void resetNumReduceTasks() throws Exception;
-    
-    public abstract void setFlowPriority(FlowPriority priority) throws Exception;
-
-    public abstract FlowConnector makeFlowConnector() throws Exception;
-
-    public abstract FlowProcess makeFlowProcess() throws Exception;
-    
-    public abstract BasePath makePath(String path) throws Exception;
-
-    public abstract BasePath makePath(BasePath parent, String subdir) throws Exception;
-
-    public abstract Tap makeTap(Scheme scheme, BasePath path, SinkMode mode) throws Exception;
-
-    public abstract Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception;
-
-    public abstract Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception;
-
-    public abstract Scheme makeBinaryScheme(Fields fields) throws Exception;
-
-    public abstract Scheme makeTextScheme(boolean isEnableCompression) throws Exception;
-    
-    public abstract Scheme makeTextScheme() throws Exception;
-    
-    public abstract boolean rename(BasePath src, BasePath dst) throws Exception;
-    
-    /**
-     * Ensure that {@link #copySharedDirToLocal(FlowProcess, String)}
-     * will have access to the data in <code>localDirName</code> by copying it
-     * to a shared location (e.g., HDFS) if necessary.
-     * @param localDirName of path to local copy of directory
-     * @return shared directory name to pass to
-     * {@link #copySharedDirToLocal(FlowProcess, String)}
-     */
-    public abstract String shareLocalDir(String localDirName);
-    
-    /**
-     * Get a local copy of <code>sharedDirName</code>, which was shared by
-     * {@link #shareLocalDir(String)}
-     * @param flowProcess for the currently running Operation
-     * @param sharedDirName where {@link #shareLocalDir(String)}
-     * shared it
-     * @return canonical name of path to local copy of directory
-     */
-    public abstract String copySharedDirToLocal(FlowProcess flowProcess, String sharedDirName);
-
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */

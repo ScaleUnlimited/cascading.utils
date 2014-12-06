@@ -62,6 +62,7 @@ public class HadoopUtils {
      * @throws InterruptedException
      */
     public static int getNumReducers(JobConf conf) throws IOException, InterruptedException {
+        // TODO the call to getMaxReduceTasks always returns 1 in MR2.
         ClusterStatus status = safeGetClusterStatus(conf);
         return status.getMaxReduceTasks();
     }
@@ -114,9 +115,15 @@ public class HadoopUtils {
         return properties;
     }
     
-    @SuppressWarnings("deprecation")
     public static boolean isJobLocal(JobConf conf) {
-        return conf.get( "mapred.job.tracker" ).equalsIgnoreCase( "local" );
+        // First see if we have the new MR2 setting
+        String hostname = conf.get("yarn.resourcemanager.hostname");
+       if (hostname != null) {
+           return hostname.equals("0.0.0.0");
+       } else {
+           // MR1 approach
+           return conf.get("mapred.job.tracker").equalsIgnoreCase("local");
+       }
     }
     
     @SuppressWarnings("rawtypes")
@@ -156,6 +163,8 @@ public class HadoopUtils {
         
         while (true) {
             ClusterStatus status = jobClient.getClusterStatus();
+            // TODO there isn't a "job tracker" in MR2, just a resource manager, and a transient
+            // application manager for running a Hadoop job.
             if (status.getJobTrackerState() == State.RUNNING) {
                 int curTaskTrackers = status.getTaskTrackers();
                 if (curTaskTrackers == numTaskTrackers) {

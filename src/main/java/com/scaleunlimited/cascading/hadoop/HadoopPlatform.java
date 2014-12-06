@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
@@ -38,10 +41,10 @@ import cascading.tap.hadoop.PartitionTap;
 import cascading.tap.hadoop.TemplateTap;
 import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
-import cascading.tuple.hadoop.TupleSerializationProps;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.Level;
 
 @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class HadoopPlatform extends BasePlatform {
@@ -83,6 +86,26 @@ public class HadoopPlatform extends BasePlatform {
         return HadoopUtils.isJobLocal(getJobConf());
     }
     
+    @Override
+    public File getLogDir() {
+        return super.getLogDirHelper();
+    }
+
+    @Override
+    public Tap makeTap(Scheme scheme, BasePath path) throws Exception {
+        return makeTap(scheme, path, SinkMode.KEEP);
+    }
+
+    @Override
+    public void setJobPollingInterval(long interval) {
+        super.setJobPollingIntervalHelper(interval);
+    }
+
+    @Override
+    public void setLogDir(File logDir) {
+        super.setLogDirHealer(logDir);
+    }
+
     @Override
     public File getDefaultLogDir() {
         String hadoopLogDir = System.getProperty("HADOOP_LOG_DIR");
@@ -138,6 +161,31 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
+    public String getProperty(String name) {
+        String result = super.getPropertyHelper(name);
+        if (result == null) {
+            result = _conf.get(name);
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public boolean getBooleanProperty(String name) {
+        return super.getBooleanPropertyHelper(name);
+    }
+    
+    @Override
+    public int getIntProperty(String name) {
+        return super.getIntPropertyHelper(name);
+    }
+    
+    @Override
+    public Tap makePartitionTap(Tap parentTap, Partition partition) throws Exception {
+        return makePartitionTap(parentTap, partition, SinkMode.KEEP);
+    }
+    
+    @Override
     public void resetNumReduceTasks() throws Exception {
         setNumReduceTasks(CLUSTER_REDUCER_COUNT);
     }
@@ -163,38 +211,58 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
-    public FlowConnector makeFlowConnector() {
-        // Combine _props with JobConf. We want the user to call BasePlatform.setProperty to set
-        // all Cascading-specific properties, so we shouldn't get any key overlap between the
-        // Hadoop JobConf and the Cascading Properties.
-        Map<Object, Object> hadoopProps = HadoopUtil.createProperties(_conf);
-        Map<Object, Object> cascadingProps = new HashMap<Object, Object>(_props);
-        
-        for (Map.Entry<Object, Object> entry : hadoopProps.entrySet()) {
-            Object key = entry.getKey();
-            Object propertyValue = entry.getValue();
-            Object cascadingValue = cascadingProps.get(key);
-            if (cascadingValue == null) {
-                cascadingProps.put(key, propertyValue);
-            } else {
-                if (TupleSerializationProps.HADOOP_IO_SERIALIZATIONS.equals(key)) {
-                    String message = 
-                        String.format(  "Hadoop I/O serializations '%s' overridden to Cascading '%s'",
-                                        propertyValue,
-                                        cascadingValue);
-                    LOGGER.info(message);
-                } else {
-                    String message = 
-                        String.format(  "Cascading '%s' property '%s' was ignored",
-                                        key,
-                                        cascadingValue);
-                    LOGGER.info(message);
-                    cascadingProps.put(key, propertyValue);
-                }
+    public void setLogLevel(Level level, String... packageNames) {
+        for (String packageName : packageNames) {
+            if (packageName.isEmpty()) {
+                // TODO set the logging level for the current (main) code that's calling
+                // us to - but we can't do that (???) using slf4j, so this would only work
+                // if we assume log4j is being used.
+                
+                // Set the logging level for map & reduce jobs, using both old and new conf names.
+                _conf.set("mapred.map.child.log.level", level.toString());
+                _conf.set("mapreduce.map.log.level", level.toString());
+                _conf.set("mapred.reduce.child.log.level", level.toString());
+                _conf.set("mapreduce.reduce.log.level", level.toString());
             }
         }
         
-        return new HadoopFlowConnector(cascadingProps);
+        super.setLogLevelHelper(level, packageNames);
+    }
+    
+    @Override
+    public void setProperty(String name, String value) {
+        super.setPropertyHelper(name, value);
+    }
+    
+    @Override
+    public void setProperty(String name, int value) {
+        super.setPropertyHelper(name, value);
+    }
+    
+    @Override
+    public void setProperty(String name, boolean value) {
+        super.setPropertyHelper(name, value);
+    }
+    
+    @Override
+    public FlowConnector makeFlowConnector() {
+        // Combine _props with JobConf.
+        Map<Object, Object> hadoopProps = HadoopUtil.createProperties(_conf);
+        Map<Object, Object> mergedProps = new HashMap<Object, Object>(_props);
+        
+        for (Map.Entry<Object, Object> hadoopEntry : hadoopProps.entrySet()) {
+            Object key = hadoopEntry.getKey();
+            Object hadoopValue = hadoopEntry.getValue();
+            Object explicitValue = mergedProps.get(key);
+            
+            // If we have a Hadoop property value, and there isn't something already
+            // set for that explicitly in our properties, then use it.
+            if ((hadoopValue != null) && (explicitValue == null)) {
+                mergedProps.put(key, hadoopValue);
+            }
+        }
+        
+        return new HadoopFlowConnector(mergedProps);
     }
 
     @Override
@@ -334,8 +402,9 @@ public class HadoopPlatform extends BasePlatform {
      */
     private void writeObject(ObjectOutputStream out) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        DataOutput writeableOut = new DataOutputStream(byteStream);
+        DataOutputStream writeableOut = new DataOutputStream(byteStream);
         _conf.write(writeableOut);
+        writeableOut.close();
         
         // Now write out the byte array
         byte[] confBytes = byteStream.toByteArray();
@@ -349,7 +418,7 @@ public class HadoopPlatform extends BasePlatform {
         in.readFully(confBytes);
         DataInput writeableIn = new DataInputStream(new ByteArrayInputStream(confBytes));
 
-        _conf = new JobConf();
+        _conf = new JobConf(false);
         _conf.readFields(writeableIn);
     }
 
@@ -370,8 +439,28 @@ public class HadoopPlatform extends BasePlatform {
             if (other._conf != null)
                 return false;
         } else {
-            // TODO - implement real equals for JobConf
-            return true;
+            // Make sure every value we've got exists and is equal to the other
+            // value. We can't do a two-way comparison, because when JobConf
+            // deserializes, it adds additional properties (aliases) for what we
+            // set.
+            Iterator<Entry<String, String>> iter = other._conf.iterator();
+            Map<String, String> otherValues = new HashMap<String, String>();
+            
+            while (iter.hasNext()) {
+                Entry<String, String> entry = iter.next();
+                otherValues.put(entry.getKey(), entry.getValue());
+            }
+            
+            
+            iter = _conf.iterator();
+            while (iter.hasNext()) {
+                Entry<String, String> entry = iter.next();
+                if (!otherValues.containsKey(entry.getKey())) {
+                    return false;
+                } else if (!entry.getValue().equals(otherValues.get(entry.getKey()))) {
+                    return false;
+                }
+            }
         }
         
         return true;

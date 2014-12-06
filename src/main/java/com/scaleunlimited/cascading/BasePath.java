@@ -3,6 +3,7 @@ package com.scaleunlimited.cascading;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.InvalidParameterException;
 
 /**
  * An abstract "path" to a file or a directory, with concrete classes
@@ -21,6 +22,12 @@ public abstract class BasePath {
         return _path;
     }
     
+    public void assertExists(String description) {
+        if (!exists()) {
+            throw new InvalidParameterException(String.format("%s doesn't exist: %s", description, this));
+        }
+    }
+
     public abstract String getAbsolutePath();
     public abstract boolean isFile();
     public abstract boolean isDirectory();
