@@ -305,8 +305,8 @@ public class HadoopPlatform extends BasePlatform {
     }
 
     @Override
-    public Scheme makeTextScheme(boolean isEnableCompression) {
-        if (isEnableCompression) {
+    public Scheme makeTextScheme(boolean enableCompression) {
+        if (enableCompression) {
             return new TextLine(Compress.ENABLE);
         } else {
             return new TextLine(Compress.DISABLE);
