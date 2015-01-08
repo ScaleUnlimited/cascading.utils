@@ -39,7 +39,11 @@ public class HadoopPath extends BasePath {
         Path relativePath = new Path(path);
         _hadoopFS = relativePath.getFileSystem(_conf);
         if (!relativePath.isAbsolute()) {
-            Path parent = _hadoopFS.getWorkingDirectory();
+            // We always resolve paths relative to the home directory, as
+            // using the "working directory" seems fragile - this seems to
+            // change is some situations, even though we don't provide a
+            // way for the caller to set it in the _hadoopFS that we use.
+            Path parent = _hadoopFS.getHomeDirectory();
             _hadoopPath = new Path(parent, relativePath);
         } else {
             _hadoopPath = relativePath;
