@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.mapred.JobConf;
+
+import cascading.flow.hadoop.HadoopFlowStep;
 import cascading.flow.planner.BaseFlowStep;
 import cascading.flow.planner.NamingFlowStep;
 import cascading.operation.Operation;
@@ -70,8 +73,25 @@ public class StepUtils {
             stepName = groups.get(groups.size() - 1).getName();
         }
         
+        // We want the full step name to be <our better step name> (step #/total steps) <optional tap identifier>
+        // The extra stuff should already exist for the step, so just append it.
+        String curStepName = step.getName();
+        if (curStepName != null) {
+            stepName = String.format("%s %s", stepName, curStepName);
+        }
+        
         // setName exists, but it's protected. So we use our special class that's in the
         // same package, to work around this.
         NamingFlowStep.setName(step, stepName);
+        
+        // But wait, the JobConf (for Hadoop jobs) already has the job name set in its
+        // config, so we need to update that as well. Here we want to set the job name
+        // to be <flow name>/<step name>
+        if (step instanceof HadoopFlowStep) {
+            HadoopFlowStep hfs = (HadoopFlowStep)step;
+            JobConf conf = hfs.getConfig();
+            String jobName = String.format("%s/%s", step.getFlowName(), stepName);
+            conf.setJobName(jobName);
+        }
     }
 }
