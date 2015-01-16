@@ -244,13 +244,13 @@ public class FlowRunnerTest extends Assert {
         fr.terminate();
 
         // We should some number of entries in the stats file
-        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster", 0, 2);
+        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
         
         // And check for something similar in the details file
-        checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster", 0, 2);
+        checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
     
         // And also in the summary file
-        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster");
+        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0");
         
         platform.shutdown();
     }
