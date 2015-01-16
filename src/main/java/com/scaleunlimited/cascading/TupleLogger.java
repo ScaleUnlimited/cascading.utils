@@ -68,7 +68,7 @@ public class TupleLogger extends Debug {
     private long _printMaxTuples = Long.MAX_VALUE;
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
     private String _tupleMatchFieldName = null;
-    private Object _tupleMatchFieldValue = null;
+    private Object[] _tupleMatchFieldValues = null;
     
     private long _numMatchingTuples = 0L;
     private long _numPrintedTuples = 0L;
@@ -257,9 +257,9 @@ public class TupleLogger extends Debug {
      * @param fieldName of field whose value must match
      * @param targetValue of field in matching Tuples
      */
-    public void setPrintOnlyMatchingTuples(String fieldName, Object targetValue) {
+    public void setPrintOnlyMatchingTuples(String fieldName, Object... targetValues) {
         _tupleMatchFieldName = fieldName;
-        _tupleMatchFieldValue = targetValue;
+        _tupleMatchFieldValues = targetValues;
     }
     
     @SuppressWarnings("rawtypes")
@@ -301,10 +301,18 @@ public class TupleLogger extends Debug {
             boolean isCountTuple = true;
             if (_tupleMatchFieldName != null) {
                 Object fieldValue = entry.getObject(_tupleMatchFieldName);
-                if (_tupleMatchFieldValue == null) {
-                    isCountTuple = (fieldValue == null);
-                } else {
-                    isCountTuple = _tupleMatchFieldValue.equals(fieldValue);
+                for (Object tupleMatchFieldValue : _tupleMatchFieldValues) {
+                    if (tupleMatchFieldValue == null) {
+                        isCountTuple = (fieldValue == null);
+                    } else {
+                        isCountTuple = tupleMatchFieldValue.equals(fieldValue);
+                    }
+                    
+                    // Once we've found a match, we want to print - it's an OR of
+                    // any of the values that were provided.
+                    if (isCountTuple) {
+                        break;
+                    }
                 }
             }
             
