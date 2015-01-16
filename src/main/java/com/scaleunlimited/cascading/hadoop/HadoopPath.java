@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
+import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +40,19 @@ public class HadoopPath extends BasePath {
         Path relativePath = new Path(path);
         _hadoopFS = relativePath.getFileSystem(_conf);
         if (!relativePath.isAbsolute()) {
-            // We always resolve paths relative to the home directory, as
-            // using the "working directory" seems fragile - this seems to
-            // change is some situations, even though we don't provide a
-            // way for the caller to set it in the _hadoopFS that we use.
-            Path parent = _hadoopFS.getHomeDirectory();
+            Path parent;
+            if (HadoopUtils.isConfigLocal(_conf)) {
+                // When running locally, there is a concept of a working directory
+                // that we need to keep using.
+                parent = _hadoopFS.getWorkingDirectory();
+            } else {
+                // We always resolve paths relative to the home directory, as
+                // using the "working directory" seems fragile - this seems to
+                // change is some situations, even though we don't provide a
+                // way for the caller to set it in the _hadoopFS that we use.
+                parent = _hadoopFS.getHomeDirectory();
+            }
+            
             _hadoopPath = new Path(parent, relativePath);
         } else {
             _hadoopPath = relativePath;
