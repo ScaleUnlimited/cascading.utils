@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.ClusterStatus;
@@ -116,6 +117,10 @@ public class HadoopUtils {
     }
     
     public static boolean isJobLocal(JobConf conf) {
+        return isConfigLocal(conf);
+    }
+    
+    public static boolean isConfigLocal(Configuration conf) {
         // First see if we have the new MR2 setting
         String hostname = conf.get("yarn.resourcemanager.hostname");
        if (hostname != null) {
