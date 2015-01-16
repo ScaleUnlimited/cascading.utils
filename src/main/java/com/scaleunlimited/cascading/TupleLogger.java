@@ -16,12 +16,14 @@
 
 package com.scaleunlimited.cascading;
 
+import java.io.PrintStream;
+
 import org.apache.hadoop.io.BytesWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
-import cascading.operation.BaseOperation;
+import cascading.operation.Debug;
 import cascading.operation.Filter;
 import cascading.operation.FilterCall;
 import cascading.operation.OperationCall;
@@ -31,18 +33,25 @@ import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 
 /**
- * A version of Cascading's Debug() operator with two key changes:
+ * A version of Cascading's Debug() operator with several additional features:
  * 
- * 1. Use slf4j to log (and only if log level is <= debug)
- * 2. Limit output length (and remove \r\n) for cleaner output.
+ * 1. You can use slf4j to log (and only if log level is <= debug).
+ * 2. You can limit output length (and remove \r\n) for cleaner output.
+ * 3. You can limit the maximum number of logged Tuples.
+ * 4. You can log only Tuples that have a target value in one field.
  * 
  * It also has a static makePipe method, that does nothing if the log
  * level is set to > DEBUG. That way it's easy to leave code in and not
  * pay the price during production runs.
+ * 
+ * The four constructors that take no output parameter also use slf4j to log
+ * and depend on (level > DEBUG).  The four that do take an output parameter
+ * leverage Cascading's planner support and send their output directly to
+ * System.err or System.out, just like Debug does.
  *
  */
 @SuppressWarnings("serial")
-public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
+public class TupleLogger extends Debug {
     private static final Logger LOGGER = LoggerFactory.getLogger(TupleLogger.class);
     
     public static final int DEFAULT_MAX_ELEMENT_LENGTH = 100;
@@ -52,10 +61,17 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     
     private String _prefix = null;
     private boolean _printFields = false;
+    private Output _debugOutput = null;
 
     private int _printFieldsEvery = 10;
     private int _printTupleEvery = 1;
+    private long _printMaxTuples = Long.MAX_VALUE;
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
+    private String _tupleMatchFieldName = null;
+    private Object _tupleMatchFieldValue = null;
+    
+    private long _numMatchingTuples = 0L;
+    private long _numPrintedTuples = 0L;
     
     public static Pipe makePipe(Pipe inPipe) {
         return makePipe(inPipe, inPipe.getName(), true, DEFAULT_MAX_ELEMENT_LENGTH);
@@ -115,74 +131,227 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
     }
     
     public TupleLogger() {
+        super();
     }
 
     public TupleLogger(String prefix) {
+        super(prefix);
         _prefix = prefix;
-    }
-
-    public TupleLogger(String prefix, boolean printFields) {
-        _prefix = prefix;
-        _printFields = printFields;
     }
 
     public TupleLogger(boolean printFields) {
+        super(printFields);
         _printFields = printFields;
     }
 
+    public TupleLogger(String prefix, boolean printFields) {
+        super(prefix, printFields);
+        _prefix = prefix;
+        _printFields = printFields;
+    }
+
+    public TupleLogger(Output output) {
+        super(output);
+        _debugOutput = output;
+    }
+
+    public TupleLogger(Output output, String prefix) {
+        super(output, prefix);
+        _debugOutput = output;
+        _prefix = prefix;
+    }
+
+    public TupleLogger(Output output, boolean printFields) {
+        super(output, printFields);
+        _debugOutput = output;
+        _printFields = printFields;
+    }
+
+    public TupleLogger(Output output, String prefix, boolean printFields) {
+        super(output, prefix, printFields);
+        _debugOutput = output;
+        _prefix = prefix;
+        _printFields = printFields;
+    }
+
+    /**
+     * @return number of Tuples that must be logged before the next time we
+     * output another header line with their field names
+     */
+    @Override
     public int getPrintFieldsEvery() {
         return _printFieldsEvery;
     }
 
-    public void setPrintFieldsEvery( int printFieldsEvery ) {
+    /**
+     * @param printFieldsEvery number of Tuples that must be logged before
+     * the next time we output another header line with their field names
+     */
+    @Override
+    public void setPrintFieldsEvery(int printFieldsEvery) {
+        _printFields = true;
         _printFieldsEvery = printFieldsEvery;
     }
 
+    /**
+     * @return number of (matching) Tuples to skip before logging the next one.
+     * Note that this may be increased automatically as the total logged
+     * approaches any configured maximum.
+     * @see #setPrintOnlyMatchingTuples(String, Object)
+     * @see #setPrintMaxTuples(long)
+     */
+    @Override
     public int getPrintTupleEvery() {
         return _printTupleEvery;
     }
 
-    public void setPrintTupleEvery( int printTupleEvery ) {
+    /**
+     * @param printTupleEvery number of (matching) Tuples to skip before logging 
+     * the next one.  Note that this may be increased automatically as the
+     * total logged approaches any configured maximum.
+     * @see #setPrintOnlyMatchingTuples(String, Object)
+     * @see #setPrintMaxTuples(long)
+     */
+    @Override
+    public void setPrintTupleEvery(int printTupleEvery) {
         _printTupleEvery = printTupleEvery;
     }
 
+    /**
+     * @return maximum number of Tuples that will be logged.
+     */
+    public long getPrintMaxTuples() {
+        return _printMaxTuples;
+    }
+
+    /**
+     * @param printMaxTuples maximum number of Tuples that will be logged.
+     * Once half of this total have been logged, we automatically begin
+     * skipping more and more of them.
+     */
+    public void setPrintMaxTuples(long printMaxTuples) {
+        _printMaxTuples = printMaxTuples;
+    }
+
+    /**
+     * @return maximum characters before Tuple representation is automatically
+     * truncated
+     */
     public int getMaxPrintLength() {
         return _maxPrintLength;
     }
     
+    /**
+     * @param maxPrintLength maximum characters to output before Tuple 
+     * representation is automatically truncated
+     */
     public void setMaxPrintLength(int maxPrintLength) {
         _maxPrintLength = maxPrintLength;
+    }
+    
+    /**
+     * Log only Tuples whose <code>fieldName</code> equals <code>targetValue</code>.
+     * Note that only such matching Tuples count toward the Tuple and fields
+     * header logging (i.e., it's every N <em>matching</em> Tuples, and
+     * it will log a maximum of M <em>matching</em> Tuples.)
+     * @param fieldName of field whose value must match
+     * @param targetValue of field in matching Tuples
+     */
+    public void setPrintOnlyMatchingTuples(String fieldName, Object targetValue) {
+        _tupleMatchFieldName = fieldName;
+        _tupleMatchFieldValue = targetValue;
     }
     
     @SuppressWarnings("rawtypes")
     @Override
     public void prepare(FlowProcess flowProcess, OperationCall<Long> operationCall) {
-        super.prepare(flowProcess, operationCall);
 
-        operationCall.setContext(0L);
+        // Let Debug have its own context (which we try to keep updated)
+        super.prepare(flowProcess, operationCall);
     }
 
     /** @see Filter#isRemove(cascading.flow.FlowProcess, FilterCall) */
     @SuppressWarnings("rawtypes")
     public boolean isRemove(FlowProcess flowProcess, FilterCall<Long> filterCall) {
-        if (doTupleLogging()) {
-            long count = filterCall.getContext();
+        
+        // Try to keep Debug's context updated so that its cleanup logs as
+        // expected.
+        Long count = filterCall.getContext();
+        filterCall.setContext(count+1);
+        
+        if ((_debugOutput != null) || doTupleLogging()) {
             TupleEntry entry = filterCall.getArguments();
             
-            if (_printFields && ((count % _printFieldsEvery) == 0)) {
-                log(entry.getFields().print());
+            // If there's a maximum # Tuples to be logged, then skip more and
+            // more of them as we approach this limit.
+            // TODO Should we introduce a random element?
+            if (_printMaxTuples < Long.MAX_VALUE) {
+                _printTupleEvery = (_numPrintedTuples < _printMaxTuples) ?
+                        Math.max(   _printTupleEvery,
+                                    (int)
+                                    (Math.min(  (   _printMaxTuples 
+                                                /   (   _printMaxTuples 
+                                                    -   _numPrintedTuples)),
+                                                Integer.MAX_VALUE)))
+                    :   Integer.MAX_VALUE;
             }
             
-            if ((count % _printTupleEvery) == 0) {
-                StringBuilder tupleString = new StringBuilder();
-                log(printTuple(tupleString, entry.getTuple()));
+            // If we're ignoring Tuples that don't have a target value in one
+            // specific field, then figure out if this one matches.
+            boolean isCountTuple = true;
+            if (_tupleMatchFieldName != null) {
+                Object fieldValue = entry.getObject(_tupleMatchFieldName);
+                if (_tupleMatchFieldValue == null) {
+                    isCountTuple = (fieldValue == null);
+                } else {
+                    isCountTuple = _tupleMatchFieldValue.equals(fieldValue);
+                }
             }
             
-            filterCall.setContext(count + 1);
+            if (isCountTuple) {
+                
+                // Print this Tuple unless we're supposed to skip it.
+                if ((_numMatchingTuples % _printTupleEvery) == 0) {
+
+                    // If we're also printing the Field names, then do so only at
+                    // regular multiples of the Tuples we've actually printed.
+                    if (_printFields && ((_numPrintedTuples % _printFieldsEvery) == 0)) {
+                        log(entry.getFields().print());
+                    }
+                    
+                    StringBuilder tupleString = new StringBuilder();
+                    if (_printTupleEvery > 1) {
+                        String skippedNote =
+                            String.format("(%,d skipped) ", _printTupleEvery - 1);
+                        tupleString.append(skippedNote);
+                    }
+                    log(printTuple(tupleString, entry.getTuple()));
+                    _numPrintedTuples++;
+                }
+                
+                // Note that this is the count of the Tuples that made it past
+                // any special field value filtering, which is not necessarily
+                // the total Tuple count passing through TupleLogger.
+                _numMatchingTuples++;
+            }
         }
         
         // Never filter anything
         return false;
+    }
+    
+    @Override
+    @SuppressWarnings("rawtypes")
+    public void cleanup(FlowProcess flowProcess, OperationCall<Long> longOperationCall) {
+        
+        // Delegate to Debug if we're leveraging planner support
+       if (_debugOutput != null) {
+            super.cleanup(flowProcess, longOperationCall);
+            
+        // Otherwise send the same kind of thing to slf4j
+        } else if (doTupleLogging()) {
+            log("tuples count: " + longOperationCall.getContext().toString());
+        }
     }
 
     /**
@@ -202,7 +371,7 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
         if (_prefix != null) {
             log(new StringBuilder(message));
         } else {
-            LOGGER.debug(message);
+            logInternal(message);
         }
     }
     
@@ -212,7 +381,19 @@ public class TupleLogger extends BaseOperation<Long> implements Filter<Long> {
             message.insert(0, _prefix);
         }
         
-        LOGGER.debug(message.toString());
+        logInternal(message.toString());
+    }
+    
+    protected void logInternal(String message) {
+        if (_debugOutput == null) {
+            LOGGER.debug(message);
+        } else {
+            @SuppressWarnings("resource")
+            PrintStream stream = 
+                (   _debugOutput == Output.STDOUT ? 
+                    System.out : System.err);
+            stream.println(message);
+        }
     }
     
     public StringBuilder printTuple(StringBuilder buffer, Tuple tuple) {
