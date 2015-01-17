@@ -1,13 +1,16 @@
 package com.scaleunlimited.cascading.hadoop;
 
 import java.io.File;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.mapred.JobConf;
 import org.junit.Before;
 import org.junit.Test;
 
 import cascading.flow.Flow;
+import cascading.flow.FlowConnector;
 import cascading.flow.FlowDef;
 import cascading.pipe.Pipe;
 import cascading.scheme.Scheme;
@@ -215,6 +218,57 @@ public class HadoopPlatformTest extends AbstractPlatformTest {
         
     }
 
+    @Test
+    public void testFlowConnectorProperties() throws Exception {
+        BasePlatform platform;
+        FlowConnector fc;
+        Map<Object, Object> props;
+        
+        // Verify we can set properties in the JobConf and get them back
+        platform = new HadoopPlatform(HadoopPlatformTest.class);
+        fc = platform.makeFlowConnector();
+        props = fc.getProperties();
+        assertNull(props.get("my.special.property"));
+        
+        JobConf conf = new JobConf();
+        conf.set("my.special.property", "value1");
+        platform = new HadoopPlatform(HadoopPlatformTest.class, conf);
+        fc = platform.makeFlowConnector();
+        props = fc.getProperties();
+        assertEquals("value1", props.get("my.special.property"));
+        
+        // Verify we can set custom Cascading properties
+        assertNull(props.get("cascading.bogus.property"));
+        
+        platform.setProperty("cascading.bogus.property", "value2");
+        fc = platform.makeFlowConnector();
+        props = fc.getProperties();
+        assertEquals("value2", props.get("cascading.bogus.property"));
+        
+        // Verify we can override Hadoop properties. Find a property
+        conf.setCompressMapOutput(true);
+        platform = new HadoopPlatform(HadoopPlatformTest.class, conf);
+        fc = platform.makeFlowConnector();
+        props = fc.getProperties();
+        // Different versions of Hadoop use different settings
+        String propName = "mapred.compress.map.output";
+        Object compressMapOutput = props.get(propName);
+        if (compressMapOutput == null) {
+            propName = "mapreduce.map.output.compress";
+            compressMapOutput = props.get(propName);
+        }
+        
+        assertEquals(Boolean.TRUE.toString(), (String)compressMapOutput);
+        
+        // Now change it via properties.
+        platform.setProperty(propName, Boolean.FALSE.toString());
+        
+        fc = platform.makeFlowConnector();
+        props = fc.getProperties();
+        compressMapOutput = props.get(propName);
+        assertEquals(Boolean.FALSE.toString(), (String)compressMapOutput);
+    }
+    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void createDataDir(BasePlatform platform, BasePath input, String dirName, String data) throws Exception {
         BasePath input1 = platform.makePath(input, dirName);

@@ -19,12 +19,15 @@ package com.scaleunlimited.cascading;
 import org.apache.hadoop.io.BytesWritable;
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.TupleLogger;
-
+import cascading.CascadingTestCase;
+import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
-import static org.junit.Assert.*;
+import cascading.tuple.TupleEntry;
 
-public class TupleLoggerTest {
+@SuppressWarnings("serial")
+public class TupleLoggerTest extends CascadingTestCase {
+
+    private static final Fields TEST_FIELDS = new Fields("index", "matchString");
 
     @Test
     public void testLimitStringLength() {
@@ -71,4 +74,78 @@ public class TupleLoggerTest {
         
         assertEquals("['a', 'null']", result.toString());
     }
+    
+    public static class CountingTupleLogger extends TupleLogger {
+        private long _numTuplesLogged = 0;
+        private long _numFieldLinesLogged = 0;
+        
+        public CountingTupleLogger() {
+            super();
+        }
+
+        public CountingTupleLogger(boolean printFields) {
+            super(printFields);
+        }
+
+        public CountingTupleLogger(String prefix, boolean printFields) {
+            super(prefix, printFields);
+        }
+
+        public CountingTupleLogger(String prefix) {
+            super(prefix);
+        }
+
+        @Override
+        protected void logInternal(String message) {
+            super.logInternal(message);
+            if (message.contains("matchString")) {
+                _numFieldLinesLogged++;
+            } else if (!(message.contains("tuples count"))) {
+                _numTuplesLogged++;
+            }
+        }
+
+        public long getNumTuplesLogged() {
+            return _numTuplesLogged;
+        }
+
+        public long getNumFieldLinesLogged() {
+            return _numFieldLinesLogged;
+        }
+    }
+    
+    @Test
+    public void testMaxTuples() {
+        int numArguments = 1000 * 100;
+        TupleEntry[] argumentsArray = new TupleEntry[numArguments];
+        for (int i = 0; i < numArguments; i++) {
+            argumentsArray[i] = makeArguments(i, i % 100);
+        }
+        CountingTupleLogger tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintMaxTuples(200);
+        tupleLogger.setPrintTupleEvery(2);
+        tupleLogger.setPrintFieldsEvery(10);
+        tupleLogger.setPrintOnlyMatchingTuples("matchString", "match-77");
+        invokeFilter(tupleLogger, argumentsArray);
+        assertEquals(200, tupleLogger.getNumTuplesLogged());
+    }
+    
+    @Test
+    public void testMatchingTuples() {
+        int numArguments = 10 * 100;
+        TupleEntry[] argumentsArray = new TupleEntry[numArguments];
+        for (int i = 0; i < numArguments; i++) {
+            argumentsArray[i] = makeArguments(i, i % 100);
+        }
+        CountingTupleLogger tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintOnlyMatchingTuples("matchString", "match-3", "match-77", "match-89");
+        invokeFilter(tupleLogger, argumentsArray);
+        assertEquals(30, tupleLogger.getNumTuplesLogged());
+    }
+    
+    private static TupleEntry makeArguments(long tupleIndex, long matchIndex) {
+        return new TupleEntry(  TEST_FIELDS,
+                                new Tuple(tupleIndex, "match-" + matchIndex));
+    }
+                    
 }

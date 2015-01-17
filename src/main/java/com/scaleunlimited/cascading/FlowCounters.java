@@ -19,13 +19,13 @@ package com.scaleunlimited.cascading;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import cascading.flow.Flow;
 import cascading.stats.FlowStats;
@@ -35,13 +35,9 @@ import cascading.stats.FlowStepStats;
 public class FlowCounters {
     static final Logger LOGGER = LoggerFactory.getLogger(FlowCounters.class);
 
-    private enum InvalidEnum {
-        
-    }
-    
     /**
      * Run the flow, and return back a Map that has entries for every requested
-     * counter group where that counter has been set during the Flow execution.
+     * counter *group* where that counter has been set during the Flow execution.
      * Note that a Flow with multiple steps (Hadoop jobs) will sum the counter
      * values for all jobs, but warn when that happens.
      * 
@@ -88,7 +84,9 @@ public class FlowCounters {
      * counter. Note that a Flow with multiple steps (Hadoop jobs) will sum the
      * counter values for all jobs, but warn when that happens.
      * 
-     * If no counters are passed, we'll return all available counters.
+     * If no counters are passed, we'll return all available counters that are
+     * defined using Enums. This means you won't get a counter back if it was
+     * logged using a group name/counter name instead of an Enum.
      * 
      * @param flow Flow to be run & counted
      * @param counters Which counters to return in the map.
@@ -111,8 +109,8 @@ public class FlowCounters {
                     try {
                         groupClass = (Class<? extends Enum>)FlowCounters.class.forName(groupName);
                     } catch (ClassNotFoundException e) {
-                        // Something went wrong, just map it to a bogus class.
-                        groupClass = InvalidEnum.class;
+                        // Probably a counter defined using strings vs. Enum, so skip it
+                        continue;
                     }
                     
                     for (String counterName : stepStat.getCountersFor(groupClass)) {
@@ -145,6 +143,46 @@ public class FlowCounters {
         for (Enum counter : counters) {
             if (result.get(counter) == null) {
                 result.put(counter, 0L);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Run the flow, and return back a Map that has String-keyed entries for every counter.
+     * Note that a Flow with multiple steps (Hadoop jobs) will return back the sum of counter
+     * values for all jobs.
+     * 
+     * The map's keys are <group name>.<counter name>
+     * 
+     * @param flow Flow to be run & counted
+     * @return Map of counter name to counts.
+     */
+    public static Map<String, Long> runAndReturnAllCounters(Flow flow) {
+
+        flow.complete();
+        
+        Map<String, Long> result = new HashMap<String, Long>();
+        
+        FlowStats stats = flow.getFlowStats();
+        List<FlowStepStats> stepStats = stats.getFlowStepStats();
+
+        for (FlowStepStats stepStat : stepStats) {
+            for (String counterGroup : stepStat.getCounterGroups()) {
+                Collection<String> counterNames = stepStat.getCountersFor(counterGroup);
+
+                for (String counterName : counterNames) {
+                    String keyName = String.format("%s.%s", counterGroup, counterName);
+                    long counterValue = stepStat.getCounterValue(counterGroup, counterName);
+                    if (counterValue != 0) {
+                        if (result.containsKey(keyName)) {
+                            counterValue += result.get(keyName);
+                        }
+
+                        result.put(keyName, counterValue);
+                    }
+                }
             }
         }
         

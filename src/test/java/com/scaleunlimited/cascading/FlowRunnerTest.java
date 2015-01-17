@@ -185,8 +185,9 @@ public class FlowRunnerTest extends Assert {
         ff.get();
         fr.terminate();
         
-        // We should some number of entries in the stats file
-        checkStatsFile(logDirName, "testStatsLocal", "group on total", 1, 1);
+        // We should some number of entries in the stats file. The sink name is now
+        // part of the step name, so it's "group on total local".
+        checkStatsFile(logDirName, "testStatsLocal", "group on total local", 1, 1);
 
         // And also in the summary file
         checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsLocal", "group on total");
@@ -243,13 +244,13 @@ public class FlowRunnerTest extends Assert {
         fr.terminate();
 
         // We should some number of entries in the stats file
-        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
+        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
         
         // And check for something similar in the details file
-        checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total", 0, 2);
+        checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
     
         // And also in the summary file
-        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total");
+        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0");
         
         platform.shutdown();
     }

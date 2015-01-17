@@ -4,10 +4,12 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
+import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
+import cascading.flow.FlowDef;
 import cascading.flow.FlowStep;
 import cascading.operation.Debug;
 import cascading.pipe.Each;
@@ -21,52 +23,53 @@ import com.scaleunlimited.cascading.local.LocalPlatform;
 
 public class FlowUtilsTest {
 
+    private static final String FLOW_NAME = "FlowUtilsTest";
+    
     @Test
     public void testNamingStepsForMapOnlyJob() throws Exception {
-        testNamingStepsForMapOnlyJob(new HadoopPlatform(FlowUtilsTest.class));
-        testNamingStepsForMapOnlyJob(new LocalPlatform(FlowUtilsTest.class));
+        String stepName = "Debug (1/1) /path/to/dest";
+        JobConf conf = (JobConf)testNamingStepsForMapOnlyJob(new HadoopPlatform(this.getClass()), stepName);
+        assertEquals(FLOW_NAME + "/" + stepName, conf.getJobName());
+        testNamingStepsForMapOnlyJob(new LocalPlatform(this.getClass()), "Debug local");
     }
 
-    private void testNamingStepsForMapOnlyJob(BasePlatform platform) throws Exception {
+    private Object testNamingStepsForMapOnlyJob(BasePlatform platform, String expectedStepName) throws Exception {
         Pipe p = new Pipe("map-only");
         p = new Each(p, new Debug());
         
-        FlowConnector fc = platform.makeFlowConnector();
-        Flow f = fc.connect(platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/source")), 
-                            platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/dest"), SinkMode.REPLACE),
-                            p);
-        
-        FlowUtils.nameFlowSteps(f);
-        
-        List<FlowStep> steps = f.getFlowSteps();
-        assertEquals(1, steps.size());
-        
-        assertEquals("Debug", steps.get(0).getName());
+        return makeAndNameFlow(platform, expectedStepName, p);
     }
 
     @Test
     public void testNamingStepsForGroupingJob() throws Exception {
-        testNamingStepsForGroupingJob(new HadoopPlatform(FlowUtilsTest.class));
-        testNamingStepsForGroupingJob(new LocalPlatform(FlowUtilsTest.class));
+        String stepName = "grouping (1/1) /path/to/dest";
+        JobConf conf = (JobConf)testNamingStepsForGroupingJob(new HadoopPlatform(this.getClass()), stepName);
+        assertEquals(FLOW_NAME + "/" + stepName, conf.getJobName());
+        testNamingStepsForGroupingJob(new LocalPlatform(this.getClass()), "grouping local");
     }
     
-    private void testNamingStepsForGroupingJob(BasePlatform platform) throws Exception {
+    private Object testNamingStepsForGroupingJob(BasePlatform platform, String expectedStepName) throws Exception {
         Pipe p = new Pipe("grouping");
         p = new GroupBy("grouping", p, new Fields("key"));
         
-        FlowConnector fc = platform.makeFlowConnector();
-        Flow f = fc.connect(platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/source")), 
-                            platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/dest"), SinkMode.REPLACE),
-                            p);
-        
-        FlowUtils.nameFlowSteps(f);
-        
-        List<FlowStep> steps = f.getFlowSteps();
-        assertEquals(1, steps.size());
-        
-        assertEquals("grouping", steps.get(0).getName());
+        return makeAndNameFlow(platform, expectedStepName, p);
     }
 
+    private Object makeAndNameFlow(BasePlatform platform, String expectedStepName, Pipe p) throws Exception {
+        FlowDef flowDef = new FlowDef()
+            .setName(FLOW_NAME)
+            .addSource(p, platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/source")))
+            .addTailSink(p, platform.makeTap(platform.makeBinaryScheme(new Fields("key")), platform.makePath("/path/to/dest"), SinkMode.REPLACE));
+        Flow f = platform.makeFlowConnector().connect(flowDef);
+        FlowUtils.nameFlowSteps(f);
+    
+        List<FlowStep> steps = f.getFlowSteps();
+        assertEquals(1, steps.size());
+        FlowStep fs = steps.get(0);
+        assertEquals(expectedStepName, fs.getName());
+    
+        return fs.getConfig();
+    }
     
     
 }

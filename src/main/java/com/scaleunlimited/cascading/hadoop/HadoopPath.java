@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
+import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,19 @@ public class HadoopPath extends BasePath {
         Path relativePath = new Path(path);
         _hadoopFS = relativePath.getFileSystem(_conf);
         if (!relativePath.isAbsolute()) {
-            Path parent = _hadoopFS.getWorkingDirectory();
+            Path parent;
+            if (HadoopUtils.isConfigLocal(_conf)) {
+                // When running locally, there is a concept of a working directory
+                // that we need to keep using.
+                parent = _hadoopFS.getWorkingDirectory();
+            } else {
+                // We always resolve paths relative to the home directory, as
+                // using the "working directory" seems fragile - this seems to
+                // change is some situations, even though we don't provide a
+                // way for the caller to set it in the _hadoopFS that we use.
+                parent = _hadoopFS.getHomeDirectory();
+            }
+            
             _hadoopPath = new Path(parent, relativePath);
         } else {
             _hadoopPath = relativePath;
@@ -107,8 +120,12 @@ public class HadoopPath extends BasePath {
         }
     }
 
-    @Override public boolean rename(BasePath path) throws IOException {
-        if(!(path instanceof HadoopPath)) throw new IllegalArgumentException("HadoopPath can only be renamed to another HadoopPath.");
+    @Override
+    public boolean rename(BasePath path) throws IOException {
+        if (!(path instanceof HadoopPath)) {
+            throw new IllegalArgumentException("HadoopPath can only be renamed to another HadoopPath.");
+        }
+        
         return _hadoopFS.rename(_hadoopPath, ((HadoopPath) path)._hadoopPath);
     }
 
@@ -186,12 +203,11 @@ public class HadoopPath extends BasePath {
                     LOGGER.error(message);
                     return false;
                 }
-                
             } else {
                 String message = 
-                    String.format(  "Initial FileSystem.delete of %s failed!",
+                    String.format(  "Initial FileSystem.delete of %s returned false",
                                     _hadoopPath);
-                LOGGER.error(message);
+                LOGGER.debug(message);
                 return false;
             }
             

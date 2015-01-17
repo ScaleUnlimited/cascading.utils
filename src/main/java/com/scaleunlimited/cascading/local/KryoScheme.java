@@ -38,8 +38,7 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     
     @Override
     public void sourceConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
-        // TODO Auto-generated method stub
-        
+        // Nothing to do here
     }
 
     @Override
@@ -87,7 +86,7 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     @Override
     public void sinkCleanup(FlowProcess<Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
         // Write a null object as an end of input marker
-        // TODO - figure out if this is the best approach
+        // FUTURE - figure out if this is the best approach
         sinkCall.getContext().serialize(null);
         sinkCall.getContext().close();
         

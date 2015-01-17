@@ -21,6 +21,7 @@ import cascading.tuple.Fields;
 
 import com.scaleunlimited.cascading.BasePath;
 import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.Level;
 
 @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class LocalPlatform extends BasePlatform {
@@ -47,6 +48,21 @@ public class LocalPlatform extends BasePlatform {
     }
 
     @Override
+    public String getProperty(String name) {
+        return super.getPropertyHelper(name);
+    }
+    
+    @Override
+    public boolean getBooleanProperty(String name) {
+        return super.getBooleanPropertyHelper(name);
+    }
+    
+    @Override
+    public int getIntProperty(String name) {
+        return super.getIntPropertyHelper(name);
+    }
+    
+    @Override
     public BasePath getTempDir() throws Exception {
         return new LocalPath(FileUtils.getTempDirectoryPath());
     }
@@ -59,13 +75,12 @@ public class LocalPlatform extends BasePlatform {
     
     @Override
     public void setNumReduceTasks(int numReduceTasks) throws Exception {
-        // TODO - bail on setting reduce tasks - control via sinkparts?
-        // Nothing to do here, I think...
+        // We can't control the number of reduce tasks here.
     }
 
     @Override
     public int getNumReduceTasks() throws Exception {
-        return CLUSTER_REDUCER_COUNT;
+        return 1;
     }
 
     @Override
@@ -78,6 +93,34 @@ public class LocalPlatform extends BasePlatform {
         // Nothing to do here
     }
 
+    @Override
+    public void setLogLevel(Level level, String... packageNames) {
+        for (String packageName : packageNames) {
+            if (packageName.isEmpty()) {
+                // TODO set the logging level for the local job...
+                // but we can't do that (???) using slf4j, so this would only work
+                // if we assume log4j is being used.
+            }
+        }
+        
+        super.setLogLevelHelper(level, packageNames);
+    }
+    
+    @Override
+    public void setProperty(String name, String value) {
+        super.setPropertyHelper(name, value);
+    }
+    
+    @Override
+    public void setProperty(String name, int value) {
+        super.setPropertyHelper(name, value);
+    }
+    
+    @Override
+    public void setProperty(String name, boolean value) {
+        super.setPropertyHelper(name, value);
+    }
+    
     @Override
     public FlowConnector makeFlowConnector() throws Exception {
         return new LocalFlowConnector(_props);
@@ -111,6 +154,7 @@ public class LocalPlatform extends BasePlatform {
         return new DirectoryTap(scheme, path.getAbsolutePath(), mode);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
         return new TemplateTap((FileTap) tap, pattern, fields);
@@ -174,5 +218,30 @@ public class LocalPlatform extends BasePlatform {
     @Override
     public boolean equals(Object obj) {
         return super.equals(obj);
+    }
+
+    @Override
+    public File getLogDir() {
+        return super.getLogDirHelper();
+    }
+
+    @Override
+    public Tap makeTap(Scheme scheme, BasePath path) throws Exception {
+        return makeTap(scheme, path, SinkMode.KEEP);
+    }
+
+    @Override
+    public Tap makePartitionTap(Tap parentTap, Partition partition) throws Exception {
+        return makePartitionTap(parentTap, partition, SinkMode.KEEP);
+    }
+
+    @Override
+    public void setJobPollingInterval(long interval) {
+        super.setJobPollingIntervalHelper(interval);
+    }
+
+    @Override
+    public void setLogDir(File logDir) {
+        super.setLogDirHealer(logDir);
     }
 }
