@@ -283,7 +283,10 @@ public class TupleLogger extends Debug {
             TupleEntry entry = filterCall.getArguments();
             
             // If there's a maximum # Tuples to be logged, then skip more and
-            // more of them as we approach this limit.
+            // more of them as we approach this limit.  Here we both avoid a
+            // divide by zero error (as we reach the limit), and also deal with
+            // the fact that Debug has limited our _printTupleEvery field to
+            // an Integer.
             // TODO Should we introduce a random element?
             if (_printMaxTuples < Long.MAX_VALUE) {
                 _printTupleEvery = (_numPrintedTuples < _printMaxTuples) ?

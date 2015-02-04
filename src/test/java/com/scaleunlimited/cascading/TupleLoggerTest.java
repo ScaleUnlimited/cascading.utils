@@ -130,6 +130,19 @@ public class TupleLoggerTest extends CascadingTestCase {
         assertEquals(200, tupleLogger.getNumTuplesLogged());
     }
     
+    @Test
+    public void testMatchingTuples() {
+        int numArguments = 10 * 100;
+        TupleEntry[] argumentsArray = new TupleEntry[numArguments];
+        for (int i = 0; i < numArguments; i++) {
+            argumentsArray[i] = makeArguments(i, i % 100);
+        }
+        CountingTupleLogger tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintOnlyMatchingTuples("matchString", "match-3", "match-77", "match-89");
+        invokeFilter(tupleLogger, argumentsArray);
+        assertEquals(30, tupleLogger.getNumTuplesLogged());
+    }
+    
     private static TupleEntry makeArguments(long tupleIndex, long matchIndex) {
         return new TupleEntry(  TEST_FIELDS,
                                 new Tuple(tupleIndex, "match-" + matchIndex));
