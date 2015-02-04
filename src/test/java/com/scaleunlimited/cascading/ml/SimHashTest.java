@@ -53,7 +53,7 @@ public class SimHashTest {
         
         Tuple[] inputData = new Tuple[numWordsPerDoc * 2];
         int index = 0;
-        Random rand = new Random();
+        Random rand = new Random(0L);
         int numSimilarWords = 0;
         for (int i = 0; i < numWordsPerDoc; i++) {
             inputData[index++] = new Tuple("1", "word-" + i);
