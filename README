@@ -25,16 +25,24 @@ To get a list of valid targets:
 % cd <project directory>
 % ant -p
 
-To  clean and build a jar (which also runs all tests):
+To clean and build a jar (which also runs all tests):
 
 % ant clean jar
 
-Note that "ant clean test jar" will currently fail, due to a bug in the maven ant task
-plugin used for managing dependencies.
+Note that "ant clean jar" will currently fail, due to a bug in the maven ant task
+plugin used for managing dependencies.  After it does, execute the following commands
+in order to replace the corrupt pom in your local Maven repository:
+
+% rm ~/.m2/repository/net/java/jvnet-parent/1/jvnet-parent-1.pom
+% mvn eclipse:eclipse
+% ant clean jar
+
+After this, subsequent builds should all succeed.
 
 To create Eclipse project files:
 
 % ant eclipse
 
-Then, from Eclipse follow the standard procedure to import an existing Java project into your Workspace.
+Then, from Eclipse follow the standard procedure to import an existing Java project
+into your Workspace.
 
