@@ -47,8 +47,8 @@
     </repositories>
 	
     <properties>
-        <cascading.version>2.5.5</cascading.version>
-        <hadoop.version>2.2.0</hadoop.version>
+        <cascading.version>2.6.3</cascading.version>
+        <hadoop.version>2.4.1</hadoop.version>
     </properties>
     
 	<dependencies>
