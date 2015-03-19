@@ -23,7 +23,7 @@
 	<artifactId>cascading.utils</artifactId>
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
-	<version>2.6-SNAPSHOT</version>
+	<version>2.6.0</version>
 	<repositories>
 		<repository>
 			<id>Conjar</id>
