@@ -60,10 +60,11 @@
         </artifact:dependencies>
     </target>
 
-    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="jar">
+    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="jar, sources">
         <artifact:install file="${build.dir}/${jar.name}">
             <pom refid="maven.project"/>
-        </artifact:install>
+    		<attach file="${build.dir}/${source-jar.name}" type="jar" classifier="sources"/>
+    	</artifact:install>
     </target>
 
     <target name="mvn-deploy" xmlns:artifact="urn:maven-artifact-ant" depends="jar">
@@ -313,6 +314,13 @@
 	      </jar>
 	</target>
 
+	<target name="sources">
+		<jar jarfile="${build.dir}/${source-jar.name}">
+			<fileset dir="${main.src.dir}" />
+			<fileset dir="${main.res.dir}" />
+		</jar>
+	</target>
+	
     <!-- ================================================================== -->
     <!-- Install in local Maven repository                                  -->
     <!-- ================================================================== -->
