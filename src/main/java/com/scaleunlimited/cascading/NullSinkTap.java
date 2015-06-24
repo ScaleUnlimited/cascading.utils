@@ -43,6 +43,12 @@ public class NullSinkTap extends SinkTap<Object, Object> {
             super(Fields.UNKNOWN, fields);
         }
         
+        public NullScheme(Fields fields, int numSinkParts) {
+            super(Fields.UNKNOWN, fields);
+            
+            setNumSinkParts(numSinkParts);
+        }
+        
         @Override
         public boolean isSink() {
             return true;
@@ -75,13 +81,18 @@ public class NullSinkTap extends SinkTap<Object, Object> {
     
     private String _id;
     
-	public NullSinkTap(Fields fields) {
+    public NullSinkTap() {
+        super(new NullScheme());
+        _id = makeUniqueId();
+    }
+
+    public NullSinkTap(Fields fields) {
         super(new NullScheme(fields));
         _id = makeUniqueId();
     }
 
-    public NullSinkTap() {
-        super(new NullScheme());
+    public NullSinkTap(Fields fields, int numSinkParts) {
+        super(new NullScheme(fields, numSinkParts));
         _id = makeUniqueId();
     }
 

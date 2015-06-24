@@ -17,6 +17,7 @@
 package com.scaleunlimited.cascading.hadoop;
 
 import java.io.IOException;
+import java.util.List;
 
 import junit.framework.Assert;
 
@@ -24,13 +25,19 @@ import org.junit.Test;
 
 import com.scaleunlimited.cascading.NullSinkTap;
 
+import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
+import cascading.flow.FlowStep;
 import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
+import cascading.flow.hadoop.HadoopFlowStep;
 import cascading.operation.Identity;
 import cascading.pipe.Each;
+import cascading.pipe.Every;
+import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.scheme.hadoop.SequenceFile;
+import cascading.tap.SinkMode;
 import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
@@ -40,7 +47,7 @@ public class NullSinkTapHadoopTest {
     
     @Test
     public void testNullSinkTap() throws IOException {
-        Lfs in = new Lfs(new SequenceFile(new Fields("input")), "build/test/NullSinkTapHadoopTest/testNullSinkTap/in", true);
+        Lfs in = new Lfs(new SequenceFile(new Fields("input")), "build/test/NullSinkTapHadoopTest/testNullSinkTap/in", SinkMode.REPLACE);
         TupleEntryCollector write = in.openForWrite(new HadoopFlowProcess());
         Tuple tuple = new Tuple("value");
         write.add(tuple);
@@ -58,7 +65,7 @@ public class NullSinkTapHadoopTest {
     @Test
     public void testNullSinkTapWrongOutputFields() throws IOException {
         final Fields sourceFields = new Fields("input");
-        Lfs in = new Lfs(new SequenceFile(sourceFields), "build/test/NullSinkTapHadoopTest/testNullSinkTapWrongOutputFields/in", true);
+        Lfs in = new Lfs(new SequenceFile(sourceFields), "build/test/NullSinkTapHadoopTest/testNullSinkTapWrongOutputFields/in", SinkMode.REPLACE);
         TupleEntryCollector write = in.openForWrite(new HadoopFlowProcess());
         Tuple tuple = new Tuple("value");
         write.add(tuple);
@@ -82,8 +89,38 @@ public class NullSinkTapHadoopTest {
     }
     
     @Test
+    public void testNumSinkParts() throws Exception {
+        final Fields fields = new Fields("input");
+        Lfs in = new Lfs(new SequenceFile(fields), "build/test/NullSinkTapHadoopTest/testNumSinkParts/in", SinkMode.REPLACE);
+        TupleEntryCollector write = in.openForWrite(new HadoopFlowProcess());
+        for (int i = 0; i < 100; i++) {
+            Tuple tuple = new Tuple("value-" + i);
+            write.add(tuple);
+        }
+        write.close();
+
+        // Create tap with 3 parts
+        final int numSinkParts = 3;
+        NullSinkTap out = new NullSinkTap(fields, numSinkParts);
+
+        Pipe pipe = new Pipe("pipe");
+        pipe = new GroupBy(pipe, fields);
+        pipe = new Each(pipe, new Identity());
+        
+        FlowConnector flowConnector = new HadoopFlowConnector();
+        Flow f = flowConnector.connect(in, out, pipe);
+        List<HadoopFlowStep> steps = f.getFlowSteps();
+        Assert.assertEquals(1, steps.size());
+        HadoopFlowStep step = steps.get(0);
+        Assert.assertEquals(numSinkParts, step.getConfig().getNumReduceTasks());
+        
+        // Make sure the job actually runs
+        f.complete();
+    }
+    
+    @Test
     public void testNullSinkTapNoFields() throws IOException {
-        Lfs in = new Lfs(new SequenceFile(new Fields("input")), "build/test/NullSinkTapHadoopTest/testNullSinkTapNoFields/in", true);
+        Lfs in = new Lfs(new SequenceFile(new Fields("input")), "build/test/NullSinkTapHadoopTest/testNullSinkTapNoFields/in", SinkMode.REPLACE);
         TupleEntryCollector write = in.openForWrite(new HadoopFlowProcess());
         Tuple tuple = new Tuple("value");
         write.add(tuple);
