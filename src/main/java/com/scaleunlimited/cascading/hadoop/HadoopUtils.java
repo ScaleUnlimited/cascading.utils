@@ -122,9 +122,9 @@ public class HadoopUtils {
     
     public static boolean isConfigLocal(Configuration conf) {
         // First see if we have the new MR2 setting
-        String hostname = conf.get("yarn.resourcemanager.hostname");
-       if (hostname != null) {
-           return hostname.equals("0.0.0.0");
+        String framework = conf.get("mapreduce.framework.name");
+       if (framework != null) {
+           return framework.equals("local");
        } else {
            // MR1 approach
            return conf.get("mapred.job.tracker").equalsIgnoreCase("local");
