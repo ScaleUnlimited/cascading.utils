@@ -126,7 +126,7 @@
          
         <dependency>
             <groupId>cascading</groupId>
-            <artifactId>cascading-hadoop</artifactId>
+            <artifactId>cascading-hadoop2-mr1</artifactId>
             <version>${cascading.version}</version>
         </dependency>
          
