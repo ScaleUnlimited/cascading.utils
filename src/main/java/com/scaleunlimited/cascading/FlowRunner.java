@@ -23,6 +23,8 @@ import cascading.flow.FlowProcess;
 import cascading.flow.FlowStep;
 import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.stats.CascadingStats.Status;
+import cascading.stats.CascadingStats.Type;
+import cascading.stats.FlowNodeStats;
 import cascading.stats.FlowStats;
 import cascading.stats.FlowStepStats;
 import cascading.stats.hadoop.HadoopSliceStats;
@@ -331,16 +333,16 @@ public class FlowRunner {
            if (stepStats instanceof HadoopStepStats) {
                HadoopStepStats hadoopSS = (HadoopStepStats)stepStats;
                // We don't want/need info on task attempts
-               hadoopSS.captureDetail(false);
+               hadoopSS.captureDetail(Type.SLICE);
                
                // We have one child for every task. We have to see if it's
                // running, and if so, whether it's a mapper or reducer
-               Iterator<HadoopSliceStats> iter = hadoopSS.getChildren().iterator();
+               Iterator<FlowNodeStats> iter = hadoopSS.getChildren().iterator();
                while (iter.hasNext()) {
-                   HadoopSliceStats sliceStats = iter.next();
+                   FlowNodeStats flowNodeStats = iter.next();
                    // System.out.println(String.format("id=%s, kind=%s, status=%s", sliceStats.getID(), sliceStats.getKind(), sliceStats.getStatus()));
                    
-                   if (sliceStats.getStatus() == Status.SUCCESSFUL) {
+                   if (flowNodeStats.getStatus() == Status.SUCCESSFUL) {
                        // Set the total time
                        // TODO this doesn't seem to be working, I get 0.
                        // Plus it needs JobInProgress.Counter as a class, which means anyone using
@@ -352,10 +354,10 @@ public class FlowRunner {
                                        sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_MAPS), 
                                        sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_REDUCES));
                        */
-                   } else if (sliceStats.getStatus() == Status.RUNNING) {
-                       if (sliceStats.getKind() == Kind.MAPPER) {
+                   } else if (flowNodeStats.getStatus() == Status.RUNNING) {
+                       if (flowNodeStats.getKind().equals(Kind.MAPPER)) {
                            incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
-                       } else if (sliceStats.getKind() == Kind.REDUCER) {
+                       } else if (flowNodeStats.getKind().equals(Kind.REDUCER)) {
                            incrementCounts(taskCounts, countsKey, flowName, stepName, 0, 1, 0, 0);
                        }
                    }
@@ -388,7 +390,7 @@ public class FlowRunner {
            
            if (stepStats instanceof HadoopStepStats) {
                HadoopStepStats hadoopSS = (HadoopStepStats)stepStats;
-               hadoopSS.getTaskStats().clear();
+               hadoopSS.getFlowNodeStats().clear();
            }
         }
     }
