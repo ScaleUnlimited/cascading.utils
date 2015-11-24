@@ -28,8 +28,8 @@ import org.junit.Test;
 import cascading.flow.Flow;
 import cascading.flow.FlowProcess;
 import cascading.flow.FlowStep;
-import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
+import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.flow.planner.BaseFlowStep;
 import cascading.operation.BaseOperation;
 import cascading.operation.Debug;
@@ -135,7 +135,7 @@ public class FlowMonitorTest {
         pipe = new GroupBy("group by sum", pipe, new Fields("sum"));
         Lfs sinkTap = new Lfs(new SequenceFile(new Fields("user", "sum")), out, SinkMode.REPLACE);
         
-        Flow<JobConf> flow = new HadoopFlowConnector().connect("FlowMonitorTest", sourceTap, sinkTap, pipe);
+        Flow<JobConf> flow = new Hadoop2MR1FlowConnector().connect("FlowMonitorTest", sourceTap, sinkTap, pipe);
         for (FlowStep<JobConf> step : flow.getFlowSteps()) {
             StepUtils.nameFlowStep((BaseFlowStep<JobConf>)step);
         }
@@ -186,7 +186,7 @@ public class FlowMonitorTest {
         Lfs sinkTap = new Lfs(new SequenceFile(testFields), out, SinkMode.REPLACE);
         
         final String flowName = "testArchivingFiles";
-        Flow<JobConf> flow = new HadoopFlowConnector().connect(flowName, sourceTap, sinkTap, pipe);
+        Flow<JobConf> flow = new Hadoop2MR1FlowConnector().connect(flowName, sourceTap, sinkTap, pipe);
         for (FlowStep<JobConf> step : flow.getFlowSteps()) {
             StepUtils.nameFlowStep((BaseFlowStep<JobConf>)step);
         }

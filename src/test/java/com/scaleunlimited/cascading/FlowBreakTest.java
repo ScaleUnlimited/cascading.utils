@@ -8,11 +8,9 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.FlowBreak;
-
 import cascading.flow.Flow;
 import cascading.flow.FlowConnector;
-import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.operation.Identity;
 import cascading.pipe.Each;
 import cascading.pipe.Pipe;
@@ -41,7 +39,7 @@ public class FlowBreakTest {
         sinks.put(tail1.getName(), new Lfs(new TextLine(), "dest/path1"));
         sinks.put(tail2.getName(), new Lfs(new TextLine(), "dest/path2"));
         
-        FlowConnector fc = new HadoopFlowConnector();
+        FlowConnector fc = new Hadoop2MR1FlowConnector();
         return fc.connect(new Lfs(new TextLine(), "source/path"), sinks, tail1, tail2);
     }
     

@@ -37,29 +37,29 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     }
     
     @Override
-    public void sourceConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
+    public void sourceConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
         // Nothing to do here
     }
 
     @Override
-    public void sinkConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
+    public void sinkConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
         LOGGER.trace("KryoScheme - sinkConfInit");
     }
 
     @Override
-    public void presentSinkFields(FlowProcess<Properties> flowProcess, Tap tap, Fields fields) {
+    public void presentSinkFields(FlowProcess<? extends Properties> flowProcess, Tap tap, Fields fields) {
         super.presentSinkFields(flowProcess, tap, fields);
     }
     
     @Override
-    public void sourcePrepare(FlowProcess<Properties> flowProcess, SourceCall<KryoContext, InputStream> sourceCall) throws IOException {
+    public void sourcePrepare(FlowProcess<? extends Properties> flowProcess, SourceCall<KryoContext, InputStream> sourceCall) throws IOException {
         super.sourcePrepare(flowProcess, sourceCall);
         
         sourceCall.setContext(new KryoContext(new Input(sourceCall.getInput()), getSourceFields()));
     }
     
     @Override
-    public boolean source(FlowProcess<Properties> flowProcess, SourceCall<KryoContext, InputStream> sourceCall) throws IOException {
+    public boolean source(FlowProcess<? extends Properties> flowProcess, SourceCall<KryoContext, InputStream> sourceCall) throws IOException {
         // TODO select source fields data from tuple
         Tuple t = sourceCall.getContext().deserialize();
         if (t != null) {
@@ -71,7 +71,7 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     }
 
     @Override
-    public void sinkPrepare(FlowProcess<Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
+    public void sinkPrepare(FlowProcess<? extends Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
         super.sinkPrepare(flowProcess, sinkCall);
         
         KryoContext context = new KryoContext(new Output(sinkCall.getOutput()), getSinkFields());
@@ -79,12 +79,12 @@ public class KryoScheme extends Scheme<Properties, InputStream, OutputStream, Kr
     }
     
     @Override
-    public void sink(FlowProcess<Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
+    public void sink(FlowProcess<? extends Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
         sinkCall.getContext().serialize(sinkCall.getOutgoingEntry().getTuple());
     }
     
     @Override
-    public void sinkCleanup(FlowProcess<Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
+    public void sinkCleanup(FlowProcess<? extends Properties> flowProcess, SinkCall<KryoContext, OutputStream> sinkCall) throws IOException {
         // Write a null object as an end of input marker
         // FUTURE - figure out if this is the best approach
         sinkCall.getContext().serialize(null);

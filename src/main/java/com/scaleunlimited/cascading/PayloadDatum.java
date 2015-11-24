@@ -61,7 +61,7 @@ public class PayloadDatum extends BaseDatum {
         super.commit();
 
         if (_updated) {
-            _tupleEntry.set(PAYLOAD_FN, _payload.toTuple());
+            _tupleEntry.setObject(PAYLOAD_FN, _payload.toTuple());
             _updated = false;
         }
     }
@@ -73,7 +73,7 @@ public class PayloadDatum extends BaseDatum {
     
     public Payload getPayload() {
         if (_payload == null) {
-            _payload = new Payload((Tuple)_tupleEntry.get(PAYLOAD_FN));
+            _payload = new Payload((Tuple)_tupleEntry.getObject(PAYLOAD_FN));
             _updated = false;
         }
         

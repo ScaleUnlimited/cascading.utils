@@ -168,24 +168,24 @@ public class InMemoryTap extends Tap<Properties, InputStream, OutputStream> {
         }
 
         @Override
-        public void sourceConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
+        public void sourceConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
             // TODO anything I should be doing here?
         }
 
         @Override
-        public void sourcePrepare(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
+        public void sourcePrepare(FlowProcess<? extends Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             super.sourcePrepare(flowProcess, sourceCall);
             
             sourceCall.setContext(new AtomicInteger(0));
         }
         
         @Override
-        public void sinkConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
+        public void sinkConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, OutputStream> tap, Properties conf) {
             // TODO anything I should be doing here?
         }
 
         @Override
-        public boolean source(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
+        public boolean source(FlowProcess<? extends Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             AtomicInteger curIndex = sourceCall.getContext();
             CloseableList<TupleEntry> sourceValues = (CloseableList<TupleEntry>)sourceCall.getInput();
             if (curIndex.get() >= sourceValues.size()) {
@@ -198,7 +198,7 @@ public class InMemoryTap extends Tap<Properties, InputStream, OutputStream> {
         }
 
         @Override
-        public void sink(FlowProcess<Properties> flowProcess, SinkCall<NullContext, OutputStream> sinkCall) throws IOException {
+        public void sink(FlowProcess<? extends Properties> flowProcess, SinkCall<NullContext, OutputStream> sinkCall) throws IOException {
             List<TupleEntry> list = (List<TupleEntry>)sinkCall.getOutput();
             
             // we have to clone the Tuple, so the caller can re-use it.
@@ -242,12 +242,12 @@ public class InMemoryTap extends Tap<Properties, InputStream, OutputStream> {
     }
     
     @Override
-    public TupleEntryIterator openForRead(FlowProcess<Properties> flowProcess, InputStream input) throws IOException {
+    public TupleEntryIterator openForRead(FlowProcess<? extends Properties> flowProcess, InputStream input) throws IOException {
         return new TupleEntrySchemeIterator<Properties, List<TupleEntry>>(flowProcess, getScheme(), new CloseableList<TupleEntry>(_values));
     }
 
     @Override
-    public TupleEntryCollector openForWrite(FlowProcess<Properties> flowProcess, OutputStream output) throws IOException {
+    public TupleEntryCollector openForWrite(FlowProcess<? extends Properties> flowProcess, OutputStream output) throws IOException {
         return new TupleEntrySchemeCollector<Properties, List<TupleEntry>>(flowProcess, getScheme(), _values);
     }
 

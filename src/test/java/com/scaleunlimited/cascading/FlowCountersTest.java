@@ -1,9 +1,9 @@
 package com.scaleunlimited.cascading;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.assertFalse;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,8 +14,8 @@ import org.junit.Test;
 import cascading.flow.Flow;
 import cascading.flow.FlowProcess;
 import cascading.flow.StepCounters;
-import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
+import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.flow.local.LocalFlowConnector;
 import cascading.flow.local.LocalFlowProcess;
 import cascading.operation.BaseOperation;
@@ -109,7 +109,7 @@ public class FlowCountersTest {
         pipe = new Each(pipe, new CountTuplesFunction());
         Tap sinkTap = new NullSinkTap(testFields);
         
-        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
+        Flow flow = new Hadoop2MR1FlowConnector().connect(sourceTap, sinkTap, pipe);
         Map<Enum, Long> counters = FlowCounters.run(flow, FlowCountersTestEnum.TUPLE_COUNT,
                         FlowCountersTestEnum.UNUSED_COUNT);
         

@@ -33,7 +33,7 @@ public class FakeDataTap extends SourceTap<Properties, InputStream> {
         }
         
         @Override
-        public void sourceConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, Object> tap, Properties conf) {
+        public void sourceConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, Object> tap, Properties conf) {
             // TODO I think I need to stash the numResults value in the conf, and use it
             // in the sourcePrepare call to set up the context.
             conf.setProperty("numresults", "" + _numResults);
@@ -41,12 +41,12 @@ public class FakeDataTap extends SourceTap<Properties, InputStream> {
         }
 
         @Override
-        public void sinkConfInit(FlowProcess<Properties> flowProcess, Tap<Properties, InputStream, Object> tap, Properties conf) {
+        public void sinkConfInit(FlowProcess<? extends Properties> flowProcess, Tap<Properties, InputStream, Object> tap, Properties conf) {
             throw new TapException("FakeDataTap can only be used as a source, not a sink");
         }
 
         @Override
-        public void sourcePrepare(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
+        public void sourcePrepare(FlowProcess<? extends Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             super.sourcePrepare(flowProcess, sourceCall);
             
             
@@ -54,7 +54,7 @@ public class FakeDataTap extends SourceTap<Properties, InputStream> {
         }
         
         @Override
-        public boolean source(FlowProcess<Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
+        public boolean source(FlowProcess<? extends Properties> flowProcess, SourceCall<AtomicInteger, InputStream> sourceCall) throws IOException {
             // TODO Auto-generated method stub
             sourceCall.getIncomingEntry().setTuple(null);
 
@@ -62,7 +62,7 @@ public class FakeDataTap extends SourceTap<Properties, InputStream> {
         }
 
         @Override
-        public void sink(FlowProcess<Properties> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
+        public void sink(FlowProcess<? extends Properties> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
             throw new TapException("FakeDataTap can only be used as a source, not a sink");
         }
     }
@@ -77,7 +77,7 @@ public class FakeDataTap extends SourceTap<Properties, InputStream> {
     }
 
     @Override
-    public TupleEntryIterator openForRead(FlowProcess<Properties> flowProcess, InputStream input) throws IOException {
+    public TupleEntryIterator openForRead(FlowProcess<? extends Properties> flowProcess, InputStream input) throws IOException {
         return new TupleEntrySchemeIterator<Properties, InputStream>(flowProcess, getScheme(), input);
     }
 

@@ -15,7 +15,6 @@ import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.local.FileTap;
 import cascading.tap.local.PartitionTap;
-import cascading.tap.local.TemplateTap;
 import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
 
@@ -154,11 +153,6 @@ public class LocalPlatform extends BasePlatform {
         return new DirectoryTap(scheme, path.getAbsolutePath(), mode);
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
-        return new TemplateTap((FileTap) tap, pattern, fields);
-    }
     
     @Override
     public Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception {

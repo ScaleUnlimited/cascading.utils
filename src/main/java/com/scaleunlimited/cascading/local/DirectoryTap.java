@@ -94,7 +94,7 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
     
     @SuppressWarnings("unchecked")
     @Override
-    public TupleEntryIterator openForRead(FlowProcess<Properties> flowProcess, InputStream input) throws IOException {
+    public TupleEntryIterator openForRead(FlowProcess<? extends Properties> flowProcess, InputStream input) throws IOException {
         // TODO what to do about input? Why does MultiSourceTap check for input != null, and return first tap's TEI?
         
         List<FileTap> taps = getTaps();
@@ -135,7 +135,7 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
     }
     
     @Override
-    public TupleEntryCollector openForWrite(FlowProcess<Properties> flowProcess, OutputStream output) throws IOException {
+    public TupleEntryCollector openForWrite(FlowProcess<? extends Properties> flowProcess, OutputStream output) throws IOException {
         if (output == null) {
             if (getSinkMode() == SinkMode.REPLACE) {
                 File dirFile = new File(getPath());

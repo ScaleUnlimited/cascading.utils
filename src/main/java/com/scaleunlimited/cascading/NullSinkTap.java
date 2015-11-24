@@ -54,20 +54,20 @@ public class NullSinkTap extends SinkTap<Object, Object> {
         }
         
         @Override
-        public void sink(FlowProcess<Object> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
+        public void sink(FlowProcess<? extends Object> flowProcess, SinkCall<Object, Object> sinkCall) throws IOException {
         }
 
         @Override
-        public void sinkConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
+        public void sinkConfInit(FlowProcess<? extends Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
         }
 
         @Override
-        public boolean source(FlowProcess<Object> flowProcess, SourceCall<Object, Object> sourceCall) throws IOException {
+        public boolean source(FlowProcess<? extends Object> flowProcess, SourceCall<Object, Object> sourceCall) throws IOException {
             throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
         }
 
         @Override
-        public void sourceConfInit(FlowProcess<Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
+        public void sourceConfInit(FlowProcess<? extends Object> flowProcess, Tap<Object, Object, Object> tap, Object properties) {
             throw new UnsupportedOperationException("NullSinkTap can only be used as a sink, not a source");
         }
         
@@ -115,12 +115,13 @@ public class NullSinkTap extends SinkTap<Object, Object> {
     }
 
     @Override
-    public TupleEntryCollector openForWrite(FlowProcess<Object> flowProcess, Object out) throws IOException {
+    public TupleEntryCollector openForWrite(FlowProcess<? extends Object> flowProcess, Object out) throws IOException {
         return new TupleEntrySchemeCollector<Object, OutputStream>(flowProcess, getScheme(), new OutputStream() {
 
             @Override
             public void write(int b) throws IOException { }
         });
     }
+
 
 }

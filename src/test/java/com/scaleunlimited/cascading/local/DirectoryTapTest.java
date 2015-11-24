@@ -1,19 +1,17 @@
 package com.scaleunlimited.cascading.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
-
-import com.scaleunlimited.cascading.local.DirectoryTap;
-import com.scaleunlimited.cascading.local.KryoScheme;
 
 import cascading.flow.Flow;
 import cascading.flow.local.LocalFlowConnector;
@@ -22,7 +20,8 @@ import cascading.pipe.Pipe;
 import cascading.scheme.local.TextLine;
 import cascading.tap.SinkMode;
 import cascading.tap.local.FileTap;
-import cascading.tap.local.TemplateTap;
+import cascading.tap.local.PartitionTap;
+import cascading.tap.partition.DelimitedPartition;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
@@ -90,8 +89,8 @@ public class DirectoryTapTest {
     }
 
     @Test
-    public void testAsTamplateTapSink() throws Exception {
-        final String dirPath = "build/test/DirectoryTapTest/testAsTamplateTapSink/in";
+    public void testAsPartitionTapSink() throws Exception {
+        final String dirPath = "build/test/DirectoryTapTest/testAsPartitionTapSink/in";
         
         DirectoryTap dt = new DirectoryTap(new KryoScheme(new Fields("key", "value")), dirPath, SinkMode.REPLACE);
         TupleEntryCollector writer = dt.openForWrite(new LocalFlowProcess());
@@ -101,23 +100,25 @@ public class DirectoryTapTest {
         writer.close();
 
         // We should have a single file, called part-00000, in the directory.
-        // We'll use that as input, and use TemplateTap for the output.
+        // We'll use that as input, and use PartitionTap for the output.
         Pipe p = new Pipe("pipe");
         
-        final String out = "build/test/DirectoryTapTest/testAsTamplateTapSink/out";
+        final String out = "build/test/DirectoryTapTest/testAsPartitionTapSink/out";
         DirectoryTap parentTap = new DirectoryTap(new TextLine(), out, SinkMode.REPLACE);
-        TemplateTap sinkTap = new TemplateTap(parentTap, "key-%s", new Fields("key"));
+        
+        DelimitedPartition partition = new DelimitedPartition( new Fields( "key"), "-" );
+        PartitionTap sinkTap = new PartitionTap(parentTap, partition, SinkMode.REPLACE );
         
         Flow<?> f= new LocalFlowConnector().connect(dt, sinkTap, p);
         f.complete();
         
-        // We should have two files, called "key-key1" and "key-key2", in the output directory.
+        // We should have two files, called "key1" and "key2", in the output directory.
         
         File outDir = new File(out);
         assertTrue(outDir.exists());
         assertTrue(outDir.isDirectory());
         
-        File resultFile = new File(outDir, "key-key1");
+        File resultFile = new File(outDir, "key1");
         assertTrue(resultFile.exists());
         
         List<String> lines = IOUtils.readLines(new FileInputStream(resultFile));
@@ -125,7 +126,7 @@ public class DirectoryTapTest {
         assertEquals("key1\t11", lines.get(0));
         assertEquals("key1\t12", lines.get(1));
         
-        resultFile = new File(outDir, "key-key2");
+        resultFile = new File(outDir, "key2");
         assertTrue(resultFile.exists());
         
         lines = IOUtils.readLines(new FileInputStream(resultFile));

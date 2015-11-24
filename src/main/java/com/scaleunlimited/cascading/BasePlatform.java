@@ -83,10 +83,6 @@ public abstract class BasePlatform implements Serializable {
     
     public abstract Tap makeTap(Scheme scheme, BasePath path, SinkMode mode) throws Exception;
 
-    // Use makePartitionTap instead
-    @Deprecated
-    public abstract Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception;
-
     public abstract Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception;
 
     public abstract Scheme makeBinaryScheme(Fields fields) throws Exception;

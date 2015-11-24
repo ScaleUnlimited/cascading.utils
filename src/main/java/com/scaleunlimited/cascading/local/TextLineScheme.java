@@ -82,7 +82,7 @@ public class TextLineScheme extends TextLine {
     }
     
     @Override
-    public void sinkCleanup(FlowProcess<Properties> flowProcess, SinkCall<PrintWriter, OutputStream> sinkCall) throws IOException {
+    public void sinkCleanup(FlowProcess<? extends Properties> flowProcess, SinkCall<PrintWriter, OutputStream> sinkCall) throws IOException {
         // Currently cascading doesn't close the printwriter, so the underlying stream doesn't get flushed properly.
         PrintWriter pw = sinkCall.getContext();
         super.sinkCleanup(flowProcess, sinkCall);

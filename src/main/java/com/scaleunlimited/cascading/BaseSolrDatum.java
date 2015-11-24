@@ -52,7 +52,7 @@ public abstract class BaseSolrDatum extends BaseDatum {
     }
 
     protected void setDateField(String fieldName, long time) {
-        _tupleEntry.set(fieldName, toSolrDate(time));
+        _tupleEntry.setString(fieldName, toSolrDate(time));
     }
     
     protected long getDateField(String fieldName) {

@@ -23,7 +23,7 @@
 	<artifactId>cascading.utils</artifactId>
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
-	<version>2.7-SNAPSHOT</version>
+	<version>3.1-SNAPSHOT</version>
 	<repositories>
 		<repository>
 			<id>Conjar</id>
@@ -47,8 +47,8 @@
     </repositories>
 	
     <properties>
-        <cascading.version>2.5.5</cascading.version>
-        <hadoop.version>2.2.0</hadoop.version>
+        <cascading.version>3.1.0-wip-40</cascading.version>
+        <hadoop.version>2.6.0</hadoop.version>
     </properties>
     
 	<dependencies>
@@ -111,7 +111,14 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-aws</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+		</dependency>  
+		      
 		<dependency>
             <groupId>cascading</groupId>
             <artifactId>cascading-core</artifactId>
@@ -129,7 +136,12 @@
             <artifactId>cascading-hadoop2-mr1</artifactId>
             <version>${cascading.version}</version>
         </dependency>
-         
+ 
+		<dependency>
+			<groupId>cascading</groupId>
+			<artifactId>cascading-expression</artifactId>
+            <version>${cascading.version}</version>
+		</dependency>        
         <!-- For KryoScheme -->
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>

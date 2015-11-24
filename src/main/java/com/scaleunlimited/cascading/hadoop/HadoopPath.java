@@ -10,7 +10,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
-import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +92,7 @@ public class HadoopPath extends BasePath {
     @Override
     public boolean isDirectory() {
         try {
-            return _hadoopFS.getFileStatus(_hadoopPath).isDir();
+            return _hadoopFS.getFileStatus(_hadoopPath).isDirectory();
         } catch (IOException e) {
             LOGGER.error("Exception getting information about Hadoop path: " + e.getMessage(), e);
             return false;

@@ -8,11 +8,9 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import com.scaleunlimited.cascading.StdDeviation;
-
 import cascading.flow.Flow;
-import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
+import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
@@ -57,7 +55,7 @@ public class StdDeviationTest {
         
         Lfs sinkTap = new Lfs(new SequenceFile(new Fields("user", StdDeviation.FIELD_NAME)), out, SinkMode.REPLACE);
         
-        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
+        Flow flow = new Hadoop2MR1FlowConnector().connect(sourceTap, sinkTap, pipe);
         flow.complete();
         
         TupleEntryIterator iter = sinkTap.openForRead(new HadoopFlowProcess());

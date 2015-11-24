@@ -38,7 +38,7 @@ public class PayloadDatumTest {
         }
         
         public void setA(String a) {
-            _tupleEntry.set(A_FN, a);
+            _tupleEntry.setString(A_FN, a);
         }
     }
     

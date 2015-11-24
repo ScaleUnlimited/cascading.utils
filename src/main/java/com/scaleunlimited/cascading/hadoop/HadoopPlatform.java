@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
@@ -27,9 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
-import cascading.flow.hadoop.HadoopFlowConnector;
 import cascading.flow.hadoop.HadoopFlowProcess;
 import cascading.flow.hadoop.util.HadoopUtil;
+import cascading.flow.hadoop2.Hadoop2MR1FlowConnector;
 import cascading.scheme.Scheme;
 import cascading.scheme.hadoop.SequenceFile;
 import cascading.scheme.hadoop.TextLine;
@@ -38,7 +36,6 @@ import cascading.tap.SinkMode;
 import cascading.tap.Tap;
 import cascading.tap.hadoop.Hfs;
 import cascading.tap.hadoop.PartitionTap;
-import cascading.tap.hadoop.TemplateTap;
 import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
 
@@ -262,7 +259,7 @@ public class HadoopPlatform extends BasePlatform {
             }
         }
         
-        return new HadoopFlowConnector(mergedProps);
+        return new Hadoop2MR1FlowConnector(mergedProps);
     }
 
     @Override
@@ -285,11 +282,6 @@ public class HadoopPlatform extends BasePlatform {
         return new Hfs(scheme, path.getAbsolutePath(), mode);
     }
 
-    @Override
-    public Tap makeTemplateTap(Tap tap, String pattern, Fields fields) throws Exception {
-        return new TemplateTap((Hfs) tap, pattern, fields);
-    }
-    
     @Override
     public Tap makePartitionTap(Tap parentTap, Partition partition, SinkMode mode) throws Exception {
         if (parentTap instanceof Hfs) {
