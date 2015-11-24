@@ -23,7 +23,6 @@ import cascading.pipe.Every;
 import cascading.pipe.GroupBy;
 import cascading.pipe.Pipe;
 import cascading.pipe.SubAssembly;
-import cascading.pipe.assembly.AggregateBy;
 import cascading.pipe.assembly.SumBy;
 import cascading.pipe.joiner.LeftJoin;
 import cascading.tuple.Fields;
@@ -35,6 +34,7 @@ import com.scaleunlimited.cascading.NullContext;
 @SuppressWarnings("serial")
 public class TopTermsByLLR extends SubAssembly {
     private static final Logger LOGGER = LoggerFactory.getLogger(TopTermsByLLR.class);
+    private static final int DEFAULT_THRESHOLD = 10000;
     
     private static class ExtractTerms extends BaseOperation<NullContext> implements Function<NullContext> {
         
@@ -266,7 +266,7 @@ public class TopTermsByLLR extends SubAssembly {
             public boolean filter(double llrScore, String term, ITermsParser parser) {
                 return false;
             }
-        }, new Fields("docId"), new Fields("text"), AggregateBy.CompositeFunction.DEFAULT_THRESHOLD);
+        }, new Fields("docId"), new Fields("text"), DEFAULT_THRESHOLD);
     }
 
     /**
