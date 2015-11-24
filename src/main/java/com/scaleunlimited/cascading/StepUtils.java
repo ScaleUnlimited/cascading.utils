@@ -48,7 +48,7 @@ public class StepUtils {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void nameFlowStep(BaseFlowStep step) {
-        List<Group> groups = step.getGroups();
+        List<Group> groups = (List<Group>) step.getGroups();
         
         String stepName = "";
         if (groups.size() == 0) {

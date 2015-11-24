@@ -1,6 +1,6 @@
 package com.scaleunlimited.cascading;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
@@ -8,7 +8,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.junit.Test;
 
 import cascading.flow.Flow;
-import cascading.flow.FlowConnector;
 import cascading.flow.FlowDef;
 import cascading.flow.FlowStep;
 import cascading.operation.Debug;
@@ -55,6 +54,7 @@ public class FlowUtilsTest {
         return makeAndNameFlow(platform, expectedStepName, p);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private Object makeAndNameFlow(BasePlatform platform, String expectedStepName, Pipe p) throws Exception {
         FlowDef flowDef = new FlowDef()
             .setName(FLOW_NAME)
