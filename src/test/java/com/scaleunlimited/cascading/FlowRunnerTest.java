@@ -186,11 +186,11 @@ public class FlowRunnerTest extends Assert {
         fr.terminate();
         
         // We should some number of entries in the stats file. The sink name is now
-        // part of the step name, so it's "group on total local".
-        checkStatsFile(logDirName, "testStatsLocal", "group on total local", 1, 1);
+        // part of the step name.
+        checkStatsFile(logDirName, "testStatsLocal", "group on total (1/1) ...Test/testStatsLocal/out-0", 1, 1);
 
         // And also in the summary file
-        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsLocal", "group on total");
+        checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsLocal", "group on total ");
     }
     
     @Test
