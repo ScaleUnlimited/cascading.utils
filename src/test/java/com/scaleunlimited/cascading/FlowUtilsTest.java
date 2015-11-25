@@ -29,7 +29,7 @@ public class FlowUtilsTest {
         String stepName = "Debug (1/1) /path/to/dest";
         JobConf conf = (JobConf)testNamingStepsForMapOnlyJob(new HadoopPlatform(this.getClass()), stepName);
         assertEquals(FLOW_NAME + "/" + stepName, conf.getJobName());
-        testNamingStepsForMapOnlyJob(new LocalPlatform(this.getClass()), "Debug local");
+        testNamingStepsForMapOnlyJob(new LocalPlatform(this.getClass()), stepName);
     }
 
     private Object testNamingStepsForMapOnlyJob(BasePlatform platform, String expectedStepName) throws Exception {
@@ -44,7 +44,7 @@ public class FlowUtilsTest {
         String stepName = "grouping (1/1) /path/to/dest";
         JobConf conf = (JobConf)testNamingStepsForGroupingJob(new HadoopPlatform(this.getClass()), stepName);
         assertEquals(FLOW_NAME + "/" + stepName, conf.getJobName());
-        testNamingStepsForGroupingJob(new LocalPlatform(this.getClass()), "grouping local");
+        testNamingStepsForGroupingJob(new LocalPlatform(this.getClass()), stepName);
     }
     
     private Object testNamingStepsForGroupingJob(BasePlatform platform, String expectedStepName) throws Exception {
