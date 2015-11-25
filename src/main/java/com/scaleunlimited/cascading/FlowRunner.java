@@ -355,9 +355,9 @@ public class FlowRunner {
                                        sliceStats.getCounterValue(JobInProgress.Counter.SLOTS_MILLIS_REDUCES));
                        */
                    } else if (flowNodeStats.getStatus() == Status.RUNNING) {
-                       if (flowNodeStats.getKind().equals(Kind.MAPPER)) {
+                       if (flowNodeStats.getKind().equals(Kind.MAPPER.name())) {
                            incrementCounts(taskCounts, countsKey, flowName, stepName, 1, 0, 0, 0);
-                       } else if (flowNodeStats.getKind().equals(Kind.REDUCER)) {
+                       } else if (flowNodeStats.getKind().equals(Kind.REDUCER.name())) {
                            incrementCounts(taskCounts, countsKey, flowName, stepName, 0, 1, 0, 0);
                        }
                    }
