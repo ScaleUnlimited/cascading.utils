@@ -40,6 +40,9 @@ public class FlowRunner {
 
     // Default number of flows to run in parallel
     private static final int DEFAULT_MAX_FLOWS = 100;
+
+    // Maximum number of map or reduce slots (flow name + step name) in memory.
+    protected static final int MAX_TIME_SLOTS = 10000;
     
     private static class TaskStats {
         
@@ -246,6 +249,15 @@ public class FlowRunner {
             private void addSlotTime(Map<String, Long> slotTime, String flowAndStepName, int slotCount, long checkInterval) {
                 Long curSlotTime = slotTime.get(flowAndStepName);
                 if (curSlotTime == null) {
+                    int numSlots = slotTime.size();
+
+                    if (numSlots > MAX_TIME_SLOTS) {
+                        return;
+                    } else if (numSlots == MAX_TIME_SLOTS) {
+                        // Generate a single error.
+                        LOGGER.error("At max number of time slots, won't record additional flow/step combinations");
+                    }
+                    
                     curSlotTime = new Long(0);
                 }
                 
