@@ -232,13 +232,14 @@ public class FlowRunnerTest extends Assert {
     
     @Test
     public void testStatsHadoopMiniCluster() throws Exception {
-        final int numContainers = 2;
+        // We need 2 containers for the reduce tasks, plus one for the app mgr.
+        final int numContainers = 3;
         MiniClusterPlatform platform = new MiniClusterPlatform(FlowRunnerTest.class, numContainers, 
                         "build/test/FlowRunnerTest/testStatsHadoopMiniCluster/log/");
         platform.setJobPollingInterval(10);
-        platform.setNumReduceTasks(numContainers);
+        platform.setNumReduceTasks(2);
         
-        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 1000);
+        FlowRunner fr = new FlowRunner("testStatsHadoopMiniCluster", 1, platform.getLogDir(), 100);
         FlowFuture result = fr.addFlow(makeFlow("testStatsHadoopMiniCluster", 10, 0, false, platform));
         result.get();
         fr.terminate();
@@ -359,7 +360,7 @@ public class FlowRunnerTest extends Assert {
         pipe = new GroupBy("group on total", pipe, new Fields("total"));
         
         BasePath out = platform.makePath(testDir, "out-" + id);
-        Tap sinkTap = platform.makeTap(platform.makeBinaryScheme(new Fields("user", "total")), out, SinkMode.REPLACE);
+        Tap sinkTap = platform.makeTap(platform.makeTextScheme(), out, SinkMode.REPLACE);
 
         Flow flow = platform.makeFlowConnector().connect(testName, sourceTap, sinkTap, pipe);
         FlowUtils.nameFlowSteps(flow);

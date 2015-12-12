@@ -2,6 +2,8 @@ package com.scaleunlimited.cascading.hadoop.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -10,6 +12,10 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MiniMRClientCluster;
 import org.apache.hadoop.mapred.MiniMRClientClusterFactory;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.server.MiniYARNCluster;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ResourceScheduler;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler;
 
 import com.scaleunlimited.cascading.hadoop.HadoopPlatform;
 
@@ -21,7 +27,7 @@ public class MiniClusterPlatform extends HadoopPlatform {
     private static final String DEFAULT_LOGDIR_NAME = "minicluster-logs";
 //    private static final String DEFAULT_TEMPDIR_NAME = "minicluster-tmp";
     
-    private MiniMRClientCluster _mr2 = null;
+    private MiniYARNCluster _yarn = null;
     MiniDFSCluster _dfs = null;
     
     public MiniClusterPlatform(Class applicationJarClass) throws IOException {
@@ -66,34 +72,60 @@ public class MiniClusterPlatform extends HadoopPlatform {
         //  yarn.nodemanager.local-dirs - ignored?
         //  yarn.nodemanager.log-dirs - ignored?
         //  dfs.data.dir - ignored, use MiniDFSCluster.HDFS_MINIDFS_BASEDIR
-        //  mapreduce.map.memory.mb - ???
-        //  mapreduce.reduce.memory.mb - ???
         //  mapreduce.map.java.opts - ???
         //  mapreduce.reduce.java.opts - ???
-        //  yarn.nodemanager.resource.memory-mb - ???
-        //  yarn.scheduler.minimum-allocation-mb - ???
         //  yarn.scheduler.maximum-allocation-mb - ???
         //  yarn.app.mapreduce.am.resource.mb - ???
         //  yarn.app.mapreduce.am.command-opts - ???
-        //  yarn.nodemanager.resource.cpu-vcores - ???
-        //  mapreduce.map.cpu.vcores - ??? (defaults to 1)
-        //  mapreduce.reduce.cpu.vcores - ??? (defaults to 1)
         
+        // mapred.child.java.opts: -Xmx200m
+        
+        //  yarn.scheduler.maximum-allocation-vcores
+        // yarn.nodemanager.resource.memory-mb
+        
+        // We need to set how many containers are available.
+        conf.setInt("yarn.nodemanager.resource.cpu-vcores", numContainers);
+        conf.setInt("yarn.scheduler.maximum-allocation-vcores", 1);
+        
+        final int taskMemory = 200;
+        final int containerMemory = taskMemory * 3 / 2;
+        
+        conf.setInt("mapreduce.map.memory.mb", containerMemory);
+        conf.setInt("mapreduce.reduce.memory.mb", containerMemory);
+        conf.setInt("yarn.scheduler.minimum-allocation-mb", taskMemory);
+        conf.setInt("yarn.scheduler.maximum-allocation-mb", taskMemory);
+        conf.setInt("yarn.nodemanager.resource.memory-mb", containerMemory * numContainers);
+        conf.setInt("yarn.app.mapreduce.am.resource.mb", containerMemory);
+        conf.set("mapred.child.java.opts", "-Xmx" + taskMemory + "m");
+
+        // Tell the minicluster where to put data. Sadly, this doesn't work.
+        // See comment in shutdown()
         conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dfsDir.getAbsolutePath());
+        
+        Iterator<Entry<String, String>> iter = conf.iterator();
+        while (iter.hasNext()) {
+            Entry<String, String> prop = iter.next();
+            System.out.println(prop.getKey() + ": " + prop.getValue());
+        }
+        
         _dfs = new MiniDFSCluster.Builder(conf).build();
         _dfs.waitClusterUp();
         
-        _mr2 = MiniMRClientClusterFactory.create(this.getClass(), MR_IDENTIFIER, numContainers, conf);
-        _mr2.start();
-        
+        YarnConfiguration clusterConf = new YarnConfiguration();
+        clusterConf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 64);
+        clusterConf.setClass(YarnConfiguration.RM_SCHEDULER, FifoScheduler.class, ResourceScheduler.class);
+        _yarn = new MiniYARNCluster("cluster1", numContainers, 1, 1);
+        _yarn.init(clusterConf);
+        _yarn.start();
+
         // Update _conf to match what we get back from the minicluster
-        Configuration newConf = _mr2.getConfig();
+        Configuration newConf = _yarn.getConfig();
         _conf = new JobConf(newConf);
     }
 
     public void shutdown() throws InterruptedException, IOException {
-        if (_mr2 != null) {
-            _mr2.stop();
+        if (_yarn != null) {
+            _yarn.stop();
         }
 
         if (_dfs != null) {
