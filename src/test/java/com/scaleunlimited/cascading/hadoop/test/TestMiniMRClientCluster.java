@@ -76,12 +76,12 @@ public class TestMiniMRClientCluster {
     mrCluster.stop();
   }
 
-  @Test
+  // @Test
   public void testNothing() {
       // keep JUnit happy
   }
   
-  // @Test
+  @Test
   public void testRestart() throws Exception {
 
     String rmAddress1 = mrCluster.getConfig().get(YarnConfiguration.RM_ADDRESS);
@@ -140,7 +140,7 @@ public class TestMiniMRClientCluster {
 
   }
 
-  // @Test
+  @Test
   public void testJob() throws Exception {
     final Job job = createJob();
     org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,

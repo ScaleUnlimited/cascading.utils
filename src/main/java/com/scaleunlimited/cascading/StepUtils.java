@@ -66,11 +66,11 @@ public class StepUtils {
                 stepName = stepName.substring(0, stepName.length()-1);
             }
         } else {
-            // Get the name of the last group. We should only have one group unless
+            // Get the name of the first group. We should only have one group unless
             // we're running in Cascading local mode (or maybe HashJoin on map side???)
             // FUTURE - try to pick the "best" group name?
             // or combine first/last group names?
-            stepName = groups.get(groups.size() - 1).getName();
+            stepName = groups.get(0).getName();
         }
         
         // We want the full step name to be <our better step name> (step #/total steps) <optional tap identifier>

@@ -230,7 +230,9 @@ public class FlowRunnerTest extends Assert {
         fr.terminate();
     }
     
-    @Test
+    // TODO this is commented out for now, as we can't seem to get the minicluster to run two reduce tasks
+    // at the same time. See https://github.com/ScaleUnlimited/cascading.utils/issues/26
+    // @Test
     public void testStatsHadoopMiniCluster() throws Exception {
         // We need 2 containers for the reduce tasks, plus one for the app mgr.
         final int numContainers = 3;

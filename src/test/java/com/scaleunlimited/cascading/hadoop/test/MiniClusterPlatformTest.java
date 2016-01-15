@@ -72,7 +72,7 @@ public class MiniClusterPlatformTest {
 
     
     private Flow makeFlow(String testName) throws Exception {
-        BasePath testDir = _platform.makePath(testName);
+        BasePath testDir = _platform.makePath(BASE_DIR + testName);
         BasePath in = _platform.makePath(testDir, "in");
         
         Tap sourceTap = _platform.makeTap(_platform.makeBinaryScheme(new Fields("user", "val")), in, SinkMode.REPLACE);
