@@ -167,6 +167,7 @@ public class SimHash extends SubAssembly {
     
     
     public SimHash(Pipe sourcePipe, String docIdFieldname, String termFieldname, int numHashes, int numSimilarDocs) {
+        super(sourcePipe);
         
         // Calculate hash for each tuple. First leave one unique value per document.
         // FUTURE we could defer this until a custom Buffer instead of First(numHashes), to avoid

@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
@@ -185,11 +183,6 @@ public class HadoopPlatform extends BasePlatform {
         return makePartitionTap(parentTap, partition, SinkMode.KEEP);
     }
     
-    @Override
-    public void resetNumReduceTasks() throws Exception {
-        setNumReduceTasks(CLUSTER_REDUCER_COUNT);
-    }
-
     @Override
     public void setFlowPriority(FlowPriority priority) throws Exception {
         switch (priority) {

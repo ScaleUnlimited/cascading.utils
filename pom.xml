@@ -23,7 +23,7 @@
 	<artifactId>cascading.utils</artifactId>
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
-	<version>2.6-SNAPSHOT</version>
+	<version>2.7-SNAPSHOT</version>
 	<repositories>
 		<repository>
 			<id>Conjar</id>
@@ -126,7 +126,7 @@
          
         <dependency>
             <groupId>cascading</groupId>
-            <artifactId>cascading-hadoop</artifactId>
+            <artifactId>cascading-hadoop2-mr1</artifactId>
             <version>${cascading.version}</version>
         </dependency>
          
