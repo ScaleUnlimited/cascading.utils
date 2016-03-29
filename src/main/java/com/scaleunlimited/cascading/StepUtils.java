@@ -28,6 +28,7 @@ import cascading.flow.planner.BaseFlowStep;
 import cascading.flow.planner.NamingFlowStep;
 import cascading.operation.Operation;
 import cascading.pipe.Group;
+import cascading.pipe.GroupBy;
 import cascading.stats.FlowStepStats;
 
 public class StepUtils {
@@ -48,7 +49,7 @@ public class StepUtils {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void nameFlowStep(BaseFlowStep step) {
-        List<Group> groups = (List<Group>) step.getGroups();
+        List<Group> groups = (List<Group>)step.getGroups();
         
         String stepName = "";
         if (groups.size() == 0) {
@@ -68,7 +69,9 @@ public class StepUtils {
         } else {
             // Get the name of the first group. We should only have one group unless
             // we're running in Cascading local mode (or maybe HashJoin on map side???)
-            // FUTURE - try to pick the "best" group name?
+            // If we're running in local mode, we could have any number of groups, and
+            // the order isn't deterministic.
+            // FUTURE - try to figure out the last group name
             // or combine first/last group names?
             stepName = groups.get(0).getName();
         }

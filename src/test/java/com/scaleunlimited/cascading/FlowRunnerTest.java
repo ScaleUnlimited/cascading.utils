@@ -185,9 +185,10 @@ public class FlowRunnerTest extends Assert {
         ff.get();
         fr.terminate();
         
-        // We should some number of entries in the stats file. The sink name is now
-        // part of the step name.
-        checkStatsFile(logDirName, "testStatsLocal", "group on total (1/1) ...Test/testStatsLocal/out-0", 1, 1);
+        // We should get some number of entries in the stats file. The sink name is now
+        // part of the step name. We don't know the order of the groups in the step, so we have to check for whichever
+        // one might have come first.
+        checkStatsFile(logDirName, "testStatsLocal", 1, 1, "sum values (1/1) ...Test/testStatsLocal/out-0", "group on total (1/1) ...Test/testStatsLocal/out-0");
 
         // And also in the summary file
         checkSummaryFile(platform.getLogDir().getAbsolutePath(), "testStatsLocal", "group on total ");
@@ -247,7 +248,7 @@ public class FlowRunnerTest extends Assert {
         fr.terminate();
 
         // We should some number of entries in the stats file
-        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
+        checkStatsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", 0, 2, "group on total (2/2) ...tsHadoopMiniCluster/out-0");
         
         // And check for something similar in the details file
         checkDetailsFile(platform.getLogDir().getAbsolutePath(), "testStatsHadoopMiniCluster", "group on total (2/2) ...tsHadoopMiniCluster/out-0", 0, 2);
@@ -287,14 +288,21 @@ public class FlowRunnerTest extends Assert {
     }
     
     
-    private void checkStatsFile(String logDirName, String testName, String stepName, int numMaps, int numReduces) throws IOException {
-        String targetText = String.format("\t%d\t%d\t%s|%s=%d,%d;", numMaps, numReduces, testName, stepName, numMaps, numReduces);
+    private void checkStatsFile(String logDirName, String testName, int numMaps, int numReduces, String... stepNames) throws IOException {
+        String[] targetTexts = new String[stepNames.length];
+        int i = 0;
+        for (String stepName : stepNames) {
+            targetTexts[i++] = String.format("\t%d\t%d\t%s|%s=%d,%d;", numMaps, numReduces, testName, stepName, numMaps, numReduces);
+        }
+        
         BufferedReader br = openStatsFile(logDirName, testName);
         
         String curLine;
         while ((curLine = br.readLine()) != null) {
-            if (curLine.contains(targetText)) {
-                return;
+            for (String targetText : targetTexts) {
+                if (curLine.contains(targetText)) {
+                    return;
+                }
             }
         }
         

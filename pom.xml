@@ -1,5 +1,5 @@
 <!--
- * Copyright 2010-2014 Scale Unlimited.
+ * Copyright 2010-2016 Scale Unlimited.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 	<name>Scale Unlimited utilities for Cascading</name>
 	<packaging>jar</packaging>
 	<version>3.1-SNAPSHOT</version>
+	
 	<repositories>
 		<repository>
 			<id>Conjar</id>
@@ -47,7 +48,7 @@
     </repositories>
 	
     <properties>
-        <cascading.version>3.1.0-wip-40</cascading.version>
+        <cascading.version>3.1.0-wip-56</cascading.version>
         <hadoop.version>2.6.0</hadoop.version>
     </properties>
     

@@ -203,10 +203,8 @@ public class SimHashTest {
                     Object o1 = t.getObject(i);
                     Object o2 = targetTuple.getObject(i);
                     if ((o1 instanceof Float) && (o2 instanceof Float)) {
-                        // Delta is less than 5%
-                        float min = (Float)o1 < (Float)o2 ? (Float)o1 : (Float)o2;
-                        float max = (Float)o1 > (Float)o2 ? (Float)o1 : (Float)o2;
-                        matches = ((max - min) / min) < 0.05f;
+                        // Delta is <= than 5%
+                        matches = Math.abs((Float)o1 - (Float)o2) <= 0.05f;
                     } else {
                         matches = t.getObject(i).equals(targetTuple.getObject(i));
                     }
