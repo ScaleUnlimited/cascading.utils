@@ -188,6 +188,28 @@ public abstract class BaseDatum implements Serializable {
         }
     }
     
+    @Override
+    public String toString() {
+        return toString(_tupleEntry.getTuple(), 
+                        TupleLogger.DEFAULT_MAX_ELEMENT_LENGTH);
+    }
+    
+    public static String toString(TupleEntry tupleEntry) {
+        tupleEntry.getFields().print();
+        StringBuilder buffer = 
+            new StringBuilder(tupleEntry.getFields().print() + "\n");
+        TupleLogger.printTuple( buffer, 
+                                tupleEntry.getTuple(), 
+                                Integer.MAX_VALUE);
+        return buffer.toString();
+    }
+
+    public static String toString(Tuple tuple, int maxPrintLength) {
+        StringBuilder buffer = new StringBuilder();
+        TupleLogger.printTuple(buffer, tuple, maxPrintLength);
+        return buffer.toString();
+    }
+
     /**
      * Create a unique field name
      * 
