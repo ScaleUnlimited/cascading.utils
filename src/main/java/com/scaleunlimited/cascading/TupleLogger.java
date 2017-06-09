@@ -408,15 +408,21 @@ public class TupleLogger extends Debug {
     }
     
     public StringBuilder printTuple(StringBuilder buffer, Tuple tuple) {
+        return printTuple(buffer, tuple, _maxPrintLength);
+    }
+    
+    public static StringBuilder printTuple( StringBuilder buffer, 
+                                            Tuple tuple, 
+                                            int maxPrintLength) {
         buffer.append( "[" );
         for (int i = 0; i < tuple.size(); i++) {
             Object element = tuple.getObject( i );
 
             if (element instanceof Tuple) {
-                printTuple(buffer, (Tuple)element);
+                printTuple(buffer, (Tuple)element, maxPrintLength);
             } else {
                 buffer.append("\'");
-                buffer.append(printObject(element, _maxPrintLength));
+                buffer.append(printObject(element, maxPrintLength));
                 buffer.append( "\'" );
             }
 
