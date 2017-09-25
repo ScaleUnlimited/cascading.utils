@@ -46,3 +46,25 @@ To create Eclipse project files:
 Then, from Eclipse follow the standard procedure to import an existing Java project
 into your Workspace.
 
+NOTE: Invalid 3rd Pary Jars
+
+Sometimes during a build you'll run into this kind of error:
+
+    [javac] error: error reading /Users/kenkrugler/.m2/repository/asm/asm/3.1/asm-3.1.jar; error in opening zip file
+    [javac] error: error reading /Users/kenkrugler/.m2/repository/org/codehaus/jettison/jettison/1.1/jettison-1.1.jar; error in opening zip file
+    [javac] error: error reading /Users/kenkrugler/.m2/repository/com/sun/xml/bind/jaxb-impl/2.2.3-1/jaxb-impl-2.2.3-1.jar; error in opening zip file
+
+The issue is that some Maven repositories return redirect results when a download 
+is requested (e.g. glassfish is one of these). When that happens, the maven-ant 
+task we're using fails, and creates a jar that's actually the HTML redirect page.
+
+The solution is to (a) delete all of the directories in your local maven repo that
+contain invalid jars, and then (b) run `mvn eclipse` to trigger the download 
+of the jars using standard Maven, which correctly handles redirects.
+
+E.g. for the above, I did:
+
+rm -rf ~/.m2/repository/asm/asm/3.1/
+rm -rf ~/.m2/repository/org/codehaus/jettison/jettison/1.1/
+rm -rf ~/.m2/repository/com/sun/xml/bind/jaxb-impl/2.2.3-1/
+mvn eclipse
