@@ -41,7 +41,7 @@ public class LoggingUtilsTest {
         options.setTraceLogging(true);
         LoggingUtils.setLoggingProperties(props, options);
         String logSettings = (String)props.get("log4j.logger");
-        Assert.assertEquals("cascading=INFO,bixo=TRACE,com.bixolabs=TRACE",
+        Assert.assertEquals("cascading=INFO,bixo=TRACE,com.bixolabs=TRACE,com.scaleunlimited=TRACE",
                             logSettings);
         
         props.put("log4j.logger", "org.apache=INFO");
@@ -49,7 +49,7 @@ public class LoggingUtilsTest {
         options.setDebugLogging(true);
         LoggingUtils.setLoggingProperties(props, options);
         logSettings = (String)props.get("log4j.logger");
-        Assert.assertEquals("org.apache=INFO,cascading=INFO,bixo=DEBUG,com.bixolabs=DEBUG",
+        Assert.assertEquals("org.apache=INFO,cascading=INFO,bixo=DEBUG,com.bixolabs=DEBUG,com.scaleunlimited=DEBUG",
                             logSettings);
     }
 }

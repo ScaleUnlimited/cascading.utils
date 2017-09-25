@@ -29,6 +29,11 @@ public class BaseOptions {
     @Option(name = "-debug", usage = "debug logging", required = false)
     public void setDebugLogging(boolean debugLogging) {
         _debugLogging = debugLogging;
+        
+        // HACK - set the TupleLogger's logging explicitly, so that subsequent
+        // calls to TupleLogger.makePipe() will do the right thing when defining the
+        // workflow.
+        TupleLogger.enableLogging(debugLogging);
     }
 
     @Option(name = "-trace", usage = "trace logging", required = false)
