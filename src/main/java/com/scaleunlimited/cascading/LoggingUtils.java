@@ -43,10 +43,11 @@ public class LoggingUtils {
         } else {
             curLogSettings = curLogSettings + ",";
         }
-        String newLogSettings = String.format(  "%scascading=%s,bixo=%s,com.bixolabs=%s",
+        String newLogSettings = String.format(  "%scascading=%s,bixo=%s,com.bixolabs=%s,com.scaleunlimited=%s",
                                                 curLogSettings,
                                                 cascadingLevel,
                                                 bixoLevel,
+                                                myLevel,
                                                 myLevel);
         props.put("log4j.logger", newLogSettings);
         
