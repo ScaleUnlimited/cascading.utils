@@ -141,6 +141,16 @@ public class TupleLoggerTest extends CascadingTestCase {
         tupleLogger.setPrintOnlyMatchingTuples("matchString", "match-3", "match-77", "match-89");
         invokeFilter(tupleLogger, argumentsArray);
         assertEquals(30, tupleLogger.getNumTuplesLogged());
+
+        tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintOnlyMatchingTuples("*String", "match-3", "match-77", "match-89");
+        invokeFilter(tupleLogger, argumentsArray);
+        assertEquals(30, tupleLogger.getNumTuplesLogged());
+
+        tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintOnlyMatchingTuples("*Stringy", "match-3", "match-77", "match-89");
+        invokeFilter(tupleLogger, argumentsArray);
+        assertEquals(0, tupleLogger.getNumTuplesLogged());
     }
     
     private static TupleEntry makeArguments(long tupleIndex, long matchIndex) {

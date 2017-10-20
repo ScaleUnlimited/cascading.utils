@@ -303,19 +303,21 @@ public class TupleLogger extends Debug {
             // specific field, then figure out if this one matches.
             boolean isCountTuple = true;
             if (_tupleMatchFieldName != null) {
-                Object fieldValue = entry.getObject(_tupleMatchFieldName);
-                for (Object tupleMatchFieldValue : _tupleMatchFieldValues) {
-                    if (tupleMatchFieldValue == null) {
-                        isCountTuple = (fieldValue == null);
-                    } else {
-                        isCountTuple = tupleMatchFieldValue.equals(fieldValue);
+                isCountTuple = false;
+                if (_tupleMatchFieldName.startsWith("*")) {
+                    String tupleMatchFieldNameSuffix =
+                        _tupleMatchFieldName.substring(1);
+                    for (Comparable field : entry.getFields()) {
+                        String fieldName = (String)field;
+                        if  (   fieldName.endsWith(tupleMatchFieldNameSuffix)
+                            &&  isTupleMatch(entry.getObject(fieldName))) {
+                            isCountTuple = true;
+                            break;
+                        }
                     }
-                    
-                    // Once we've found a match, we want to print - it's an OR of
-                    // any of the values that were provided.
-                    if (isCountTuple) {
-                        break;
-                    }
+                } else {
+                    isCountTuple = 
+                        isTupleMatch(entry.getObject(_tupleMatchFieldName));
                 }
             }
             
@@ -349,6 +351,19 @@ public class TupleLogger extends Debug {
         
         // Never filter anything
         return false;
+    }
+    
+    private boolean isTupleMatch(Object fieldValue) {
+        boolean result = true;
+        for (Object tupleMatchFieldValue : _tupleMatchFieldValues) {
+            result = false;
+            if  (   (tupleMatchFieldValue == null) ?
+                    (fieldValue == null)
+                :   tupleMatchFieldValue.equals(fieldValue)) {
+                return true;
+            }
+        }
+        return result;
     }
     
     @Override
