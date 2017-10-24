@@ -56,8 +56,14 @@ public class TupleLogger extends Debug {
     
     public static final int DEFAULT_MAX_ELEMENT_LENGTH = 100;
     
-    // Support (via setLevel) to explicitly enable/disable tuple logging
+    // Support to explicitly and globally enable/disable tuple logging
+    // (e.g., see BaseOptions.setDebugLogging).
     private static Boolean _enableTupleLogging = null;
+    
+    // Support (via this.setLogLevel) to explicitly control level of tuple 
+    // logging when _debugOutput is null.  This can be useful in combination
+    // with this.setTupleMatchFieldName/Values to log matching Tuples at WARN.
+    private Level _logLevel = Level.SLF4J_DEBUG;
     
     private String _prefix = null;
     private boolean _printFields = false;
@@ -262,6 +268,25 @@ public class TupleLogger extends Debug {
         _tupleMatchFieldValues = targetValues;
     }
     
+    /**
+     * @return Level at which TupleLogger logs (matching) Tuples whenever no
+     * Output stream was provided to the constructor.
+     */
+    public Level getLogLevel() {
+        return _logLevel;
+    }
+
+    /**
+     * @param logLevel at which TupleLogger should log (matching) Tuples
+     * (only valid when no Output stream was provided to the constructor).
+     */
+    public void setLogLevel(Level logLevel) {
+        if (_debugOutput != null) {
+            throw new IllegalArgumentException("Unsupported for Output: " + _debugOutput);
+        }
+        _logLevel = logLevel;
+    }
+
     @SuppressWarnings("rawtypes")
     @Override
     public void prepare(FlowProcess flowProcess, OperationCall<Long> operationCall) {
@@ -412,7 +437,26 @@ public class TupleLogger extends Debug {
     
     protected void logInternal(String message) {
         if (_debugOutput == null) {
-            LOGGER.debug(message);
+            switch (_logLevel) {
+                case SLF4J_TRACE:
+                    LOGGER.trace(message);
+                break;
+                case SLF4J_DEBUG:
+                    LOGGER.debug(message);
+                break;
+                case SLF4J_INFO:
+                    LOGGER.info(message);
+                break;
+                case SLF4J_WARN:
+                    LOGGER.warn(message);
+                break;
+                case SLF4J_ERROR:
+                    LOGGER.error(message);
+                break;
+                default:
+                    throw new IllegalArgumentException(     "Unkonwn log level: " 
+                                                        +   _logLevel);
+            }
         } else {
             @SuppressWarnings("resource")
             PrintStream stream = 

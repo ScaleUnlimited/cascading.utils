@@ -139,6 +139,7 @@ public class TupleLoggerTest extends CascadingTestCase {
         }
         CountingTupleLogger tupleLogger = new CountingTupleLogger(true);
         tupleLogger.setPrintOnlyMatchingTuples("matchString", "match-3", "match-77", "match-89");
+        tupleLogger.setLogLevel(Level.SLF4J_WARN);
         invokeFilter(tupleLogger, argumentsArray);
         assertEquals(30, tupleLogger.getNumTuplesLogged());
 
