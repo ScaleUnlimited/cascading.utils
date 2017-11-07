@@ -50,7 +50,7 @@ import cascading.tuple.TupleEntry;
  * System.err or System.out, just like Debug does.
  *
  */
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "rawtypes"})
 public class TupleLogger extends Debug {
     private static final Logger LOGGER = LoggerFactory.getLogger(TupleLogger.class);
     
@@ -75,6 +75,7 @@ public class TupleLogger extends Debug {
     private int _maxPrintLength = DEFAULT_MAX_ELEMENT_LENGTH;
     private String _tupleMatchFieldName = null;
     private Object[] _tupleMatchFieldValues = null;
+    private Enum _tupleMatchCounter = null;
     
     private long _numMatchingTuples = 0L;
     private long _numPrintedTuples = 0L;
@@ -269,6 +270,14 @@ public class TupleLogger extends Debug {
     }
     
     /**
+     * @param counter to increment for each Tuple matching constraints set via
+     * {@link #setPrintOnlyMatchingTuples(String, Object...)}
+     */
+    public void setTupleMatchCounter(Enum counter) {
+        _tupleMatchCounter = counter;
+    }
+    
+    /**
      * @return Level at which TupleLogger logs (matching) Tuples whenever no
      * Output stream was provided to the constructor.
      */
@@ -287,7 +296,6 @@ public class TupleLogger extends Debug {
         _logLevel = logLevel;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public void prepare(FlowProcess flowProcess, OperationCall<Long> operationCall) {
 
@@ -296,7 +304,6 @@ public class TupleLogger extends Debug {
     }
 
     /** @see Filter#isRemove(cascading.flow.FlowProcess, FilterCall) */
-    @SuppressWarnings("rawtypes")
     public boolean isRemove(FlowProcess flowProcess, FilterCall<Long> filterCall) {
         
         // Try to keep Debug's context updated so that its cleanup logs as
@@ -343,6 +350,11 @@ public class TupleLogger extends Debug {
                 } else {
                     isCountTuple = 
                         isTupleMatch(entry.getObject(_tupleMatchFieldName));
+                }
+                
+                if  (   isCountTuple
+                    &&  (_tupleMatchCounter != null)) {
+                    flowProcess.increment(_tupleMatchCounter, 1);
                 }
             }
             
@@ -392,7 +404,6 @@ public class TupleLogger extends Debug {
     }
     
     @Override
-    @SuppressWarnings("rawtypes")
     public void cleanup(FlowProcess flowProcess, OperationCall<Long> longOperationCall) {
         
         // Delegate to Debug if we're leveraging planner support

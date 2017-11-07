@@ -16,19 +16,32 @@
 
 package com.scaleunlimited.cascading;
 
+import java.util.Map;
+
 import org.apache.hadoop.io.BytesWritable;
 import org.junit.Test;
 
 import cascading.CascadingTestCase;
+import cascading.flow.Flow;
+import cascading.flow.hadoop.HadoopFlowConnector;
+import cascading.flow.hadoop.HadoopFlowProcess;
+import cascading.pipe.Each;
+import cascading.pipe.Pipe;
+import cascading.scheme.hadoop.SequenceFile;
+import cascading.tap.SinkMode;
+import cascading.tap.Tap;
+import cascading.tap.hadoop.Lfs;
 import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
+import cascading.tuple.TupleEntryCollector;
 
 @SuppressWarnings("serial")
 public class TupleLoggerTest extends CascadingTestCase {
 
     private static final Fields TEST_FIELDS = new Fields("index", "matchString");
-
+    private static enum TestCounters { TUPLE_MATCHES };
+    
     @Test
     public void testLimitStringLength() {
         assertEquals("abc", TupleLogger.printObject("abcdefg", 3));
@@ -145,6 +158,7 @@ public class TupleLoggerTest extends CascadingTestCase {
 
         tupleLogger = new CountingTupleLogger(true);
         tupleLogger.setPrintOnlyMatchingTuples("*String", "match-3", "match-77", "match-89");
+        tupleLogger.setTupleMatchCounter(TestCounters.TUPLE_MATCHES);
         invokeFilter(tupleLogger, argumentsArray);
         assertEquals(30, tupleLogger.getNumTuplesLogged());
 
@@ -152,6 +166,36 @@ public class TupleLoggerTest extends CascadingTestCase {
         tupleLogger.setPrintOnlyMatchingTuples("*Stringy", "match-3", "match-77", "match-89");
         invokeFilter(tupleLogger, argumentsArray);
         assertEquals(0, tupleLogger.getNumTuplesLogged());
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testTupleMatchCounter() throws Throwable {
+        final int numDatums = 10 * 100;
+        
+        final String testDir = "build/test/TupleLoggerTest/testTupleMatchCounter/";
+        String in = testDir + "in";
+
+        Lfs sourceTap = new Lfs(new SequenceFile(TEST_FIELDS), in, SinkMode.REPLACE);
+        TupleEntryCollector write = sourceTap.openForWrite(new HadoopFlowProcess());
+        
+        for (int i = 0; i < numDatums; i++) {
+            write.add(makeArguments(i, i % 100).getTuple());
+        }
+        
+        write.close();
+
+        CountingTupleLogger tupleLogger = new CountingTupleLogger(true);
+        tupleLogger.setPrintOnlyMatchingTuples("*String", "match-3", "match-77", "match-89");
+        tupleLogger.setTupleMatchCounter(TestCounters.TUPLE_MATCHES);
+
+        Pipe pipe = new Pipe("test");
+        pipe = new Each(pipe, tupleLogger);
+        Tap sinkTap = new NullSinkTap(TEST_FIELDS);
+       
+        Flow flow = new HadoopFlowConnector().connect(sourceTap, sinkTap, pipe);
+        Map<Enum, Long> counters = FlowCounters.run(flow, TestCounters.TUPLE_MATCHES);
+        assertEquals(30, (long)counters.get(TestCounters.TUPLE_MATCHES));
     }
     
     private static TupleEntry makeArguments(long tupleIndex, long matchIndex) {
