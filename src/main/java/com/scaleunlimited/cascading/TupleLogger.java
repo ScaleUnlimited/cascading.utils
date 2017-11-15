@@ -17,6 +17,7 @@
 package com.scaleunlimited.cascading;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 
 import org.apache.hadoop.io.BytesWritable;
 import org.slf4j.Logger;
@@ -58,7 +59,11 @@ public class TupleLogger extends Debug {
     
     // Support to explicitly and globally enable/disable tuple logging
     // (e.g., see BaseOptions.setDebugLogging).
-    private static Boolean _enableTupleLogging = null;
+    private static Boolean _enableAllTupleLogging = null;
+    
+    // Save the value of _enableAllTupleLogging when this instance was created
+    // (for use during the actual logging).
+    private Boolean _enableTupleLogging = _enableAllTupleLogging;
     
     // Support (via this.setLogLevel) to explicitly control level of tuple 
     // logging when _debugOutput is null.  This can be useful in combination
@@ -123,7 +128,7 @@ public class TupleLogger extends Debug {
      * @return pipe to use
      */
     public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength) {
-        return makePipe(inPipe, prefix, printFields, maxLength, doTupleLogging());
+        return makePipe(inPipe, prefix, printFields, maxLength, planTupleLogging());
     }
     
     public static Pipe makePipe(Pipe inPipe, String prefix, boolean printFields, int maxLength, boolean addPipe) {
@@ -421,9 +426,23 @@ public class TupleLogger extends Debug {
      * 
      * @return true if we should log tuples.
      */
-    private static boolean doTupleLogging() {
+    private boolean doTupleLogging() {
         if (_enableTupleLogging != null) {
             return _enableTupleLogging;
+        } else {
+            return LOGGER.isDebugEnabled();
+        }
+    }
+    
+    /**
+     * Decide if we want to include TupleLogger Filters in the work flow
+     * to log tuples.
+     * 
+     * @return true if we should include TupleLogger Filters.
+     */
+    private static boolean planTupleLogging() {
+        if (_enableAllTupleLogging != null) {
+            return _enableAllTupleLogging;
         } else {
             return LOGGER.isDebugEnabled();
         }
@@ -542,7 +561,12 @@ public class TupleLogger extends Debug {
      * @param enabled true to force logging, false to force no logging.
      */
     public static void enableLogging(boolean enabled) {
-        _enableTupleLogging = enabled;
+        String message = 
+            String.format(  "%s TupleLogger planning (i.e., regardless log level).\n%s",
+                            enabled ? "Enabling" : "Disabling",
+                            Arrays.toString(Thread.currentThread().getStackTrace()));
+        LOGGER.warn(message);
+        _enableAllTupleLogging = enabled;
     }
 
 }

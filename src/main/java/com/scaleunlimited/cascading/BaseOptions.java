@@ -31,9 +31,20 @@ public class BaseOptions {
         _debugLogging = debugLogging;
         
         // HACK - set the TupleLogger's logging explicitly, so that subsequent
-        // calls to TupleLogger.makePipe() will do the right thing when defining the
-        // workflow.
-        TupleLogger.enableLogging(debugLogging);
+        // calls to TupleLogger.makePipe() will do the right thing when defining
+        // the workflow.  Note that this a static setting, so it affects all
+        // workflow planning from here on.  We're careful not to turn off
+        // TupleLogger's logging if (!debugLogging), since other code may want
+        // it on even when not logging everything at DEBUG.  For example, those
+        // calling all three of the following:
+        //
+        //   tupleLogger.setPrintOnlyMatchingTuples(fieldName, fieldValues);
+        //   tupleLogger.setLogLevel(Level.SLF4J_WARN);
+        //   TupleLogger.enableLogging(true);
+        // 
+        if (debugLogging) {
+            TupleLogger.enableLogging(true);
+        }
     }
 
     @Option(name = "-trace", usage = "trace logging", required = false)
