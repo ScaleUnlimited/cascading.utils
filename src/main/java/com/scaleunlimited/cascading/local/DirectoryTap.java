@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,8 +13,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobConf;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
@@ -115,6 +114,9 @@ public class DirectoryTap extends FileTap implements CompositeTap<FileTap> {
                 throw new IllegalArgumentException("Path provided doesn't exist: " + getPath());
             } else if (dir.isDirectory()) {
                 File[] files = dir.listFiles();
+                
+                // Note: File.listFiles() does not guarantee any ordering
+                Arrays.sort(files);
 
                 for (File file : files) {
                     // Ignore .xxx files, like .part-00000.crc

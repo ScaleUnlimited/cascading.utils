@@ -23,6 +23,10 @@ import org.apache.hadoop.mapred.JobPriority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.scaleunlimited.cascading.BasePath;
+import com.scaleunlimited.cascading.BasePlatform;
+import com.scaleunlimited.cascading.Level;
+
 import cascading.flow.FlowConnector;
 import cascading.flow.FlowProcess;
 import cascading.flow.hadoop.HadoopFlowConnector;
@@ -39,10 +43,6 @@ import cascading.tap.hadoop.PartitionTap;
 import cascading.tap.hadoop.TemplateTap;
 import cascading.tap.partition.Partition;
 import cascading.tuple.Fields;
-
-import com.scaleunlimited.cascading.BasePath;
-import com.scaleunlimited.cascading.BasePlatform;
-import com.scaleunlimited.cascading.Level;
 
 @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class HadoopPlatform extends BasePlatform {
@@ -186,10 +186,14 @@ public class HadoopPlatform extends BasePlatform {
     @Override
     public void setFlowPriority(FlowPriority priority) throws Exception {
         switch (priority) {
+            case VERY_HIGH:
+                _conf.setJobPriority(JobPriority.VERY_HIGH);
+                break;
+            
             case HIGH:
                 _conf.setJobPriority(JobPriority.HIGH);
                 break;
-                
+            
             case MEDIUM:
                 _conf.setJobPriority(JobPriority.NORMAL);
                 break;

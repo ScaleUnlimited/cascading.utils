@@ -21,7 +21,7 @@ public abstract class BasePlatform implements Serializable {
     public static final int CLUSTER_REDUCER_COUNT = -1;
     
     public enum FlowPriority {
-        LOW, MEDIUM, HIGH
+        LOW, MEDIUM, HIGH, VERY_HIGH
     }
     
     public abstract String getPlatformType();
