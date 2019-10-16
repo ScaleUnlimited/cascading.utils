@@ -7,6 +7,10 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.scaleunlimited.cascading.AbstractPlatformTest;
+import com.scaleunlimited.cascading.BasePath;
+import com.scaleunlimited.cascading.BasePlatform;
+
 import cascading.flow.Flow;
 import cascading.flow.FlowDef;
 import cascading.pipe.Pipe;
@@ -21,16 +25,12 @@ import cascading.tuple.TupleEntry;
 import cascading.tuple.TupleEntryCollector;
 import cascading.tuple.TupleEntryIterator;
 
-import com.scaleunlimited.cascading.AbstractPlatformTest;
-import com.scaleunlimited.cascading.BasePath;
-import com.scaleunlimited.cascading.BasePlatform;
-
 public class LocalPlatformTest extends AbstractPlatformTest {
 
     private static final String WORKING_DIR = "build/test/LocalPlatformTest";
     
     @Before
-    public void setup() {
+    public void setUp() {
         File workingDir = new File(WORKING_DIR);
         if (workingDir.exists()) {
             FileUtils.deleteQuietly(workingDir);

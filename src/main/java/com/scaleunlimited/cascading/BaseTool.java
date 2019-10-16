@@ -72,7 +72,7 @@ public class BaseTool {
         // We can't dynamically change the slf4j log level, so we'll just have
         // to set system properties that will impact Log4J levels (in case the
         // user of cascading.utils is using log4j).
-        Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         if (options.isTraceLogging()) {
             System.setProperty("my.root.level", "TRACE");
             System.setProperty("my.cascading.level", "TRACE");

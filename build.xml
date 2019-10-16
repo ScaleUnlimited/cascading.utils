@@ -326,7 +326,7 @@
     <!-- ================================================================== -->
 
     <target name="install"
-            depends="mvn-install"
+            depends="mvn-install, clean"
             description="--> install SNAPSHOT jar to local repository">
     </target>
 

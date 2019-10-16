@@ -1,9 +1,5 @@
 package com.scaleunlimited.cascading.hadoop.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -11,6 +7,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.scaleunlimited.cascading.BasePath;
 
 import cascading.flow.Flow;
 import cascading.pipe.Pipe;
@@ -20,8 +18,6 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntryCollector;
 
-import com.scaleunlimited.cascading.BasePath;
-
 public class MiniClusterPlatformTest {
 
     private static final String BASE_DIR = "build/test/MiniClusterPlatformTest/";
@@ -29,7 +25,7 @@ public class MiniClusterPlatformTest {
     private MiniClusterPlatform _platform;
     
     @Before
-    public void setup() throws IOException {
+    public void setUp() throws IOException {
         _platform = null;
         
         File outputDir = new File(BASE_DIR);

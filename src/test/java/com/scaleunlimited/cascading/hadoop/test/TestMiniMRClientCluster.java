@@ -38,7 +38,7 @@ public class TestMiniMRClientCluster {
   }
 
   @BeforeClass
-  public static void setup() throws IOException {
+  public static void setUpBeforeClass() throws IOException {
     final Configuration conf = new Configuration();
     final Path TEST_ROOT_DIR = new Path(System.getProperty("test.build.data",
         "/tmp"));
@@ -65,7 +65,7 @@ public class TestMiniMRClientCluster {
   }
 
   @AfterClass
-  public static void cleanup() throws IOException {
+  public static void tearDownAfterClass() throws IOException {
     // clean up the input and output files
     final Configuration conf = new Configuration();
     final FileSystem fs = testdir.getFileSystem(conf);
