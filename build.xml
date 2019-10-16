@@ -60,7 +60,7 @@
         </artifact:dependencies>
     </target>
 
-    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="jar, sources">
+    <target name="mvn-install" xmlns:artifact="urn:maven-artifact-ant" depends="clean, jar, sources">
         <artifact:install file="${build.dir}/${jar.name}">
             <pom refid="maven.project"/>
     		<attach file="${build.dir}/${source-jar.name}" type="jar" classifier="sources"/>
@@ -326,7 +326,7 @@
     <!-- ================================================================== -->
 
     <target name="install"
-            depends="mvn-install, clean"
+            depends="mvn-install"
             description="--> install SNAPSHOT jar to local repository">
     </target>
 
