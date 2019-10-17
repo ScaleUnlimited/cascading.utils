@@ -75,15 +75,6 @@
             
             <pom refid="maven.project"/>
         </artifact:deploy>
-        
-        <artifact:deploy file="${build.dir}/${test-jar.name}">
-            
-            <remoteRepository id="conjars" url="http://conjars.org/repo">
-            </remoteRepository>
-            
-            <pom refid="maven.project"/>
-        </artifact:deploy>
-        
     </target>
 
 	<!-- ================================================================== -->
