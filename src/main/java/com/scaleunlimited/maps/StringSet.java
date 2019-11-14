@@ -1,7 +1,5 @@
 package com.scaleunlimited.maps;
 
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -13,6 +11,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.hadoop.io.Writable;
+
+import com.scaleunlimited.cu.fastutil.ints.Int2IntOpenHashMap;
 
 public class StringSet implements Set<String>, Writable {
 
